@@ -74,9 +74,9 @@ class vg_wiki_and_relco_lan():
         print('Model loaded.')
         self.relco_vec_mean = self.relco_model.wv.syn0.mean(axis=0)
         # change everything into lowercase
-        for key in self.relco_model.vocab.keys():
+        for key in self.relco_model.wv.vocab.keys():
             new_key = key.lower()
-            self.relco_model.vocab[new_key] = self.relco_model.vocab.pop(key)
+            self.relco_model.wv.vocab[new_key] = self.relco_model.wv.vocab.pop(key)
         print('Relco words converted to lowercase.')
 
         half_dim = int(cfg.INPUT_LANG_EMBEDDING_DIM / 2)
@@ -100,7 +100,7 @@ class vg_wiki_and_relco_lan():
             obj_vecs_relco = np.zeros(half_dim, dtype=np.float32)
             words = name.split()
             for word in words:
-                if word in self.relco_model.vocab:
+                if word in self.relco_model.wv.vocab:
                     raw_word = self.relco_model[word]
                     obj_vecs_relco += (raw_word / la.norm(raw_word))
                 else:
@@ -130,7 +130,7 @@ class vg_wiki_and_relco_lan():
             prd_vecs_relco = np.zeros(half_dim, dtype=np.float32)
             words = name.split()
             for word in words:
-                if word in self.relco_model.vocab:
+                if word in self.relco_model.wv.vocab:
                     raw_word = self.relco_model[word]
                     prd_vecs_relco += (raw_word / la.norm(raw_word))
                 else:
