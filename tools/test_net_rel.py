@@ -35,6 +35,8 @@ from caffe2.python import workspace
 
 import logging
 
+import json
+
 FORMAT = '[%(levelname)s: %(filename)s: %(lineno)4d]: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -110,6 +112,10 @@ def test():
     iter_accs = test_evaluator.calculate_and_plot_accuracy()
     for key in iter_accs.keys():
         accumulated_accs[key].append(iter_accs[key])
+
+    with open('accuracies.json', 'w') as fp:
+        json.dump(accumulated_accs, fp)
+
     test_evaluator.save_all_dets()
 
     test_model.roi_data_loader.shutdown()
