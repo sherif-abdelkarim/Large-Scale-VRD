@@ -154,13 +154,25 @@ class vg_wiki_and_relco(imdb_rel):
             self._data_path, 'relationships_clean_spo_joined_and_merged.json')
         with open(rel_data_path) as f:
             all_rels = json.load(f)
+
+        rel_w_data_path = os.path.join(
+            self._data_path, 'relationships_weak_labels.json')
+        with open(rel_w_data_path) as f:
+            rels_w = json.load(f)
+
         all_rels_map = {}
         for cnt, rel in enumerate(all_rels):
             all_rels_map[rel['image_id']] = cnt
-        gt_roidb = \
-            [self._load_vg_annotation(all_rels[all_rels_map[index]],
-                                      index, cnt, len(self.image_index))
-             for cnt, index in enumerate(self.image_index)]
+        if True: # temporarily until flag is passed from input command
+            gt_roidb = \
+                [self._load_vg_annotation(all_rels[all_rels_map[index]],
+                                          index, cnt, len(self.image_index))
+                 for cnt, index in enumerate(self.image_index)]
+        else:
+            gt_roidb = \
+                [self._load_vg_annotation_with_weak_labels(all_rels[all_rels_map[index]], rels_w[all_rels_map[index]],
+                                                           index, cnt, len(self.image_index), 4)
+                 for cnt, index in enumerate(self.image_index)]
 
         with open(cache_file, 'wb') as fid:
             cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
@@ -339,6 +351,244 @@ class vg_wiki_and_relco(imdb_rel):
                 'gt_sbj_overlaps': sbj_overlaps,
                 'gt_obj_overlaps': obj_overlaps,
                 'gt_rel_overlaps': rel_overlaps,
+                'sbj_seg_areas': sbj_seg_areas,
+                'obj_seg_areas': obj_seg_areas,
+                'rel_seg_areas': rel_seg_areas,
+                'sbj_vecs': sbj_vecs,
+                'obj_vecs': obj_vecs,
+                'prd_vecs': prd_vecs,
+                'flipped': False}
+
+    def _load_vg_annotation_with_weak_labels(self, img_rels, img_rels_w, index, cnt, length, k):
+        """
+        Load image and bounding boxes info.
+        """
+
+        print("Loading image %d/%d..." % (cnt + 1, length))
+
+        assert index == img_rels['image_id']  # sanity check
+
+        num_rels = len(img_rels['relationships'])
+
+        sbj_boxes = np.zeros((num_rels, 4), dtype=np.uint16)
+        obj_boxes = np.zeros((num_rels, 4), dtype=np.uint16)
+        rel_boxes = np.zeros((num_rels, 4), dtype=np.uint16)
+        sbj_names = np.zeros((num_rels), dtype='U100')
+        obj_names = np.zeros((num_rels), dtype='U100')
+        prd_names = np.zeros((num_rels), dtype='U100')
+        sbj_names_w = np.zeros((num_rels, k), dtype='U100')
+        obj_names_w = np.zeros((num_rels, k), dtype='U100')
+        prd_names_w = np.zeros((num_rels, k), dtype='U100')
+        gt_sbj_classes = np.zeros((num_rels), dtype=np.int32)
+        gt_obj_classes = np.zeros((num_rels), dtype=np.int32)
+        gt_rel_classes = np.zeros((num_rels), dtype=np.int32)
+        gt_sbj_classes_w = np.zeros((num_rels, k), dtype=np.int32)
+        gt_obj_classes_w = np.zeros((num_rels, k), dtype=np.int32)
+        gt_rel_classes_w = np.zeros((num_rels, k), dtype=np.int32)
+        sbj_overlaps = \
+            np.zeros((num_rels, self._num_object_classes), dtype=np.float32)
+        obj_overlaps = \
+            np.zeros((num_rels, self._num_object_classes), dtype=np.float32)
+        rel_overlaps = \
+            np.zeros((num_rels, self._num_predicate_classes), dtype=np.float32)
+
+        sbj_overlaps_w = \
+            np.zeros((num_rels, k, self._num_object_classes), dtype=np.float32)
+        obj_overlaps_w = \
+            np.zeros((num_rels, k, self._num_object_classes), dtype=np.float32)
+        rel_overlaps_w = \
+            np.zeros((num_rels, k, self._num_predicate_classes), dtype=np.float32)
+
+        # "Seg" area for pascal is just the box area
+        sbj_seg_areas = np.zeros((num_rels), dtype=np.float32)
+        obj_seg_areas = np.zeros((num_rels), dtype=np.float32)
+        rel_seg_areas = np.zeros((num_rels), dtype=np.float32)
+
+        # variables for word vectors
+        half_dim = int(cfg.INPUT_LANG_EMBEDDING_DIM / 2)
+        sbj_vecs = np.zeros(
+            (num_rels, cfg.INPUT_LANG_EMBEDDING_DIM), dtype=np.float32)
+        obj_vecs = np.zeros(
+            (num_rels, cfg.INPUT_LANG_EMBEDDING_DIM), dtype=np.float32)
+        prd_vecs = np.zeros(
+            (num_rels, cfg.INPUT_LANG_EMBEDDING_DIM), dtype=np.float32)
+
+        # {'predicate_weak_labels': ['in', 'of', 'on side of', 'next to'],
+        #  'subject': {'name_weak_labels': ['sidewalk', 'ground', 'shadow', 'pavement']},
+        #  'object': {'name_weak_labels': ['street', 'road', 'ground', 'pavement']}}
+        # Load object bounding boxes into a data frame.
+        for ix, rel in enumerate(img_rels['relationships']):
+            sbj = rel['subject']
+            obj = rel['object']
+            prd = rel['predicate']
+
+            sbj_w = img_rels_w['relationships'][ix]['subject']
+            obj_w = img_rels_w['relationships'][ix]['object']
+            prd_w = img_rels_w['relationships'][ix]['predicate_weak_labels']
+
+            sbj_box = [sbj['x'], sbj['y'], sbj['x'] + sbj['w'], sbj['y'] + sbj['h']]
+            obj_box = [obj['x'], obj['y'], obj['x'] + obj['w'], obj['y'] + obj['h']]
+            rel_box = box_utils.box_union(sbj_box, obj_box)
+            sbj_boxes[ix, :] = sbj_box
+            obj_boxes[ix, :] = obj_box
+            rel_boxes[ix, :] = rel_box
+
+            sbj_names[ix] = sbj['name']
+            obj_names[ix] = obj['name']
+            prd_names[ix] = prd
+
+            sbj_names_w[ix] = sbj_w['name_weak_labels']
+            obj_names_w[ix] = obj_w['name_weak_labels']
+            prd_names_w[ix] = prd_w
+
+            sbj_cls = self._object_class_to_ind[str(sbj_names[ix])]
+            obj_cls = self._object_class_to_ind[str(obj_names[ix])]
+            prd_cls = self._predicate_class_to_ind[str(prd_names[ix])]
+
+            sbj_cls_w = [self._object_class_to_ind[str(sbj_names_w[ix][i])] for i in range(len(sbj_names_w))]
+            obj_cls_w = [self._object_class_to_ind[str(obj_names_w[ix][i])] for i in range(len(sbj_names_w))]
+            prd_cls_w = [self._predicate_class_to_ind[str(prd_names_w[ix][i])] for i in range(len(sbj_names_w))]
+
+            gt_sbj_classes[ix] = sbj_cls
+            gt_obj_classes[ix] = obj_cls
+            gt_rel_classes[ix] = prd_cls
+
+            gt_sbj_classes_w[ix] = sbj_cls_w
+            gt_obj_classes_w[ix] = obj_cls_w
+            gt_rel_classes_w[ix] = prd_cls_w
+
+            sbj_overlaps[ix, sbj_cls] = 1.0
+            obj_overlaps[ix, obj_cls] = 1.0
+            rel_overlaps[ix, prd_cls] = 1.0
+
+            for i, s in enumerate(sbj_cls_w):
+                sbj_overlaps_w[ix, i, s] = 1.0
+            for i, o in enumerate(obj_cls_w):
+                obj_overlaps_w[ix, i, o] = 1.0
+            for i, p in enumerate(prd_cls_w):
+                rel_overlaps_w[ix, i, p] = 1.0
+
+            sbj_seg_areas[ix] = (sbj_box[2] - sbj_box[0] + 1) * \
+                                (sbj_box[3] - sbj_box[1] + 1)
+            obj_seg_areas[ix] = (obj_box[2] - obj_box[0] + 1) * \
+                                (obj_box[3] - obj_box[1] + 1)
+            rel_seg_areas[ix] = (rel_box[2] - rel_box[0] + 1) * \
+                                (rel_box[3] - rel_box[1] + 1)
+
+            # add word vectors for sbjs, objs and rels
+            # sbj word2vec
+            sbj_vecs_wiki = np.zeros(half_dim, dtype=np.float32)
+            sbj_words = sbj_names[ix].split()
+            for word in sbj_words:
+                if word in self.model.vocab:
+                    raw_word = self.model[word]
+                    sbj_vecs_wiki += (raw_word / la.norm(raw_word))
+                else:
+                    print('Singular word found: ', word)
+                    raise NameError('Terminated.')
+            sbj_vecs_wiki /= len(sbj_words)
+            sbj_vecs_wiki /= la.norm(sbj_vecs_wiki)
+
+            sbj_vecs_relco = np.zeros(half_dim, dtype=np.float32)
+            sbj_words = sbj_names[ix].split()
+            for word in sbj_words:
+                if word in self.relco_model.vocab:
+                    raw_word = self.relco_model[word]
+                    sbj_vecs_relco += (raw_word / la.norm(raw_word))
+                else:
+                    sbj_vecs_relco += \
+                        (self.relco_vec_mean / la.norm(self.relco_vec_mean))
+            sbj_vecs_relco /= len(sbj_words)
+            sbj_vecs_relco /= la.norm(sbj_vecs_relco)
+
+            sbj_vecs[ix][:half_dim] = sbj_vecs_wiki
+            sbj_vecs[ix][half_dim:] = sbj_vecs_relco
+
+            # obj word2vec
+            obj_vecs_wiki = np.zeros(half_dim, dtype=np.float32)
+            obj_words = obj_names[ix].split()
+            for word in obj_words:
+                if word in self.model.vocab:
+                    raw_word = self.model[word]
+                    obj_vecs_wiki += (raw_word / la.norm(raw_word))
+                else:
+                    print('Singular word found: ', word)
+                    raise NameError('Terminated.')
+            obj_vecs_wiki /= len(obj_words)
+            obj_vecs_wiki /= la.norm(obj_vecs_wiki)
+
+            obj_vecs_relco = np.zeros(half_dim, dtype=np.float32)
+            obj_words = obj_names[ix].split()
+            for word in obj_words:
+                if word in self.relco_model.vocab:
+                    raw_word = self.relco_model[word]
+                    obj_vecs_relco += (raw_word / la.norm(raw_word))
+                else:
+                    obj_vecs_relco += \
+                        (self.relco_vec_mean / la.norm(self.relco_vec_mean))
+            obj_vecs_relco /= len(obj_words)
+            obj_vecs_relco /= la.norm(obj_vecs_relco)
+
+            obj_vecs[ix][:half_dim] = obj_vecs_wiki
+            obj_vecs[ix][half_dim:] = obj_vecs_relco
+
+            # prd word2vec
+            prd_vecs_wiki = np.zeros(half_dim, dtype=np.float32)
+            prd_words = prd_names[ix].split()
+            for word in prd_words:
+                if word in self.model.vocab:
+                    raw_word = self.model[word]
+                    prd_vecs_wiki += (raw_word / la.norm(raw_word))
+                else:
+                    print('Singular word found: ', word)
+                    raise NameError('Terminated.')
+            prd_vecs_wiki /= len(prd_words)
+            prd_vecs_wiki /= la.norm(prd_vecs_wiki)
+
+            prd_vecs_relco = np.zeros(half_dim, dtype=np.float32)
+            prd_words = prd_names[ix].split()
+            for word in prd_words:
+                if word in self.relco_model.vocab:
+                    raw_word = self.relco_model[word]
+                    prd_vecs_relco += (raw_word / la.norm(raw_word))
+                else:
+                    prd_vecs_relco += \
+                        (self.relco_vec_mean / la.norm(self.relco_vec_mean))
+            prd_vecs_relco /= len(prd_words)
+            prd_vecs_relco /= la.norm(prd_vecs_relco)
+
+            prd_vecs[ix][:half_dim] = prd_vecs_wiki
+            prd_vecs[ix][half_dim:] = prd_vecs_relco
+
+        sbj_overlaps = scipy.sparse.csr_matrix(sbj_overlaps)
+        obj_overlaps = scipy.sparse.csr_matrix(obj_overlaps)
+        rel_overlaps = scipy.sparse.csr_matrix(rel_overlaps)
+
+        sbj_overlaps_w = scipy.sparse.csr_matrix(sbj_overlaps_w)
+        obj_overlaps_w = scipy.sparse.csr_matrix(obj_overlaps_w)
+        rel_overlaps_w = scipy.sparse.csr_matrix(rel_overlaps_w)
+
+        return {'sbj_boxes': sbj_boxes,
+                'obj_boxes': obj_boxes,
+                'rel_boxes': rel_boxes,
+                'sbj_names': sbj_names,
+                'obj_names': obj_names,
+                'prd_names': prd_names,
+                'sbj_names_w': sbj_names_w,
+                'obj_names_w': obj_names_w,
+                'prd_names_w': prd_names_w,
+                'gt_sbj_classes': gt_sbj_classes,
+                'gt_obj_classes': gt_obj_classes,
+                'gt_rel_classes': gt_rel_classes,
+                'gt_sbj_classes_w': gt_sbj_classes_w,
+                'gt_obj_classes_w': gt_obj_classes_w,
+                'gt_rel_classes_w': gt_rel_classes_w,
+                'gt_sbj_overlaps': sbj_overlaps,
+                'gt_obj_overlaps': obj_overlaps,
+                'gt_rel_overlaps': rel_overlaps,
+                'gt_sbj_overlaps_w': sbj_overlaps_w,
+                'gt_obj_overlaps_w': obj_overlaps_w,
+                'gt_rel_overlaps_w': rel_overlaps_w,
                 'sbj_seg_areas': sbj_seg_areas,
                 'obj_seg_areas': obj_seg_areas,
                 'rel_seg_areas': rel_seg_areas,
