@@ -216,6 +216,11 @@ def add_fast_rcnn_blobs(
                 unique_sbj_gt_labels = sbj_gt_labels[unique_sbj_gt_inds]
                 unique_obj_gt_labels = obj_gt_labels[unique_obj_gt_inds]
 
+                unique_sbj_gt_labels_w = sbj_gt_labels_w[unique_sbj_gt_inds]
+                unique_obj_gt_labels_w = obj_gt_labels_w[unique_obj_gt_inds]
+
+                # Add here for weak labels
+
             if cfg.MODEL.LOSS_TYPE.find('TRIPLET') >= 0:
                 frcn_blobs = _sample_rois_triplet_yall(
                     unique_all_rois_sbj, unique_all_rois_obj,
@@ -232,6 +237,7 @@ def add_fast_rcnn_blobs(
                     unique_sbj_gt_boxes, unique_obj_gt_boxes,
                     unique_sbj_gt_vecs, unique_obj_gt_vecs,
                     unique_sbj_gt_labels, unique_obj_gt_labels,
+                    unique_sbj_gt_labels_w, unique_obj_gt_labels_w,
                     sbj_gt_boxes, obj_gt_boxes,
                     sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
                     rel_gt_labels,
@@ -534,15 +540,16 @@ def _sample_rois_softmax_yall(
         unique_sbj_gt_boxes, unique_obj_gt_boxes,
         unique_sbj_gt_vecs, unique_obj_gt_vecs,
         unique_sbj_gt_labels, unique_obj_gt_labels,
+        unique_sbj_gt_labels_w, unique_obj_gt_labels_w,
         sbj_gt_boxes, obj_gt_boxes,
         sbj_gt_vecs, obj_gt_vecs,
-        rel_gt_vecs, rel_gt_labels,
+        rel_gt_vecs, rel_gt_labels, rel_gt_labels_w,
         low_shot_helper):
 
-    rois_sbj, pos_vecs_sbj, all_labels_sbj, _, _ = \
+    rois_sbj, pos_vecs_sbj, all_labels_sbj, all_labels_sbj_w, _, _ = \
         _sample_rois_pos_neg_for_one_branch(
             unique_all_rois_sbj, unique_sbj_gt_boxes,
-            unique_sbj_gt_labels, unique_sbj_gt_vecs,
+            unique_sbj_gt_labels, unique_sbj_gt_labels_w, unique_sbj_gt_vecs,
             low_shot_helper, 'sbj')
     fg_size_sbj = pos_vecs_sbj.shape[0]
     pos_starts_sbj = np.array([0, 0], dtype=np.int32)
@@ -550,11 +557,12 @@ def _sample_rois_softmax_yall(
     neg_starts_sbj = np.array([fg_size_sbj, 0], dtype=np.int32)
     neg_ends_sbj = np.array([-1, -1], dtype=np.int32)
     sbj_pos_labels = all_labels_sbj[:fg_size_sbj] - 1
+    sbj_pos_labels_w = all_labels_sbj_w[:fg_size_sbj] - 1
 
-    rois_obj, pos_vecs_obj, all_labels_obj, _, _ = \
+    rois_obj, pos_vecs_obj, all_labels_obj, all_labels_obj_w, _, _ = \
         _sample_rois_pos_neg_for_one_branch(
             unique_all_rois_obj, unique_obj_gt_boxes,
-            unique_obj_gt_labels, unique_obj_gt_vecs,
+            unique_obj_gt_labels, unique_obj_gt_labels_w, unique_obj_gt_vecs,
             low_shot_helper, 'obj')
     fg_size_obj = pos_vecs_obj.shape[0]
     pos_starts_obj = np.array([0, 0], dtype=np.int32)
@@ -562,6 +570,7 @@ def _sample_rois_softmax_yall(
     neg_starts_obj = np.array([fg_size_obj, 0], dtype=np.int32)
     neg_ends_obj = np.array([-1, -1], dtype=np.int32)
     obj_pos_labels = all_labels_obj[:fg_size_obj] - 1
+    obj_pos_labels_w = all_labels_obj_w[:fg_size_obj] - 1
 
     rois_per_image = int(cfg.TRAIN.BATCH_SIZE_PER_IM)
     fg_rois_per_image = int(
@@ -699,7 +708,11 @@ def _sample_rois_softmax_yall(
     rel_rois_prd = rel_all_rois_prd[rel_keep_inds]
 
     all_labels_rel = rel_gt_labels[gt_assignment_pair_min[rel_keep_inds]]
+    all_labels_rel_w = rel_gt_labels_w[gt_assignment_pair_min[rel_keep_inds]]
+
     rel_pos_labels = all_labels_rel[:rel_fg_inds.size] - 1
+    rel_pos_labels_w = all_labels_rel_w[:rel_fg_inds.size] - 1
+
 
     pos_starts_rel = np.array([0, 0], dtype=np.int32)
     pos_ends_rel = np.array([rel_fg_inds.size, -1], dtype=np.int32)
@@ -715,6 +728,9 @@ def _sample_rois_softmax_yall(
         sbj_pos_labels_int32=sbj_pos_labels.astype(np.int32, copy=False),
         obj_pos_labels_int32=obj_pos_labels.astype(np.int32, copy=False),
         rel_pos_labels_int32=rel_pos_labels.astype(np.int32, copy=False),
+        sbj_pos_labels_int32_w=sbj_pos_labels_w.astype(np.int32, copy=False),
+        obj_pos_labels_int32_w=obj_pos_labels_w.astype(np.int32, copy=False),
+        rel_pos_labels_int32_w=rel_pos_labels_w.astype(np.int32, copy=False),
         sbj_pos_starts=pos_starts_sbj,
         obj_pos_starts=pos_starts_obj,
         rel_pos_starts=pos_starts_rel,
@@ -737,7 +753,7 @@ def _sample_rois_softmax_yall(
 
 
 def _sample_rois_pos_neg_for_one_branch(
-        all_rois, gt_boxes, gt_labels, gt_vecs, low_shot_helper, label):
+        all_rois, gt_boxes, gt_labels, gt_labels_w, gt_vecs, low_shot_helper, label):
 
     rois_per_image = int(cfg.TRAIN.BATCH_SIZE_PER_IM)
     fg_rois_per_image = int(
@@ -810,6 +826,8 @@ def _sample_rois_pos_neg_for_one_branch(
 
     all_labels = np.zeros(len(keep_inds), dtype=np.float32)
     all_labels[:fg_inds.size] = gt_labels[gt_assignment[fg_inds]]
+    all_labels_w = np.zeros((len(keep_inds), 4), dtype=np.float32)
+    all_labels_w[:fg_inds.size] = gt_labels_w[gt_assignment[fg_inds]]
 
     all_labels_horizontal_tile = np.tile(
         all_labels, (fg_inds.size, 1))
@@ -828,10 +846,10 @@ def _sample_rois_pos_neg_for_one_branch(
                  pos_labels_vertical_tile).astype(np.float32)
 
     if cfg.TRAIN.OVERSAMPLE_SO:
-        return rois, pos_vecs, all_labels, neg_affinity_mask, pos_affinity_mask, \
+        return rois, pos_vecs, all_labels, all_labels_w, neg_affinity_mask, pos_affinity_mask, \
             low_shot_ends, regular_starts
     else:
-        return rois, pos_vecs, all_labels, neg_affinity_mask, pos_affinity_mask
+        return rois, pos_vecs, all_labels, all_labels_w, neg_affinity_mask, pos_affinity_mask
 
 
 def box_union(boxes1, boxes2):
