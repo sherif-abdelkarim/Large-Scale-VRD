@@ -14,3 +14,7 @@ __pycache__/
 # Generated C files
 lib/utils/cython_*.c
 
+# Data and checkpoints directories
+checkpoints
+datasets
+.ipynb_checkpoints
