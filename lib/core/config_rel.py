@@ -458,7 +458,7 @@ def merge_dicts(dict_a, dict_b):
 def load_params_from_file(filename):
     import yaml
     with open(filename, 'r') as fopen:
-        yaml_config = AttrDict(yaml.load(fopen))
+        yaml_config = AttrDict(yaml.load(fopen, Loader=yaml.FullLoader))
     merge_dicts(yaml_config, __C)
 
 
