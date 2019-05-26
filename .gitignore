@@ -18,3 +18,5 @@ lib/utils/cython_*.c
 checkpoints
 datasets
 .ipynb_checkpoints
+
+idea
