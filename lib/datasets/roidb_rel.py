@@ -29,6 +29,8 @@ def combined_roidb_for_val_test(dataset_names):
 
         roidb_file = os.path.join(cfg.DATA_DIR, 'roidb_cache', dataset_name +
                                   '_configured_gt_roidb.pkl')
+        roidb_file = os.path.join(cfg.DATA_DIR, 'roidb_cache', dataset_name +
+                                  '_configured_gt_roidb_w.pkl')
         if os.path.exists(roidb_file):
             with open(roidb_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
@@ -151,6 +153,8 @@ def combined_roidb_for_training(dataset_names, proposal_files):
 
         roidb_file = os.path.join(cfg.DATA_DIR, 'roidb_cache', dataset_name +
                                   '_configured_gt_roidb.pkl')
+        roidb_file = os.path.join(cfg.DATA_DIR, 'roidb_cache', dataset_name +
+                                  '_configured_gt_roidb_w.pkl')
         if os.path.exists(roidb_file):
             with open(roidb_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
