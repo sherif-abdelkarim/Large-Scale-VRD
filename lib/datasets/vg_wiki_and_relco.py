@@ -120,6 +120,7 @@ class vg_wiki_and_relco(imdb_rel):
         This function loads/saves from/to a cache file to speed up future calls.
         """
         cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
+        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_w.pkl')
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
@@ -156,14 +157,14 @@ class vg_wiki_and_relco(imdb_rel):
             all_rels = json.load(f)
 
         rel_w_data_path = os.path.join(
-            self._data_path, 'relationships_weak_labels.json')
+            self._data_path, 'relationships_weak_labels_top4.json')
         with open(rel_w_data_path) as f:
             rels_w = json.load(f)
 
         all_rels_map = {}
         for cnt, rel in enumerate(all_rels):
             all_rels_map[rel['image_id']] = cnt
-        if True: # temporarily until flag is passed from input command
+        if False: # temporarily until flag is passed from input command
             gt_roidb = \
                 [self._load_vg_annotation(all_rels[all_rels_map[index]],
                                           index, cnt, len(self.image_index))
