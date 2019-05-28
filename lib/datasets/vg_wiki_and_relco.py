@@ -445,9 +445,9 @@ class vg_wiki_and_relco(imdb_rel):
             obj_cls = self._object_class_to_ind[str(obj_names[ix])]
             prd_cls = self._predicate_class_to_ind[str(prd_names[ix])]
 
-            sbj_cls_w = [self._object_class_to_ind[str(sbj_names_w[ix][i])] for i in range(len(sbj_names_w))]
-            obj_cls_w = [self._object_class_to_ind[str(obj_names_w[ix][i])] for i in range(len(sbj_names_w))]
-            prd_cls_w = [self._predicate_class_to_ind[str(prd_names_w[ix][i])] for i in range(len(sbj_names_w))]
+            sbj_cls_w = [self._object_class_to_ind[str(sbj_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))]
+            obj_cls_w = [self._object_class_to_ind[str(obj_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))]
+            prd_cls_w = [self._predicate_class_to_ind[str(prd_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))]
 
             gt_sbj_classes[ix] = sbj_cls
             gt_obj_classes[ix] = obj_cls
