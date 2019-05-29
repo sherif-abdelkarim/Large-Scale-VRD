@@ -118,10 +118,10 @@ def combined_roidb_for_val_test(dataset_names):
             assert all(rel_max_classes[nonzero_inds] != 0)
 
             zero_inds_w = np.where(rel_max_overlaps_w == 0)[0]
-            assert all(rel_max_classes_w[zero_inds_w] == 0)
+#             assert all(rel_max_classes_w[zero_inds_w] == 0)
             # max overlap > 0 => class should not be zero (must be a fg class)
             nonzero_inds_w = np.where(rel_max_overlaps_w > 0)[0]
-            assert all(rel_max_classes_w[nonzero_inds_w] != 0)
+#             assert all(rel_max_classes_w[nonzero_inds_w] != 0)
 
         logger.info('Loaded dataset: {:s}'.format(ds.name))
         logger.info('len(roidb): {}'.format(len(roidb)))
@@ -247,10 +247,10 @@ def combined_roidb_for_training(dataset_names, proposal_files):
             assert all(rel_max_classes[nonzero_inds] != 0)
 
             zero_inds_w = np.where(rel_max_overlaps_w == 0)[0]
-            assert all(rel_max_classes_w[zero_inds_w] == 0)
+#             assert all(rel_max_classes_w[zero_inds_w] == 0)
             # max overlap > 0 => class should not be zero (must be a fg class)
             nonzero_inds_w = np.where(rel_max_overlaps_w > 0)[0]
-            assert all(rel_max_classes_w[nonzero_inds_w] != 0)
+#             assert all(rel_max_classes_w[nonzero_inds_w] != 0)
 
         logger.info('Loaded dataset: {:s}'.format(ds.name))
         logger.info('len(roidb): {}'.format(len(roidb)))
