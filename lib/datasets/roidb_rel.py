@@ -50,7 +50,7 @@ def combined_roidb_for_val_test(dataset_names):
             roidb[i]['height'] = heights[i]
             roidb[i]['image'] = ds.image_path_at(i)
             gt_sbj_overlaps = roidb[i]['gt_sbj_overlaps'].toarray()
-            gt_sbj_overlaps_w = roidb[i]['gt_sbj_overlaps_w'].toarray()
+            gt_sbj_overlaps_w = roidb[i]['gt_sbj_overlaps_w'].todense()
             # max sbj_overlap with gt over classes (columns)
             sbj_max_overlaps = gt_sbj_overlaps.max(axis=1)
             sbj_max_overlaps_w = gt_sbj_overlaps_w.max(axis=2)
@@ -75,7 +75,7 @@ def combined_roidb_for_val_test(dataset_names):
 
             # need gt_obj_overlaps as a dense array for argmax
             gt_obj_overlaps = roidb[i]['gt_obj_overlaps'].toarray()
-            gt_obj_overlaps_w = roidb[i]['gt_obj_overlaps_w'].toarray()
+            gt_obj_overlaps_w = roidb[i]['gt_obj_overlaps_w'].todense()
             # max obj_overlap with gt over classes (columns)
             obj_max_overlaps = gt_obj_overlaps.max(axis=1)
             obj_max_overlaps_w = gt_obj_overlaps_w.max(axis=2)
@@ -98,7 +98,7 @@ def combined_roidb_for_val_test(dataset_names):
 
             # need gt_rel_overlaps as a dense array for argmax
             gt_rel_overlaps = roidb[i]['gt_rel_overlaps'].toarray()
-            gt_rel_overlaps_w = roidb[i]['gt_rel_overlaps_w'].toarray()
+            gt_rel_overlaps_w = roidb[i]['gt_rel_overlaps_w'].todense()
             # max rel_overlap with gt over classes (columns)
             rel_max_overlaps = gt_rel_overlaps.max(axis=1)
             rel_max_overlaps_w = gt_rel_overlaps_w.max(axis=2)
@@ -180,7 +180,7 @@ def combined_roidb_for_training(dataset_names, proposal_files):
             roidb[i]['height'] = heights[i]
             roidb[i]['image'] = ds.image_path_at(i)
             gt_sbj_overlaps = roidb[i]['gt_sbj_overlaps'].toarray()
-            gt_sbj_overlaps_w = roidb[i]['gt_sbj_overlaps_w'].toarray()
+            gt_sbj_overlaps_w = roidb[i]['gt_sbj_overlaps_w'].todense()
             # max sbj_overlap with gt over classes (columns)
             sbj_max_overlaps = gt_sbj_overlaps.max(axis=1)
             sbj_max_overlaps_w = gt_sbj_overlaps_w.max(axis=2)
@@ -204,7 +204,7 @@ def combined_roidb_for_training(dataset_names, proposal_files):
 
             # need gt_obj_overlaps as a dense array for argmax
             gt_obj_overlaps = roidb[i]['gt_obj_overlaps'].toarray()
-            gt_obj_overlaps_w = roidb[i]['gt_obj_overlaps_w'].toarray()
+            gt_obj_overlaps_w = roidb[i]['gt_obj_overlaps_w'].todense()
             # max obj_overlap with gt over classes (columns)
             obj_max_overlaps = gt_obj_overlaps.max(axis=1)
             obj_max_overlaps_w = gt_obj_overlaps_w.max(axis=2)
@@ -227,7 +227,7 @@ def combined_roidb_for_training(dataset_names, proposal_files):
 
             # need gt_rel_overlaps as a dense array for argmax
             gt_rel_overlaps = roidb[i]['gt_rel_overlaps'].toarray()
-            gt_rel_overlaps_w = roidb[i]['gt_rel_overlaps_w'].toarray()
+            gt_rel_overlaps_w = roidb[i]['gt_rel_overlaps_w'].todense()
             # max rel_overlap with gt over classes (columns)
             rel_max_overlaps = gt_rel_overlaps.max(axis=1)
             rel_max_overlaps_w = gt_rel_overlaps_w.max(axis=2)
