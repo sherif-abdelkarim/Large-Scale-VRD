@@ -14,6 +14,7 @@ from datasets.imdb_rel import imdb_rel
 import utils.boxes as box_utils
 import numpy as np
 import scipy.sparse
+import sparse
 import json
 import cPickle
 from core.config_rel import cfg
@@ -561,13 +562,14 @@ class vg_wiki_and_relco(imdb_rel):
             prd_vecs[ix][:half_dim] = prd_vecs_wiki
             prd_vecs[ix][half_dim:] = prd_vecs_relco
 
+
         sbj_overlaps = scipy.sparse.csr_matrix(sbj_overlaps)
         obj_overlaps = scipy.sparse.csr_matrix(obj_overlaps)
         rel_overlaps = scipy.sparse.csr_matrix(rel_overlaps)
 
-        sbj_overlaps_w = scipy.sparse.csr_matrix(sbj_overlaps_w)
-        obj_overlaps_w = scipy.sparse.csr_matrix(obj_overlaps_w)
-        rel_overlaps_w = scipy.sparse.csr_matrix(rel_overlaps_w)
+        sbj_overlaps_w = sparse.COO(sbj_overlaps_w)
+        obj_overlaps_w = sparse.COO(obj_overlaps_w)
+        rel_overlaps_w = sparse.COO(rel_overlaps_w)
 
         return {'sbj_boxes': sbj_boxes,
                 'obj_boxes': obj_boxes,
