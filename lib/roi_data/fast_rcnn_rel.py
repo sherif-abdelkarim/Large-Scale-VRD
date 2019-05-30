@@ -69,9 +69,9 @@ def add_fast_rcnn_blobs(
             frcn_blobs['sbj_pos_labels_int32'] = sbj_gt_labels.astype(np.int32)
             frcn_blobs['obj_pos_labels_int32'] = obj_gt_labels.astype(np.int32)
             frcn_blobs['rel_pos_labels_int32'] = rel_gt_labels.astype(np.int32)
-            frcn_blobs['sbj_pos_labels_w_int32'] = sbj_gt_labels_w.astype(np.int32)
-            frcn_blobs['obj_pos_labels_w_int32'] = obj_gt_labels_w.astype(np.int32)
-            frcn_blobs['rel_pos_labels_w_int32'] = rel_gt_labels_w.astype(np.int32)
+            frcn_blobs['sbj_pos_labels_int32_w'] = sbj_gt_labels_w.astype(np.int32)
+            frcn_blobs['obj_pos_labels_int32_w'] = obj_gt_labels_w.astype(np.int32)
+            frcn_blobs['rel_pos_labels_int32_w'] = rel_gt_labels_w.astype(np.int32)
             frcn_blobs['sbj_gt_boxes'] = sbj_gt_boxes.astype(np.float32)
             frcn_blobs['obj_gt_boxes'] = obj_gt_boxes.astype(np.float32)
             frcn_blobs['rel_gt_boxes'] = rel_gt_boxes.astype(np.float32)
@@ -240,7 +240,7 @@ def add_fast_rcnn_blobs(
                     unique_sbj_gt_labels_w, unique_obj_gt_labels_w,
                     sbj_gt_boxes, obj_gt_boxes,
                     sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
-                    rel_gt_labels,
+                    rel_gt_labels, rel_gt_labels_w,
                     low_shot_helper)
             else:
                 raise KeyError('Unknown loss type: {}'.format(cfg.MODEL.LOSS_TYPE))
