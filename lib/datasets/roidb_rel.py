@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 DEBUG = False
 
 
-def combined_roidb_for_val_test(dataset_names):
+def combined_roidb_for_val_test(dataset_names): # Comment changes until proven needed
     def get_roidb(dataset_name):
 
         logger.info('loading roidb for {}'.format(dataset_name))
@@ -146,7 +146,7 @@ def combined_roidb_for_val_test(dataset_names):
         return roidb
 
 
-def combined_roidb_for_training(dataset_names, proposal_files):
+def combined_roidb_for_training(dataset_names, proposal_files): # Comment changes until proven needed
     def get_roidb(dataset_name, proposal_file):
 
         logger.info('loading roidb for {}'.format(dataset_name))
