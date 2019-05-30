@@ -240,7 +240,7 @@ def add_fast_rcnn_blobs(
                     unique_sbj_gt_labels_w, unique_obj_gt_labels_w,
                     sbj_gt_boxes, obj_gt_boxes,
                     sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
-                    rel_gt_labels,
+                    rel_gt_labels, rel_gt_labels_w,
                     low_shot_helper)
             else:
                 raise KeyError('Unknown loss type: {}'.format(cfg.MODEL.LOSS_TYPE))
