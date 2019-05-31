@@ -245,6 +245,9 @@ __C.MODEL.TRIPLET_RATIO = 1.0
 __C.MODEL.CLUSTER_RATIO = 0.0
 __C.MODEL.SOFTMAX_RATIO = 0.0
 
+# weak labels
+__C.MODEL.WEAK_LABELS = False
+
 # Caffe2 net execution type
 # Use 'prof_dag' to get profiling statistics
 __C.MODEL.EXECUTION_TYPE = b'dag'
