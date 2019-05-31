@@ -18,6 +18,7 @@ import utils.boxes as box_utils
 from utils.timer import Timer
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,9 +35,9 @@ def add_fast_rcnn_blobs(
             sbj_gt_labels = entry['sbj_max_classes']
             obj_gt_labels = entry['obj_max_classes']
             rel_gt_labels = entry['rel_max_classes']
-            sbj_gt_labels_w = entry['sbj_max_classes_w']
-            obj_gt_labels_w = entry['obj_max_classes_w']
-            rel_gt_labels_w = entry['rel_max_classes_w']
+            # sbj_gt_labels_w = entry['sbj_max_classes_w']
+            # obj_gt_labels_w = entry['obj_max_classes_w']
+            # rel_gt_labels_w = entry['rel_max_classes_w']
             sbj_gt_boxes = entry['sbj_boxes'] * scale
             obj_gt_boxes = entry['obj_boxes'] * scale
             rel_gt_boxes = entry['rel_boxes'] * scale
@@ -69,9 +70,9 @@ def add_fast_rcnn_blobs(
             frcn_blobs['sbj_pos_labels_int32'] = sbj_gt_labels.astype(np.int32)
             frcn_blobs['obj_pos_labels_int32'] = obj_gt_labels.astype(np.int32)
             frcn_blobs['rel_pos_labels_int32'] = rel_gt_labels.astype(np.int32)
-            frcn_blobs['sbj_pos_labels_int32_w'] = sbj_gt_labels_w.astype(np.int32)
-            frcn_blobs['obj_pos_labels_int32_w'] = obj_gt_labels_w.astype(np.int32)
-            frcn_blobs['rel_pos_labels_int32_w'] = rel_gt_labels_w.astype(np.int32)
+            # frcn_blobs['sbj_pos_labels_int32_w'] = sbj_gt_labels_w.astype(np.int32)
+            # frcn_blobs['obj_pos_labels_int32_w'] = obj_gt_labels_w.astype(np.int32)
+            # frcn_blobs['rel_pos_labels_int32_w'] = rel_gt_labels_w.astype(np.int32)
             frcn_blobs['sbj_gt_boxes'] = sbj_gt_boxes.astype(np.float32)
             frcn_blobs['obj_gt_boxes'] = obj_gt_boxes.astype(np.float32)
             frcn_blobs['rel_gt_boxes'] = rel_gt_boxes.astype(np.float32)
@@ -119,10 +120,10 @@ def add_fast_rcnn_blobs(
             obj_gt_labels = entry['obj_max_classes']
             rel_gt_labels = entry['rel_max_classes']
 
-            sbj_gt_labels_w = entry['sbj_max_classes_w']
-            obj_gt_labels_w = entry['obj_max_classes_w']
-            rel_gt_labels_w = entry['rel_max_classes_w']
-
+            if cfg.MODEL.WEAK_LABELS:
+                sbj_gt_labels_w = entry['sbj_max_classes_w']
+                obj_gt_labels_w = entry['obj_max_classes_w']
+                rel_gt_labels_w = entry['rel_max_classes_w']
 
             sbj_gt_vecs = entry['sbj_vecs']
             obj_gt_vecs = entry['obj_vecs']
@@ -182,16 +183,16 @@ def add_fast_rcnn_blobs(
                     np.vstack((unique_rois_sbj, unique_sbj_gt_boxes[:, :-1]))
                 unique_all_rois_obj = \
                     np.vstack((unique_rois_obj, unique_obj_gt_boxes[:, :-1]))
-                
+
                 sbj_gt_boxes = sbj_gt_boxes[:, 1:]  # strip off batch index
                 obj_gt_boxes = obj_gt_boxes[:, 1:]
-                
+
                 unique_sbj_gt_boxes = unique_sbj_gt_boxes[:, 1:]  # strip off batch index
                 unique_obj_gt_boxes = unique_obj_gt_boxes[:, 1:]
-                
+
                 unique_sbj_gt_vecs = sbj_gt_vecs[unique_sbj_gt_inds]
                 unique_obj_gt_vecs = obj_gt_vecs[unique_obj_gt_inds]
-                
+
                 unique_sbj_gt_labels = sbj_gt_labels[unique_sbj_gt_inds]
                 unique_obj_gt_labels = obj_gt_labels[unique_obj_gt_inds]
             else:
@@ -216,21 +217,33 @@ def add_fast_rcnn_blobs(
                 unique_sbj_gt_labels = sbj_gt_labels[unique_sbj_gt_inds]
                 unique_obj_gt_labels = obj_gt_labels[unique_obj_gt_inds]
 
-                unique_sbj_gt_labels_w = sbj_gt_labels_w[unique_sbj_gt_inds]
-                unique_obj_gt_labels_w = obj_gt_labels_w[unique_obj_gt_inds]
-
-                # Add here for weak labels
+                if cfg.MODEL.WEAK_LABELS:
+                    unique_sbj_gt_labels_w = sbj_gt_labels_w[unique_sbj_gt_inds]
+                    unique_obj_gt_labels_w = obj_gt_labels_w[unique_obj_gt_inds]
 
             if cfg.MODEL.LOSS_TYPE.find('TRIPLET') >= 0:
-                frcn_blobs = _sample_rois_triplet_yall(
-                    unique_all_rois_sbj, unique_all_rois_obj,
-                    unique_sbj_gt_boxes, unique_obj_gt_boxes,
-                    unique_sbj_gt_vecs, unique_obj_gt_vecs,
-                    unique_sbj_gt_labels, unique_obj_gt_labels,
-                    sbj_gt_boxes, obj_gt_boxes,
-                    sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
-                    rel_gt_labels,
-                    low_shot_helper)
+                if cfg.MODEL.WEAK_LABELS:
+                    frcn_blobs = _sample_rois_triplet_yall_w(
+                        unique_all_rois_sbj, unique_all_rois_obj,
+                        unique_sbj_gt_boxes, unique_obj_gt_boxes,
+                        unique_sbj_gt_vecs, unique_obj_gt_vecs,
+                        unique_sbj_gt_labels, unique_obj_gt_labels,
+                        unique_sbj_gt_labels_w, unique_obj_gt_labels_w,
+                        sbj_gt_boxes, obj_gt_boxes,
+                        sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
+                        rel_gt_labels, rel_gt_labels_w,
+                        low_shot_helper)
+                else:
+                    frcn_blobs = _sample_rois_triplet_yall(
+                        unique_all_rois_sbj, unique_all_rois_obj,
+                        unique_sbj_gt_boxes, unique_obj_gt_boxes,
+                        unique_sbj_gt_vecs, unique_obj_gt_vecs,
+                        unique_sbj_gt_labels, unique_obj_gt_labels,
+                        sbj_gt_boxes, obj_gt_boxes,
+                        sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
+                        rel_gt_labels,
+                        low_shot_helper)
+
             elif cfg.MODEL.LOSS_TYPE == 'SOFTMAX':
                 frcn_blobs = _sample_rois_softmax_yall(
                     unique_all_rois_sbj, unique_all_rois_obj,
@@ -256,7 +269,6 @@ def add_fast_rcnn_blobs(
 
 
 def _augment_gt_boxes_by_perturbation(unique_gt_boxes, im_width, im_height):
-
     num_gt = unique_gt_boxes.shape[0]
     num_rois = 1000
     rois = np.zeros((num_rois, 4), dtype=np.float32)
@@ -285,6 +297,25 @@ def _augment_gt_boxes_by_perturbation(unique_gt_boxes, im_width, im_height):
 
     return rois
 
+def _sample_rois_triplet_yall_w(
+        unique_all_rois_sbj, unique_all_rois_obj,
+        unique_sbj_gt_boxes, unique_obj_gt_boxes,
+        unique_sbj_gt_vecs, unique_obj_gt_vecs,
+        unique_sbj_gt_labels, unique_obj_gt_labels,
+        unique_sbj_gt_labels_w, unique_obj_gt_labels_w,
+        sbj_gt_boxes, obj_gt_boxes,
+        sbj_gt_vecs, obj_gt_vecs,
+        rel_gt_vecs, rel_gt_labels, rel_gt_labels_w,
+        low_shot_helper):
+    return _sample_rois_triplet_yall(
+                        unique_all_rois_sbj, unique_all_rois_obj,
+                        unique_sbj_gt_boxes, unique_obj_gt_boxes,
+                        unique_sbj_gt_vecs, unique_obj_gt_vecs,
+                        unique_sbj_gt_labels, unique_obj_gt_labels,
+                        sbj_gt_boxes, obj_gt_boxes,
+                        sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
+                        rel_gt_labels,
+                        low_shot_helper)
 
 def _sample_rois_triplet_yall(
         unique_all_rois_sbj, unique_all_rois_obj,
@@ -295,18 +326,17 @@ def _sample_rois_triplet_yall(
         sbj_gt_vecs, obj_gt_vecs,
         rel_gt_vecs, rel_gt_labels,
         low_shot_helper):
-
     if cfg.TRAIN.OVERSAMPLE_SO:
         rois_sbj, pos_vecs_sbj, all_labels_sbj, \
-            neg_affinity_mask_sbj, pos_affinity_mask_sbj, \
-            low_shot_ends_sbj, regular_starts_sbj = \
+        neg_affinity_mask_sbj, pos_affinity_mask_sbj, \
+        low_shot_ends_sbj, regular_starts_sbj = \
             _sample_rois_pos_neg_for_one_branch(
                 unique_all_rois_sbj, unique_sbj_gt_boxes,
                 unique_sbj_gt_labels, unique_sbj_gt_vecs,
                 low_shot_helper, 'sbj')
     else:
         rois_sbj, pos_vecs_sbj, all_labels_sbj, \
-            neg_affinity_mask_sbj, pos_affinity_mask_sbj = \
+        neg_affinity_mask_sbj, pos_affinity_mask_sbj = \
             _sample_rois_pos_neg_for_one_branch(
                 unique_all_rois_sbj, unique_sbj_gt_boxes,
                 unique_sbj_gt_labels, unique_sbj_gt_vecs,
@@ -320,15 +350,15 @@ def _sample_rois_triplet_yall(
 
     if cfg.TRAIN.OVERSAMPLE_SO:
         rois_obj, pos_vecs_obj, all_labels_obj, \
-            neg_affinity_mask_obj, pos_affinity_mask_obj, \
-            low_shot_ends_obj, regular_starts_obj = \
+        neg_affinity_mask_obj, pos_affinity_mask_obj, \
+        low_shot_ends_obj, regular_starts_obj = \
             _sample_rois_pos_neg_for_one_branch(
                 unique_all_rois_obj, unique_obj_gt_boxes,
                 unique_obj_gt_labels, unique_obj_gt_vecs,
                 low_shot_helper, 'obj')
     else:
         rois_obj, pos_vecs_obj, all_labels_obj, \
-            neg_affinity_mask_obj, pos_affinity_mask_obj = \
+        neg_affinity_mask_obj, pos_affinity_mask_obj = \
             _sample_rois_pos_neg_for_one_branch(
                 unique_all_rois_obj, unique_obj_gt_boxes,
                 unique_obj_gt_labels, unique_obj_gt_vecs,
@@ -412,7 +442,7 @@ def _sample_rois_triplet_yall(
     rel_fg_rois_per_this_image = min(int(fg_rois_per_image),
                                      rel_gt_inds.size + rel_pos_inds.size)
     if rel_pos_inds.size > 0 and \
-       rel_pos_inds.size > fg_rois_per_image - rel_gt_inds.size:
+            rel_pos_inds.size > fg_rois_per_image - rel_gt_inds.size:
         rel_pos_inds = npr.choice(rel_pos_inds,
                                   size=(rel_fg_rois_per_this_image - rel_gt_inds.size),
                                   replace=False)
@@ -423,7 +453,7 @@ def _sample_rois_triplet_yall(
         rel_pos_labels = rel_gt_labels[gt_assignment_pair_min[rel_fg_inds]] - 1
         low_shot_inds = \
             np.array([rel_fg_inds[i] for i, p in enumerate(rel_pos_labels) if
-                     low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
         rel_fg_inds = np.append(low_shot_inds, rel_fg_inds)
     if rel_fg_inds.size > fg_rois_per_image:
         rel_fg_inds = npr.choice(rel_fg_inds, size=fg_rois_per_image, replace=False)
@@ -448,7 +478,7 @@ def _sample_rois_triplet_yall(
         # This is to make sure that low_shot ROIs are never empty
         low_shot_inds = \
             np.array([rel_fg_inds[i] for i, p in enumerate(rel_pos_labels) if
-                     low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
         rel_fg_inds = np.append(low_shot_inds, rel_fg_inds)
     if cfg.TRAIN.ADD_LOSS_WEIGHTS:
         # low-shot on P
@@ -456,7 +486,7 @@ def _sample_rois_triplet_yall(
         rel_pos_weights = np.ones_like(rel_pos_labels, dtype=np.float32)
         low_shot_idx = \
             np.array([i for i, p in enumerate(rel_pos_labels) if
-                     low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
         rel_pos_weights[low_shot_idx] *= 2.0
         rel_pos_weights /= np.mean(rel_pos_weights)
     if cfg.TRAIN.ADD_LOSS_WEIGHTS_SO:
@@ -464,14 +494,14 @@ def _sample_rois_triplet_yall(
         sbj_pos_weights = np.ones_like(sbj_pos_labels, dtype=np.float32)
         low_shot_idx = \
             np.array([i for i, s in enumerate(sbj_pos_labels) if
-                     low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
         sbj_pos_weights[low_shot_idx] *= 2.0
         sbj_pos_weights /= np.mean(sbj_pos_weights)
         # low-shot on O
         obj_pos_weights = np.ones_like(obj_pos_labels, dtype=np.float32)
         low_shot_idx = \
             np.array([i for i, o in enumerate(obj_pos_labels) if
-                     low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
         obj_pos_weights[low_shot_idx] *= 2.0
         obj_pos_weights /= np.mean(obj_pos_weights)
 
@@ -545,7 +575,6 @@ def _sample_rois_softmax_yall(
         sbj_gt_vecs, obj_gt_vecs,
         rel_gt_vecs, rel_gt_labels, rel_gt_labels_w,
         low_shot_helper):
-
     rois_sbj, pos_vecs_sbj, all_labels_sbj, all_labels_sbj_w, _, _ = \
         _sample_rois_pos_neg_for_one_branch(
             unique_all_rois_sbj, unique_sbj_gt_boxes,
@@ -625,7 +654,7 @@ def _sample_rois_softmax_yall(
     rel_fg_rois_per_this_image = min(int(fg_rois_per_image),
                                      rel_gt_inds.size + rel_pos_inds.size)
     if rel_pos_inds.size > 0 and \
-       rel_pos_inds.size > fg_rois_per_image - rel_gt_inds.size:
+            rel_pos_inds.size > fg_rois_per_image - rel_gt_inds.size:
         rel_pos_inds = npr.choice(rel_pos_inds,
                                   size=(rel_fg_rois_per_this_image - rel_gt_inds.size),
                                   replace=False)
@@ -649,7 +678,7 @@ def _sample_rois_softmax_yall(
         rel_pos_labels = rel_gt_labels[gt_assignment_pair_min[rel_fg_inds]] - 1
         low_shot_inds = \
             np.array([rel_fg_inds[i] for i, p in enumerate(rel_pos_labels) if
-                     low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
         rel_fg_inds = np.append(low_shot_inds, rel_fg_inds)
     if rel_fg_inds.size > fg_rois_per_image:
         rel_fg_inds = npr.choice(rel_fg_inds, size=fg_rois_per_image, replace=False)
@@ -674,7 +703,7 @@ def _sample_rois_softmax_yall(
         # This is to make sure that low_shot ROIs are never empty
         low_shot_inds = \
             np.array([rel_fg_inds[i] for i, p in enumerate(rel_pos_labels) if
-                     low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
         rel_fg_inds = np.append(low_shot_inds, rel_fg_inds)
     if cfg.TRAIN.ADD_LOSS_WEIGHTS:
         # low-shot on P
@@ -682,7 +711,7 @@ def _sample_rois_softmax_yall(
         rel_pos_weights = np.ones_like(rel_pos_labels, dtype=np.float32)
         low_shot_idx = \
             np.array([i for i, p in enumerate(rel_pos_labels) if
-                     low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
         rel_pos_weights[low_shot_idx] *= 2.0
         rel_pos_weights /= np.mean(rel_pos_weights)
     if cfg.TRAIN.ADD_LOSS_WEIGHTS_SO:
@@ -690,14 +719,14 @@ def _sample_rois_softmax_yall(
         sbj_pos_weights = np.ones_like(sbj_pos_labels, dtype=np.float32)
         low_shot_idx = \
             np.array([i for i, s in enumerate(sbj_pos_labels) if
-                     low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
         sbj_pos_weights[low_shot_idx] *= 2.0
         sbj_pos_weights /= np.mean(sbj_pos_weights)
         # low-shot on O
         obj_pos_weights = np.ones_like(obj_pos_labels, dtype=np.float32)
         low_shot_idx = \
             np.array([i for i, o in enumerate(obj_pos_labels) if
-                     low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
+                      low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
         obj_pos_weights[low_shot_idx] *= 2.0
         obj_pos_weights /= np.mean(obj_pos_weights)
 
@@ -712,7 +741,6 @@ def _sample_rois_softmax_yall(
 
     rel_pos_labels = all_labels_rel[:rel_fg_inds.size] - 1
     rel_pos_labels_w = all_labels_rel_w[:rel_fg_inds.size] - 1
-
 
     pos_starts_rel = np.array([0, 0], dtype=np.int32)
     pos_ends_rel = np.array([rel_fg_inds.size, -1], dtype=np.int32)
@@ -754,7 +782,6 @@ def _sample_rois_softmax_yall(
 
 def _sample_rois_pos_neg_for_one_branch(
         all_rois, gt_boxes, gt_labels, gt_labels_w, gt_vecs, low_shot_helper, label):
-
     rois_per_image = int(cfg.TRAIN.BATCH_SIZE_PER_IM)
     fg_rois_per_image = int(
         np.round(cfg.TRAIN.FG_FRACTION * rois_per_image))
@@ -771,7 +798,7 @@ def _sample_rois_pos_neg_for_one_branch(
     fg_rois_per_this_image = min(int(fg_rois_per_image),
                                  gt_inds.size + pos_inds.size)
     if pos_inds.size > 0 and \
-       pos_inds.size > fg_rois_per_image - gt_inds.size:
+            pos_inds.size > fg_rois_per_image - gt_inds.size:
         pos_inds = npr.choice(pos_inds,
                               size=(fg_rois_per_this_image - gt_inds.size),
                               replace=False)
@@ -782,11 +809,11 @@ def _sample_rois_pos_neg_for_one_branch(
         if label == 'sbj':
             low_shot_inds = \
                 np.array([fg_inds[i] for i, s in enumerate(pos_labels) if
-                         low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
+                          low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
         elif label == 'obj':
             low_shot_inds = \
                 np.array([fg_inds[i] for i, o in enumerate(pos_labels) if
-                         low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
+                          low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
         else:
             raise NotImplementedError
         fg_inds = np.append(low_shot_inds, fg_inds)
@@ -808,11 +835,11 @@ def _sample_rois_pos_neg_for_one_branch(
         if label == 'sbj':
             low_shot_inds = \
                 np.array([fg_inds[i] for i, s in enumerate(pos_labels) if
-                         low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
+                          low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
         elif label == 'obj':
             low_shot_inds = \
                 np.array([fg_inds[i] for i, o in enumerate(pos_labels) if
-                         low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
+                          low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
         else:
             raise NotImplementedError
         fg_inds = np.append(low_shot_inds, fg_inds)
@@ -847,7 +874,7 @@ def _sample_rois_pos_neg_for_one_branch(
 
     if cfg.TRAIN.OVERSAMPLE_SO:
         return rois, pos_vecs, all_labels, all_labels_w, neg_affinity_mask, pos_affinity_mask, \
-            low_shot_ends, regular_starts
+               low_shot_ends, regular_starts
     else:
         return rois, pos_vecs, all_labels, all_labels_w, neg_affinity_mask, pos_affinity_mask
 
