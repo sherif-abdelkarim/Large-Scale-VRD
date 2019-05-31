@@ -120,8 +120,11 @@ class vg_wiki_and_relco(imdb_rel):
 
         This function loads/saves from/to a cache file to speed up future calls.
         """
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_w.pkl')
+        if cfg.MODEL.WEAK_LABELS:
+            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_w.pkl')
+        else:
+            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
+
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
