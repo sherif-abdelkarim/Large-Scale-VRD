@@ -166,7 +166,7 @@ class vg_wiki_and_relco(imdb_rel):
         for cnt, rel in enumerate(all_rels):
             all_rels_map[rel['image_id']] = cnt
 
-        if cfg.MODEL.WEAL_LABELS: # temporarily until flag is passed from input command
+        if cfg.MODEL.WEAK_LABELS: # temporarily until flag is passed from input command
             gt_roidb = \
                 [self._load_vg_annotation_with_weak_labels(all_rels[all_rels_map[index]], rels_w[all_rels_map[index]],
                                                            index, cnt, len(self.image_index), 4)
