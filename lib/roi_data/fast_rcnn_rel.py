@@ -781,7 +781,8 @@ def _sample_rois_softmax_yall(
 
 
 def _sample_rois_pos_neg_for_one_branch(
-        all_rois, gt_boxes, gt_labels, gt_labels_w, gt_vecs, low_shot_helper, label):
+        all_rois, gt_boxes, gt_labels, gt_vecs, low_shot_helper, label, gt_labels_w=None):
+
     rois_per_image = int(cfg.TRAIN.BATCH_SIZE_PER_IM)
     fg_rois_per_image = int(
         np.round(cfg.TRAIN.FG_FRACTION * rois_per_image))
@@ -854,7 +855,9 @@ def _sample_rois_pos_neg_for_one_branch(
     all_labels = np.zeros(len(keep_inds), dtype=np.float32)
     all_labels[:fg_inds.size] = gt_labels[gt_assignment[fg_inds]]
     all_labels_w = np.zeros((len(keep_inds), 4), dtype=np.float32)
-    all_labels_w[:fg_inds.size] = gt_labels_w[gt_assignment[fg_inds]]
+
+    if cfg.MODEL.WEAK_LABELS:
+        all_labels_w[:fg_inds.size] = gt_labels_w[gt_assignment[fg_inds]]
 
     all_labels_horizontal_tile = np.tile(
         all_labels, (fg_inds.size, 1))
@@ -873,10 +876,16 @@ def _sample_rois_pos_neg_for_one_branch(
                  pos_labels_vertical_tile).astype(np.float32)
 
     if cfg.TRAIN.OVERSAMPLE_SO:
-        return rois, pos_vecs, all_labels, all_labels_w, neg_affinity_mask, pos_affinity_mask, \
-               low_shot_ends, regular_starts
+        if cfg.MODEL.WEAK_LABELS:
+            return rois, pos_vecs, all_labels, all_labels_w, neg_affinity_mask, pos_affinity_mask, low_shot_ends, regular_starts
+        else:
+            return rois, pos_vecs, all_labels, neg_affinity_mask, pos_affinity_mask, low_shot_ends, regular_starts
+
     else:
-        return rois, pos_vecs, all_labels, all_labels_w, neg_affinity_mask, pos_affinity_mask
+        if cfg.MODEL.WEAK_LABELS:
+            return rois, pos_vecs, all_labels, all_labels_w, neg_affinity_mask, pos_affinity_mask
+        else:
+            return rois, pos_vecs, all_labels, neg_affinity_mask, pos_affinity_mask
 
 
 def box_union(boxes1, boxes2):
