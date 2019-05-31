@@ -165,15 +165,17 @@ class vg_wiki_and_relco(imdb_rel):
         all_rels_map = {}
         for cnt, rel in enumerate(all_rels):
             all_rels_map[rel['image_id']] = cnt
-        if False: # temporarily until flag is passed from input command
-            gt_roidb = \
-                [self._load_vg_annotation(all_rels[all_rels_map[index]],
-                                          index, cnt, len(self.image_index))
-                 for cnt, index in enumerate(self.image_index)]
-        else:
+
+        if cfg.MODEL.WEAL_LABELS: # temporarily until flag is passed from input command
             gt_roidb = \
                 [self._load_vg_annotation_with_weak_labels(all_rels[all_rels_map[index]], rels_w[all_rels_map[index]],
                                                            index, cnt, len(self.image_index), 4)
+                 for cnt, index in enumerate(self.image_index)]
+
+        else:
+            gt_roidb = \
+                [self._load_vg_annotation(all_rels[all_rels_map[index]],
+                                          index, cnt, len(self.image_index))
                  for cnt, index in enumerate(self.image_index)]
 
         with open(cache_file, 'wb') as fid:
