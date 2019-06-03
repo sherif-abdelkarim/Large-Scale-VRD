@@ -12,6 +12,7 @@ MODEL:
   ALLOW_INPLACE_SUM: True
   MEMONGER: True
   WEAK_LABELS: True
+  NUM_WEAK_LABELS: 4
 VISUAL_EMBEDDING:
   WEIGHT_SHARING:  SBJ_OBJ_SHARED #, all_unshared,  sbj_obj_shared, all_unshared
   L2_NORMALIZE: True
