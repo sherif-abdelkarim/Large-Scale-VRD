@@ -60,9 +60,10 @@ def get_minibatch_blob_names(split):
         blob_names += ['obj_pos_labels_int32']
         blob_names += ['rel_pos_labels_int32']
         if cfg.MODEL.WEAK_LABELS:
-            blob_names += ['sbj_pos_labels_int32_w']
-            blob_names += ['obj_pos_labels_int32_w']
-            blob_names += ['rel_pos_labels_int32_w']
+            for i in cfg.MODEL.NUM_WEAK_LABELS:
+                blob_names += ['sbj_pos_labels_int32_w_' + str(i)]
+                blob_names += ['obj_pos_labels_int32_w_' + str(i)]
+                blob_names += ['rel_pos_labels_int32_w_' + str(i)]
         blob_names += ['sbj_pos_starts']
         blob_names += ['obj_pos_starts']
         blob_names += ['rel_pos_starts']
