@@ -172,7 +172,7 @@ class vg_wiki_and_relco(imdb_rel):
         if cfg.MODEL.WEAK_LABELS: # temporarily until flag is passed from input command
             gt_roidb = \
                 [self._load_vg_annotation_with_weak_labels(all_rels[all_rels_map[index]], rels_w[all_rels_map[index]],
-                                                           index, cnt, len(self.image_index), 4)
+                                                           index, cnt, len(self.image_index))
                  for cnt, index in enumerate(self.image_index)]
 
         else:
@@ -366,7 +366,7 @@ class vg_wiki_and_relco(imdb_rel):
                 'prd_vecs': prd_vecs,
                 'flipped': False}
 
-    def _load_vg_annotation_with_weak_labels(self, img_rels, img_rels_w, index, cnt, length, k):
+    def _load_vg_annotation_with_weak_labels(self, img_rels, img_rels_w, index, cnt, length):
         """
         Load image and bounding boxes info.
         """
@@ -383,15 +383,15 @@ class vg_wiki_and_relco(imdb_rel):
         sbj_names = np.zeros((num_rels), dtype='U100')
         obj_names = np.zeros((num_rels), dtype='U100')
         prd_names = np.zeros((num_rels), dtype='U100')
-        sbj_names_w = np.zeros((num_rels, k), dtype='U100')
-        obj_names_w = np.zeros((num_rels, k), dtype='U100')
-        prd_names_w = np.zeros((num_rels, k), dtype='U100')
+        sbj_names_w = np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS), dtype='U100')
+        obj_names_w = np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS), dtype='U100')
+        prd_names_w = np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS), dtype='U100')
         gt_sbj_classes = np.zeros((num_rels), dtype=np.int32)
         gt_obj_classes = np.zeros((num_rels), dtype=np.int32)
         gt_rel_classes = np.zeros((num_rels), dtype=np.int32)
-        gt_sbj_classes_w = np.zeros((num_rels, k), dtype=np.int32)
-        gt_obj_classes_w = np.zeros((num_rels, k), dtype=np.int32)
-        gt_rel_classes_w = np.zeros((num_rels, k), dtype=np.int32)
+        gt_sbj_classes_w = np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS), dtype=np.int32)
+        gt_obj_classes_w = np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS), dtype=np.int32)
+        gt_rel_classes_w = np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS), dtype=np.int32)
         sbj_overlaps = \
             np.zeros((num_rels, self._num_object_classes), dtype=np.float32)
         obj_overlaps = \
@@ -400,11 +400,11 @@ class vg_wiki_and_relco(imdb_rel):
             np.zeros((num_rels, self._num_predicate_classes), dtype=np.float32)
 
         sbj_overlaps_w = \
-            np.zeros((num_rels, k, self._num_object_classes), dtype=np.float32)
+            np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS, self._num_object_classes), dtype=np.float32)
         obj_overlaps_w = \
-            np.zeros((num_rels, k, self._num_object_classes), dtype=np.float32)
+            np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS, self._num_object_classes), dtype=np.float32)
         rel_overlaps_w = \
-            np.zeros((num_rels, k, self._num_predicate_classes), dtype=np.float32)
+            np.zeros((num_rels, cfg.MODEL.NUM_WEAK_LABELS, self._num_predicate_classes), dtype=np.float32)
 
         # "Seg" area for pascal is just the box area
         sbj_seg_areas = np.zeros((num_rels), dtype=np.float32)
