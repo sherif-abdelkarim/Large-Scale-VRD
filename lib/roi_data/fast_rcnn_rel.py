@@ -585,7 +585,7 @@ def _sample_rois_triplet_yall(
         rel_neg_ends=neg_ends_rel)
 
     if cfg.MODEL.WEAK_LABELS:
-        for num_w in cfg.MODEL.NUM_WEAK_LABELS:
+        for num_w in range(cfg.MODEL.NUM_WEAK_LABELS):
             blob['sbj_pos_labels_int32_w_' + num_w] = sbj_pos_labels_w[:, num_w].astype(np.int32, copy=False) # weak labels
             blob['obj_pos_labels_int32_w_' + num_w] = obj_pos_labels_w[:, num_w].astype(np.int32, copy=False) # weak labels
             blob['rel_pos_labels_int32_w_' + num_w] = rel_pos_labels_w[:, num_w].astype(np.int32, copy=False) # weak labels
