@@ -247,6 +247,7 @@ __C.MODEL.SOFTMAX_RATIO = 0.0
 
 # weak labels
 __C.MODEL.WEAK_LABELS = False
+__C.MODEL.NUM_WEAK_LABELS = 0
 
 # Caffe2 net execution type
 # Use 'prof_dag' to get profiling statistics
