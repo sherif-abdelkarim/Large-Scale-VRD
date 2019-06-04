@@ -595,7 +595,7 @@ def add_embd_triplet_losses_labeled(model, label):
                     ['sim_xp_yall' + suffix,
                      prefix + 'pos_labels_int32_w_' + str(w),
                      prefix + 'pos_weights'],
-                    ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix + '_w_' + str(w)],
+                    ['xp_yall_prob' + suffix + '_w_' + str(w), 'loss_xp_yall' + suffix + '_w_' + str(w)],
                     scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
 
                 model.loss_set.extend([loss_xp_yall])
@@ -611,7 +611,7 @@ def add_embd_triplet_losses_labeled(model, label):
             for w in range(cfg.MODEL.NUM_WEAK_LABELS):
                 _, loss_xp_yall = model.net.SoftmaxWithLoss(
                     ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32_w_' + str(w)],
-                    ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix + '_w_' + str(w)],
+                    ['xp_yall_prob' + suffix + '_w_' + str(w), 'loss_xp_yall' + suffix + '_w_' + str(w)],
                     scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
 
                 model.loss_set.extend([loss_xp_yall])
