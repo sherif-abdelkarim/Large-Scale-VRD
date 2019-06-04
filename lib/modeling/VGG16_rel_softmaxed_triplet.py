@@ -576,20 +576,47 @@ def add_embd_triplet_losses_labeled(model, label):
 
     model.net.MatMul(['scaled_xp' + suffix, 'scaled_' + yall_name],
                      'sim_xp_yall' + suffix, trans_b=1)
-    if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
-        ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
-         cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
-        _, loss_xp_yall = model.net.SoftmaxWithLoss(
-            ['sim_xp_yall' + suffix,
-             prefix + 'pos_labels_int32',
-             prefix + 'pos_weights'],
-            ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-            scale=1. / cfg.NUM_DEVICES)
+
+    if cfg.MODEL.WEAK_LABELS:
+        total_loss_xp_yall = 0
+        if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
+                ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
+                 cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
+            for w in cfg.MODEL.NUM_WEAK_LABELS:
+                _, loss_xp_yall = model.net.SoftmaxWithLoss(
+                    ['sim_xp_yall' + suffix,
+                     prefix + 'pos_labels_int32_w_' + w,
+                     prefix + 'pos_weights'],
+                    ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
+                    scale=1. / cfg.NUM_DEVICES)
+                total_loss_xp_yall += loss_xp_yall
+            avg_loss_xp_yall = total_loss_xp_yall / cfg.MODEL.NUM_WEAK_LABELS
+        else:
+            for w in cfg.MODEL.NUM_WEAK_LABELS:
+                _, loss_xp_yall = model.net.SoftmaxWithLoss(
+                    ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32_w_' + w],
+                    ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
+                    scale=1. / cfg.NUM_DEVICES)
+                total_loss_xp_yall += loss_xp_yall
+            avg_loss_xp_yall = total_loss_xp_yall / cfg.MODEL.NUM_WEAK_LABELS
+
+        loss_xp_yall = avg_loss_xp_yall
+
     else:
-        _, loss_xp_yall = model.net.SoftmaxWithLoss(
-            ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
-            ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-            scale=1. / cfg.NUM_DEVICES)
+        if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
+            ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
+             cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
+            _, loss_xp_yall = model.net.SoftmaxWithLoss(
+                ['sim_xp_yall' + suffix,
+                 prefix + 'pos_labels_int32',
+                 prefix + 'pos_weights'],
+                ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
+                scale=1. / cfg.NUM_DEVICES)
+        else:
+            _, loss_xp_yall = model.net.SoftmaxWithLoss(
+                ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
+                ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
+                scale=1. / cfg.NUM_DEVICES)
 
     model.loss_set.extend([loss_xp_yall])
 
