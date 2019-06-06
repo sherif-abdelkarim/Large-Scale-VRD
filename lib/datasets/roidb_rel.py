@@ -53,20 +53,23 @@ def combined_roidb_for_val_test(dataset_names): # Comment changes until proven n
             roidb[i]['height'] = heights[i]
             roidb[i]['image'] = ds.image_path_at(i)
             gt_sbj_overlaps = roidb[i]['gt_sbj_overlaps'].toarray()
-            # gt_sbj_overlaps_w = roidb[i]['gt_sbj_overlaps_w'].todense()
+            if cfg.MODEL.WEAK_LABELS:
+                gt_sbj_overlaps_w = roidb[i]['gt_sbj_overlaps_w'].todense()
             # max sbj_overlap with gt over classes (columns)
             sbj_max_overlaps = gt_sbj_overlaps.max(axis=1)
-            # sbj_max_overlaps_w = gt_sbj_overlaps_w.max(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                sbj_max_overlaps_w = gt_sbj_overlaps_w.max(axis=2)
 
             # gt sbj_class that had the max sbj_overlap
             sbj_max_classes = gt_sbj_overlaps.argmax(axis=1)
-            # sbj_max_classes_w = gt_sbj_overlaps_w.argmax(axis=2)
-
+            if cfg.MODEL.WEAK_LABELS:
+                sbj_max_classes_w = gt_sbj_overlaps_w.argmax(axis=2)
 
             roidb[i]['sbj_max_classes'] = sbj_max_classes
             roidb[i]['sbj_max_overlaps'] = sbj_max_overlaps
-            # roidb[i]['sbj_max_classes_w'] = sbj_max_classes_w
-            # roidb[i]['sbj_max_overlaps_w'] = sbj_max_overlaps_w
+            if cfg.MODEL.WEAK_LABELS:
+                roidb[i]['sbj_max_classes_w'] = sbj_max_classes_w
+                roidb[i]['sbj_max_overlaps_w'] = sbj_max_overlaps_w
 
             # sanity checks
             # max overlap of 0 => class should be zero (background)
@@ -78,18 +81,22 @@ def combined_roidb_for_val_test(dataset_names): # Comment changes until proven n
 
             # need gt_obj_overlaps as a dense array for argmax
             gt_obj_overlaps = roidb[i]['gt_obj_overlaps'].toarray()
-            # gt_obj_overlaps_w = roidb[i]['gt_obj_overlaps_w'].todense()
+            if cfg.MODEL.WEAK_LABELS:
+                gt_obj_overlaps_w = roidb[i]['gt_obj_overlaps_w'].todense()
             # max obj_overlap with gt over classes (columns)
             obj_max_overlaps = gt_obj_overlaps.max(axis=1)
-            # obj_max_overlaps_w = gt_obj_overlaps_w.max(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                obj_max_overlaps_w = gt_obj_overlaps_w.max(axis=2)
             # gt obj_class that had the max obj_overlap
             obj_max_classes = gt_obj_overlaps.argmax(axis=1)
-            # obj_max_classes_w = gt_obj_overlaps_w.argmax(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                obj_max_classes_w = gt_obj_overlaps_w.argmax(axis=2)
 
             roidb[i]['obj_max_classes'] = obj_max_classes
             roidb[i]['obj_max_overlaps'] = obj_max_overlaps
-            # roidb[i]['obj_max_classes_w'] = obj_max_classes_w
-            # roidb[i]['obj_max_overlaps_w'] = obj_max_overlaps_w
+            if cfg.MODEL.WEAK_LABELS:
+                roidb[i]['obj_max_classes_w'] = obj_max_classes_w
+                roidb[i]['obj_max_overlaps_w'] = obj_max_overlaps_w
 
             # sanity checks
             # max overlap of 0 => class should be zero (background)
@@ -101,17 +108,21 @@ def combined_roidb_for_val_test(dataset_names): # Comment changes until proven n
 
             # need gt_rel_overlaps as a dense array for argmax
             gt_rel_overlaps = roidb[i]['gt_rel_overlaps'].toarray()
-            # gt_rel_overlaps_w = roidb[i]['gt_rel_overlaps_w'].todense()
+            if cfg.MODEL.WEAK_LABELS:
+                gt_rel_overlaps_w = roidb[i]['gt_rel_overlaps_w'].todense()
             # max rel_overlap with gt over classes (columns)
             rel_max_overlaps = gt_rel_overlaps.max(axis=1)
-            # rel_max_overlaps_w = gt_rel_overlaps_w.max(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                rel_max_overlaps_w = gt_rel_overlaps_w.max(axis=2)
             # gt rel_class that had the max rel_overlap
             rel_max_classes = gt_rel_overlaps.argmax(axis=1)
-            # rel_max_classes_w = gt_rel_overlaps_w.argmax(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                rel_max_classes_w = gt_rel_overlaps_w.argmax(axis=2)
             roidb[i]['rel_max_classes'] = rel_max_classes
             roidb[i]['rel_max_overlaps'] = rel_max_overlaps
-            # roidb[i]['rel_max_classes_w'] = rel_max_classes_w
-            # roidb[i]['rel_max_overlaps_w'] = rel_max_overlaps_w
+            if cfg.MODEL.WEAK_LABELS:
+                roidb[i]['rel_max_classes_w'] = rel_max_classes_w
+                roidb[i]['rel_max_overlaps_w'] = rel_max_overlaps_w
             # sanity checks
             # max overlap of 0 => class should be zero (background)
             zero_inds = np.where(rel_max_overlaps == 0)[0]
@@ -186,19 +197,23 @@ def combined_roidb_for_training(dataset_names, proposal_files): # Comment change
             roidb[i]['height'] = heights[i]
             roidb[i]['image'] = ds.image_path_at(i)
             gt_sbj_overlaps = roidb[i]['gt_sbj_overlaps'].toarray()
-            # gt_sbj_overlaps_w = roidb[i]['gt_sbj_overlaps_w'].todense()
+            if cfg.MODEL.WEAK_LABELS:
+                gt_sbj_overlaps_w = roidb[i]['gt_sbj_overlaps_w'].todense()
             # max sbj_overlap with gt over classes (columns)
             sbj_max_overlaps = gt_sbj_overlaps.max(axis=1)
-            # sbj_max_overlaps_w = gt_sbj_overlaps_w.max(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                sbj_max_overlaps_w = gt_sbj_overlaps_w.max(axis=2)
 
             # gt sbj_class that had the max sbj_overlap
             sbj_max_classes = gt_sbj_overlaps.argmax(axis=1)
-            # sbj_max_classes_w = gt_sbj_overlaps_w.argmax(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                sbj_max_classes_w = gt_sbj_overlaps_w.argmax(axis=2)
 
             roidb[i]['sbj_max_classes'] = sbj_max_classes
             roidb[i]['sbj_max_overlaps'] = sbj_max_overlaps
-            # roidb[i]['sbj_max_classes_w'] = sbj_max_classes_w
-            # roidb[i]['sbj_max_overlaps_w'] = sbj_max_overlaps_w
+            if cfg.MODEL.WEAK_LABELS:
+                roidb[i]['sbj_max_classes_w'] = sbj_max_classes_w
+                roidb[i]['sbj_max_overlaps_w'] = sbj_max_overlaps_w
 
             # sanity checks
             # max overlap of 0 => class should be zero (background)
@@ -210,18 +225,22 @@ def combined_roidb_for_training(dataset_names, proposal_files): # Comment change
 
             # need gt_obj_overlaps as a dense array for argmax
             gt_obj_overlaps = roidb[i]['gt_obj_overlaps'].toarray()
-            # gt_obj_overlaps_w = roidb[i]['gt_obj_overlaps_w'].todense()
+            if cfg.MODEL.WEAK_LABELS:
+                gt_obj_overlaps_w = roidb[i]['gt_obj_overlaps_w'].todense()
             # max obj_overlap with gt over classes (columns)
             obj_max_overlaps = gt_obj_overlaps.max(axis=1)
-            # obj_max_overlaps_w = gt_obj_overlaps_w.max(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                obj_max_overlaps_w = gt_obj_overlaps_w.max(axis=2)
             # gt obj_class that had the max obj_overlap
             obj_max_classes = gt_obj_overlaps.argmax(axis=1)
-            # obj_max_classes_w = gt_obj_overlaps_w.argmax(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                obj_max_classes_w = gt_obj_overlaps_w.argmax(axis=2)
 
             roidb[i]['obj_max_classes'] = obj_max_classes
             roidb[i]['obj_max_overlaps'] = obj_max_overlaps
-            # roidb[i]['obj_max_classes_w'] = obj_max_classes_w
-            # roidb[i]['obj_max_overlaps_w'] = obj_max_overlaps_w
+            if cfg.MODEL.WEAK_LABELS:
+                roidb[i]['obj_max_classes_w'] = obj_max_classes_w
+                roidb[i]['obj_max_overlaps_w'] = obj_max_overlaps_w
 
             # sanity checks
             # max overlap of 0 => class should be zero (background)
@@ -233,17 +252,21 @@ def combined_roidb_for_training(dataset_names, proposal_files): # Comment change
 
             # need gt_rel_overlaps as a dense array for argmax
             gt_rel_overlaps = roidb[i]['gt_rel_overlaps'].toarray()
-            # gt_rel_overlaps_w = roidb[i]['gt_rel_overlaps_w'].todense()
+            if cfg.MODEL.WEAK_LABELS:
+                gt_rel_overlaps_w = roidb[i]['gt_rel_overlaps_w'].todense()
             # max rel_overlap with gt over classes (columns)
             rel_max_overlaps = gt_rel_overlaps.max(axis=1)
-            # rel_max_overlaps_w = gt_rel_overlaps_w.max(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                rel_max_overlaps_w = gt_rel_overlaps_w.max(axis=2)
             # gt rel_class that had the max rel_overlap
             rel_max_classes = gt_rel_overlaps.argmax(axis=1)
-            # rel_max_classes_w = gt_rel_overlaps_w.argmax(axis=2)
+            if cfg.MODEL.WEAK_LABELS:
+                rel_max_classes_w = gt_rel_overlaps_w.argmax(axis=2)
             roidb[i]['rel_max_classes'] = rel_max_classes
             roidb[i]['rel_max_overlaps'] = rel_max_overlaps
-            # roidb[i]['rel_max_classes_w'] = rel_max_classes_w
-            # roidb[i]['rel_max_overlaps_w'] = rel_max_overlaps_w
+            if cfg.MODEL.WEAK_LABELS:
+                roidb[i]['rel_max_classes_w'] = rel_max_classes_w
+                roidb[i]['rel_max_overlaps_w'] = rel_max_overlaps_w
             # sanity checks
             # max overlap of 0 => class should be zero (background)
             zero_inds = np.where(rel_max_overlaps == 0)[0]
