@@ -27,10 +27,13 @@ def combined_roidb_for_val_test(dataset_names): # Comment changes until proven n
 
         logger.info('loading roidb for {}'.format(dataset_name))
 
-        roidb_file = os.path.join(cfg.DATA_DIR, 'roidb_cache', dataset_name +
-                                  '_configured_gt_roidb.pkl')
-        # roidb_file = os.path.join(cfg.DATA_DIR, 'roidb_cache', dataset_name +
-        #                           '_configured_gt_roidb_w.pkl')
+        if cfg.MODEL.WEAK_LABELS:
+            roidb_file = os.path.join(cfg.DATA_DIR, 'roidb_cache', dataset_name +
+                                      '_configured_gt_roidb_w.pkl')
+        else:
+            roidb_file = os.path.join(cfg.DATA_DIR, 'roidb_cache', dataset_name +
+                                      '_configured_gt_roidb.pkl')
+
         if os.path.exists(roidb_file):
             with open(roidb_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
