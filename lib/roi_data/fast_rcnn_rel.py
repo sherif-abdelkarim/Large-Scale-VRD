@@ -35,6 +35,7 @@ def add_fast_rcnn_blobs(
             sbj_gt_labels = entry['sbj_max_classes']
             obj_gt_labels = entry['obj_max_classes']
             rel_gt_labels = entry['rel_max_classes']
+
             if cfg.MODEL.WEAK_LABELS:
                 sbj_gt_labels_w = entry['sbj_max_classes_w']
                 obj_gt_labels_w = entry['obj_max_classes_w']
@@ -72,9 +73,13 @@ def add_fast_rcnn_blobs(
             frcn_blobs['obj_pos_labels_int32'] = obj_gt_labels.astype(np.int32)
             frcn_blobs['rel_pos_labels_int32'] = rel_gt_labels.astype(np.int32)
             if cfg.MODEL.WEAK_LABELS:
-                frcn_blobs['sbj_pos_labels_int32_w'] = sbj_gt_labels_w.astype(np.int32)
-                frcn_blobs['obj_pos_labels_int32_w'] = obj_gt_labels_w.astype(np.int32)
-                frcn_blobs['rel_pos_labels_int32_w'] = rel_gt_labels_w.astype(np.int32)
+                for num_w in range(cfg.MODEL.NUM_WEAK_LABELS):
+                    frcn_blobs['sbj_pos_labels_int32_w_' + str(num_w)] = sbj_gt_labels_w[:, num_w].astype(np.int32,
+                                                                                                     copy=False)  # weak labels
+                    frcn_blobs['obj_pos_labels_int32_w_' + str(num_w)] = obj_gt_labels_w[:, num_w].astype(np.int32,
+                                                                                                     copy=False)  # weak labels
+                    frcn_blobs['rel_pos_labels_int32_w_' + str(num_w)] = rel_gt_labels_w[:, num_w].astype(np.int32,
+                                                                                                     copy=False)  # weak labels
             frcn_blobs['sbj_gt_boxes'] = sbj_gt_boxes.astype(np.float32)
             frcn_blobs['obj_gt_boxes'] = obj_gt_boxes.astype(np.float32)
             frcn_blobs['rel_gt_boxes'] = rel_gt_boxes.astype(np.float32)
