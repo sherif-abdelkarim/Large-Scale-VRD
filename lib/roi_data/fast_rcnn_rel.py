@@ -892,9 +892,9 @@ def _sample_rois_pos_neg_for_one_branch(
 
     all_labels = np.zeros(len(keep_inds), dtype=np.float32)
     all_labels[:fg_inds.size] = gt_labels[gt_assignment[fg_inds]]
-    all_labels_w = np.zeros((len(keep_inds), 4), dtype=np.float32)
 
     if cfg.MODEL.WEAK_LABELS:
+        all_labels_w = np.zeros((len(keep_inds), cfg.MODEL.NUM_WEAK_LABELS), dtype=np.float32)
         all_labels_w[:fg_inds.size] = gt_labels_w[gt_assignment[fg_inds]]
 
     all_labels_horizontal_tile = np.tile(

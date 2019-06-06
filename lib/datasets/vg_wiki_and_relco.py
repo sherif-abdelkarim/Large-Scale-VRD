@@ -452,17 +452,17 @@ class vg_wiki_and_relco(imdb_rel):
             obj_cls = self._object_class_to_ind[str(obj_names[ix])]
             prd_cls = self._predicate_class_to_ind[str(prd_names[ix])]
 
-            sbj_cls_w = [self._object_class_to_ind[str(sbj_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))]
-            obj_cls_w = [self._object_class_to_ind[str(obj_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))]
-            prd_cls_w = [self._predicate_class_to_ind[str(prd_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))]
+            sbj_cls_w = np.array([self._object_class_to_ind[str(sbj_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))], dtype=np.int32)
+            obj_cls_w = np.array([self._object_class_to_ind[str(obj_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))], dtype=np.int32)
+            prd_cls_w = np.array([self._predicate_class_to_ind[str(prd_names_w[ix][i])] for i in range(len(sbj_names_w[ix]))], dtype=np.int32)
 
             gt_sbj_classes[ix] = sbj_cls
             gt_obj_classes[ix] = obj_cls
             gt_rel_classes[ix] = prd_cls
 
-            gt_sbj_classes_w[ix] = sbj_cls_w
-            gt_obj_classes_w[ix] = obj_cls_w
-            gt_rel_classes_w[ix] = prd_cls_w
+            gt_sbj_classes_w[ix, :] = sbj_cls_w
+            gt_obj_classes_w[ix, :] = obj_cls_w
+            gt_rel_classes_w[ix, :] = prd_cls_w
 
             sbj_overlaps[ix, sbj_cls] = 1.0
             obj_overlaps[ix, obj_cls] = 1.0
