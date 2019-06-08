@@ -96,6 +96,15 @@ if __name__ == '__main__':
     train_model, output_dir, checkpoint_dir = \
         model_builder_rel.create(cfg.MODEL.MODEL_NAME, train=True)
     logger.info('Training model built.')
+    start_model_iter = 0
+    params_ckp_file = checkpoints_rel.get_checkpoint_resume_file(checkpoint_dir)
+    if (cfg.CHECKPOINT.CHECKPOINT_MODEL and params_ckp_file is not None):
+        params_ckp_file = checkpoints_rel.get_checkpoint_resume_file(checkpoint_dir)
+        start_model_iter = int(os.path.basename(params_ckp_file).replace('.pkl', '').replace('c2_model_iter', ''))
+        checkpoints_rel.initialize_params_from_file(model=train_model,
+                                                    weights_file=params_ckp_file,
+                                                    num_devices=cfg.NUM_DEVICES,
+                                                    )
 
     # do validation by default
     if True:
@@ -120,7 +129,6 @@ if __name__ == '__main__':
             if key.find('acc') >= 0:
                 wins[key] = None
 
-    start_model_iter = 0
     prev_checkpointed_lr = None
 
     lr_iters = model_builder_rel.get_lr_steps()
@@ -158,8 +166,8 @@ if __name__ == '__main__':
         helpers_rel.check_nan_losses(train_model, cfg.NUM_DEVICES)
 
         rem_train_iters = (
-            (cfg.SOLVER.NUM_ITERATIONS - curr_iter - 1) *
-            cfg.MODEL.GRAD_ACCUM_FREQUENCY
+                (cfg.SOLVER.NUM_ITERATIONS - curr_iter - 1) *
+                cfg.MODEL.GRAD_ACCUM_FREQUENCY
         )
         train_metrics_calculator.calculate_and_log_train_metrics(
             train_model.losses, train_model.metrics,

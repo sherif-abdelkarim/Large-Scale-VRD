@@ -297,7 +297,7 @@ def add_variable_stepsize_lr(
     learning_rate = check_and_apply_warmup(curr_iter, learning_rate)
     root_device_id = cfg.ROOT_DEVICE_ID
     new_lr = learning_rate
-    if curr_iter == 1:
+    if curr_iter == start_model_iter:
         prev_lr = new_lr
     else:
         prev_lr = CURRENT_LR
