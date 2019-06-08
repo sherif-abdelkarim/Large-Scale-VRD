@@ -32,6 +32,8 @@ TRAIN:
   FG_THRESH: 0.5
   # SCALE_JITTER_TYPE: googleNet
   EVALUATION_FREQUENCY: 2500  # 50000
+  HUBNESS: False
+  HUBNESS_scale: 1.0
 TEST:
   WEIGHTS: checkpoints/vg_wiki_and_relco/latest_final.pkl
   DATA_TYPE: test

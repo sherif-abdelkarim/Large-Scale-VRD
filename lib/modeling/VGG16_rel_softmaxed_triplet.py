@@ -11,6 +11,7 @@ from __future__ import division
 
 import logging
 
+from caffe2.python import core as caffe2core
 from core.config_rel import cfg
 import utils.blob as blob_utils
 
@@ -73,6 +74,10 @@ def create_model(model):
         model.net.ConstantFill([], 'margin_blob_obj', shape=[1], value=obj_margin)
         model.net.ConstantFill([], 'margin_blob_rel', shape=[1], value=rel_margin)
         model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
+
+        model.net.ConstantFill([], 'hubness_blob_sbj', shape=[1], value=1.0 / 53304)
+        model.net.ConstantFill([], 'hubness_blob_obj', shape=[1], value=1.0 / 29086)
+        model.net.ConstantFill([], 'hubness_blob_rel', shape=[1], value=1.0 / 53304)
 
         add_embd_triplet_losses_labeled(model, 'sbj')
         add_embd_triplet_losses_labeled(model, 'obj')
@@ -631,6 +636,31 @@ def add_embd_triplet_losses_labeled(model, label):
                 ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
                 ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
                 scale=1. / cfg.NUM_DEVICES)
+
+        if (cfg.TRAIN.HUBNESS):
+            # pf = (1/batch_size) * sum(xp_yall_prob, axis=0)
+            model.Transpose(['xp_yall_prob' + suffix], ['xp_yall_probT' + suffix])
+            # op = caffe2core.CreateOperator('Reshape_xpyall'+suffix, ['xp_yall_probT' + suffix], ['xp_yall_probT_reshaped'+suffix, 'old_shape'+suffix], shape=(0,1, -1) )
+            model.net.Reshape(['xp_yall_probT' + suffix],
+                                   ['xp_yall_probT_reshaped' + suffix, 'xp_yall_probT_old_shape' + suffix],
+                                   shape=(0, 1, -1, 1))
+            xp_yall_probT_average_reshape_suffix = model.net.AveragePool(['xp_yall_probT_reshaped' + suffix], [
+            'xp_yall_probT_average_reshape' + suffix], global_pooling=True)
+            # op = core.CreateOperator('Reshape_xpyall_final'+suffix, ['xp_yall_probT_average_reshape' + suffix], ['xp_yall_probT_reshaped'+suffix, 'old_shape'+suffix], shape=(0,^) )
+            hubness_dist_suffix = model.net.Sub(
+            ['xp_yall_probT_average_reshape' + suffix, 'hubness_blob' + suffix], 'hubness_dist' + suffix, broadcast=1)
+            hubness_dist_suffix_sqr = model.net.Sqr(['hubness_dist' + suffix], ['hubness_dist_sqr' + suffix])
+
+            hubness_dist_suffix_sqr_scaled = model.Scale(['hubness_dist_sqr' + suffix],
+                                                              ['hubness_dist_sqr_scaled' + suffix],
+                                                              scale=cfg.TRAIN.HUBNESS_scale)
+
+            # scale=scale
+            # loss_hubness=   cfg.TRAIN.HUBNESS_scale* hubness_dist_suffix_sqr.AveragedLoss([], ['loss_hubness' + suffix])
+            loss_hubness = hubness_dist_suffix_sqr_scaled.AveragedLoss([], ['loss_hubness' + suffix])
+            # loss_hubness_scaled= loss_hubness.Scale(, scale=cfg.TRAIN.HUBNESS_scale, )
+            model.loss_set.extend([loss_hubness])
+            # loss_h = sum(pf - 1/k)
 
         model.loss_set.extend([loss_xp_yall])
 
