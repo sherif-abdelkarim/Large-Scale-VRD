@@ -27,7 +27,6 @@ from caffe2.python import workspace
 
 logger = logging.getLogger(__name__)
 
-
 MIN_OVLP = 0.5
 
 
@@ -50,6 +49,17 @@ class Evaluator():
         self.rel_top1_cnt = 0
         self.rel_top5_cnt = 0
         self.rel_top10_cnt = 0
+
+        if cfg.MODEL.WEAK_LABELS:
+            self.tri_top1_w_cnt = 0
+            self.sbj_top1_w_cnt = 0
+            self.obj_top1_w_cnt = 0
+            self.rel_top1_w_cnt = 0
+
+            self.tri_top1_w_acc = 0.0
+            self.sbj_top1_w_acc = 0.0
+            self.obj_top1_w_acc = 0.0
+            self.rel_top1_w_acc = 0.0
 
         self.tri_top1_acc = 0.0
         self.tri_top5_acc = 0.0
@@ -119,6 +129,18 @@ class Evaluator():
         self.rel_top1_cnt = 0
         self.rel_top5_cnt = 0
         self.rel_top10_cnt = 0
+
+        if cfg.MODEL.WEAK_LABELS:
+            self.tri_top1_w_cnt = 0
+            self.sbj_top1_w_cnt = 0
+            self.obj_top1_w_cnt = 0
+            self.rel_top1_w_cnt = 0
+
+            self.tri_top1_w_acc = 0.0
+            self.sbj_top1_w_acc = 0.0
+            self.obj_top1_w_acc = 0.0
+            self.rel_top1_w_acc = 0.0
+
 
         self.tri_top1_acc = 0.0
         self.tri_top5_acc = 0.0
@@ -198,6 +220,18 @@ class Evaluator():
             gt_labels_rel = workspace.FetchBlob(prefix + '{}/{}'.format(
                 gpu_id, 'rel_pos_labels_int32'))
 
+            if cfg.MODEL.WEAK_LABELS:
+                gt_labels_sbj_w = []
+                gt_labels_obj_w = []
+                gt_labels_rel_w = []
+                for num_w in range(cfg.MODEL.NUM_WEAK_LABELS):
+                    gt_labels_sbj_w.append(workspace.FetchBlob(prefix + '{}/{}'.format(
+                        gpu_id, 'sbj_pos_labels_int32_w_' + str(num_w))))
+                    gt_labels_obj_w.append(workspace.FetchBlob(prefix + '{}/{}'.format(
+                        gpu_id, 'obj_pos_labels_int32_w_' + str(num_w))))
+                    gt_labels_rel_w.append(workspace.FetchBlob(prefix + '{}/{}'.format(
+                        gpu_id, 'rel_pos_labels_int32_w_' + str(num_w))))
+
             gt_labels_sbj -= 1
             gt_labels_obj -= 1
             gt_labels_rel -= 1
@@ -210,6 +244,12 @@ class Evaluator():
             self.all_dets['gt_labels_sbj'].append(gt_labels_sbj)
             self.all_dets['gt_labels_obj'].append(gt_labels_obj)
             self.all_dets['gt_labels_rel'].append(gt_labels_rel)
+
+            if cfg.MODEL.WEAK_LABELS:
+                self.all_dets['gt_labels_sbj_w'].append(gt_labels_sbj_w)
+                self.all_dets['gt_labels_obj_w'].append(gt_labels_obj_w)
+                self.all_dets['gt_labels_rel_w'].append(gt_labels_rel_w)
+
             self.all_dets['gt_boxes_sbj'].append(gt_boxes_sbj)
             self.all_dets['gt_boxes_obj'].append(gt_boxes_obj)
             self.all_dets['gt_boxes_rel'].append(gt_boxes_rel)
@@ -302,18 +342,29 @@ class Evaluator():
                     if gt_labels_rel[ind] in det_labels_rel[ind, :10]:
                         self.rel_top10_cnt += 1
 
-                    s_correct = gt_labels_sbj[ind] in det_labels_sbj[ind,:self.rank_k]
-                    p_correct = gt_labels_rel[ind] in det_labels_rel[ind,:self.rank_k]
-                    o_correct = gt_labels_obj[ind] in det_labels_obj[ind,:self.rank_k]
+                    if cfg.MODEL.WEAK_LABELS:
+                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[ind] and det_labels_obj[ind, 0:1] in gt_labels_obj[ind] and det_labels_rel[ind, 0:1] in gt_labels_rel[ind]:
+                            self.tri_top1_w_cnt += 1
+                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[ind]:
+                            self.sbj_top1_w_cnt += 1
+                        if det_labels_obj[ind, 0:1] in gt_labels_obj_w[ind]:
+                            self.obj_top1_w_cnt += 1
+                        if det_labels_rel[ind, 0:1] in gt_labels_rel_w[ind]:
+                            self.rel_top1_w_cnt += 1
+
+
+                    s_correct = gt_labels_sbj[ind] in det_labels_sbj[ind, :self.rank_k]
+                    p_correct = gt_labels_rel[ind] in det_labels_rel[ind, :self.rank_k]
+                    o_correct = gt_labels_obj[ind] in det_labels_obj[ind, :self.rank_k]
                     spo_correct = s_correct and p_correct and o_correct
                     s_ind = np.where(
-                        det_labels_sbj[ind,:self.rank_k].squeeze() == \
+                        det_labels_sbj[ind, :self.rank_k].squeeze() == \
                         gt_labels_sbj[ind])[0]
                     p_ind = np.where(
-                        det_labels_rel[ind,:self.rank_k].squeeze() == \
+                        det_labels_rel[ind, :self.rank_k].squeeze() == \
                         gt_labels_rel[ind])[0]
                     o_ind = np.where(
-                        det_labels_obj[ind,:self.rank_k].squeeze() == \
+                        det_labels_obj[ind, :self.rank_k].squeeze() == \
                         gt_labels_obj[ind])[0]
 
                     self.sbj_mr += 1
@@ -397,20 +448,20 @@ class Evaluator():
                                     topk_cube_spo_labels_reshape[:, 0, np.newaxis],
                                     topk_cube_spo_labels_reshape[:, 1, np.newaxis],
                                     topk_cube_spo_labels_reshape[:, 2, np.newaxis]),
-                                    axis=1))
+                                   axis=1))
                 self.all_det_boxes[i].append(np.repeat(
                     np.concatenate((det_boxes_sbj[:, np.newaxis, :],
                                     det_boxes_obj[:, np.newaxis, :]),
-                                    axis=1), sbj_k * rel_k * obj_k, axis=0))
+                                   axis=1), sbj_k * rel_k * obj_k, axis=0))
                 self.all_gt_labels[i].append(
                     np.concatenate((gt_labels_sbj[:, np.newaxis],
                                     gt_labels_rel[:, np.newaxis],
                                     gt_labels_obj[:, np.newaxis]),
-                                    axis=1))
+                                   axis=1))
                 self.all_gt_boxes[i].append(
                     np.concatenate((gt_boxes_sbj[:, np.newaxis, :],
                                     gt_boxes_obj[:, np.newaxis, :]),
-                                    axis=1))
+                                   axis=1))
 
         return new_batch_flag
 
@@ -429,6 +480,13 @@ class Evaluator():
             self.rel_top1_acc = float(self.rel_top1_cnt) / float(self.spo_cnt) * 100
             self.rel_top5_acc = float(self.rel_top5_cnt) / float(self.spo_cnt) * 100
             self.rel_top10_acc = float(self.rel_top10_cnt) / float(self.spo_cnt) * 100
+
+            if cfg.MODEL.WEAK_LABELS:
+                self.tri_top1_w_acc = float(self.tri_top1_w_cnt) / float(self.spo_cnt) * 100
+                self.sbj_top1_w_acc = float(self.sbj_top1_w_cnt) / float(self.spo_cnt) * 100
+                self.obj_top1_w_acc = float(self.obj_top1_w_cnt) / float(self.spo_cnt) * 100
+                self.rel_top1_w_acc = float(self.rel_top1_w_cnt) / float(self.spo_cnt) * 100
+
             self.sbj_mr /= float(self.spo_cnt) / 100
             self.rel_mr /= float(self.spo_cnt) / 100
             self.obj_mr /= float(self.spo_cnt) / 100
@@ -443,24 +501,32 @@ class Evaluator():
             print('triplet top 10 accuracy: {:f}'.format(self.tri_top10_acc))
             print('triplet rr: {:f}'.format(self.tri_rr))
             print('triplet mr: {:f}'.format(self.tri_mr))
+            if cfg.MODEL.WEAK_LABELS:
+                print('triplet top 1 accuracy weak labels: {:f}'.format(self.tri_top1_w_acc))
 
             print('sbj top 1 accuracy: {:f}'.format(self.sbj_top1_acc))
             print('sbj top 5 accuracy: {:f}'.format(self.sbj_top5_acc))
             print('sbj top 10 accuracy: {:f}'.format(self.sbj_top10_acc))
             print('sbj rr: {:f}'.format(self.sbj_rr))
             print('sbj mr: {:f}'.format(self.sbj_mr))
+            if cfg.MODEL.WEAK_LABELS:
+                print('sbj top 1 accuracy weak labels: {:f}'.format(self.sbj_top1_w_acc))
 
             print('obj top 1 accuracy: {:f}'.format(self.obj_top1_acc))
             print('obj top 5 accuracy: {:f}'.format(self.obj_top5_acc))
             print('obj top 10 accuracy: {:f}'.format(self.obj_top10_acc))
             print('obj rr: {:f}'.format(self.obj_rr))
             print('obj mr: {:f}'.format(self.obj_mr))
+            if cfg.MODEL.WEAK_LABELS:
+                print('obj top 1 accuracy weak labels: {:f}'.format(self.obj_top1_w_acc))
 
             print('rel top 1 accuracy: {:f}'.format(self.rel_top1_acc))
             print('rel top 5 accuracy: {:f}'.format(self.rel_top5_acc))
             print('rel top 10 accuracy: {:f}'.format(self.rel_top10_acc))
             print('rel rr: {:f}'.format(self.rel_rr))
             print('rel mr: {:f}'.format(self.rel_mr))
+            if cfg.MODEL.WEAK_LABELS:
+                print('rel top 1 accuracy weak labels: {:f}'.format(self.rel_top1_w_acc))
 
         all_accs = {}
         for key, val in self.__dict__.items():
