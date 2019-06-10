@@ -306,7 +306,7 @@ class Evaluator():
                 self.all_obj_vis_embds.append(embds_obj)
                 self.all_prd_vis_embds.append(embds_prd)
 
-            if self._split != 'test':
+            if True:
                 self.spo_cnt += len(gt_labels_sbj)
                 for ind in range(len(gt_labels_sbj)):
                     if gt_labels_sbj[ind] in det_labels_sbj[ind, :1] and \
@@ -467,7 +467,7 @@ class Evaluator():
 
     def calculate_and_plot_accuracy(self):
 
-        if self._split != 'test':
+        if True:
             self.tri_top1_acc = float(self.tri_top1_cnt) / float(self.spo_cnt) * 100
             self.tri_top5_acc = float(self.tri_top5_cnt) / float(self.spo_cnt) * 100
             self.tri_top10_acc = float(self.tri_top10_cnt) / float(self.spo_cnt) * 100
