@@ -93,8 +93,13 @@ class Evaluator():
              'labels_sbj', 'labels_obj', 'labels_rel',
              'scores_sbj', 'scores_obj', 'scores_rel',
              'gt_labels_sbj', 'gt_labels_obj', 'gt_labels_rel',
-             'gt_labels_sbj_w', 'gt_labels_obj_w', 'gt_labels_rel_w',
              'gt_boxes_sbj', 'gt_boxes_obj', 'gt_boxes_rel']
+
+        if cfg.MODEL.WEAK_LABELS:
+            self.det_list.append('gt_labels_sbj_w')
+            self.det_list.append('gt_labels_obj_w')
+            self.det_list.append('gt_labels_rel_w')
+
         self.all_dets = {key: [] for key in self.det_list}
 
         self.roidb_size = roidb_size
@@ -232,6 +237,10 @@ class Evaluator():
                         gpu_id, 'obj_pos_labels_int32_w_' + str(num_w))))
                     gt_labels_rel_w.append(workspace.FetchBlob(prefix + '{}/{}'.format(
                         gpu_id, 'rel_pos_labels_int32_w_' + str(num_w))))
+
+                gt_labels_sbj_w -= 1
+                gt_labels_obj_w -= 1
+                gt_labels_rel_w -= 1
 
             gt_labels_sbj -= 1
             gt_labels_obj -= 1
@@ -544,7 +553,10 @@ class Evaluator():
             cfg.MODEL.TYPE, cfg.MODEL.SUBTYPE, cfg.MODEL.SPECS, cfg.TEST.DATA_TYPE)
         if not os.path.exists(det_path):
             os.makedirs(det_path)
-        det_name = 'reldn_detections.pkl'
+        if cfg.MODEL.WEAK_LABELS:
+            det_name = 'reldn_detections_w.pkl'
+        else:
+            det_name = 'reldn_detections.pkl'
         det_file = os.path.join(det_path, det_name)
         logger.info('all_dets size: {}'.format(len(self.all_dets['labels_sbj'])))
         with open(det_file, 'wb') as f:
