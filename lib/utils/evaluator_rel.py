@@ -238,9 +238,12 @@ class Evaluator():
                     gt_labels_rel_w.append(workspace.FetchBlob(prefix + '{}/{}'.format(
                         gpu_id, 'rel_pos_labels_int32_w_' + str(num_w))))
 
-                gt_labels_sbj_w[:] = [x - 1 for x in gt_labels_sbj_w]
-                gt_labels_obj_w[:] = [x - 1 for x in gt_labels_obj_w]
-                gt_labels_rel_w[:] = [x - 1 for x in gt_labels_rel_w]
+                gt_labels_sbj_w = np.array(gt_labels_sbj_w)
+                gt_labels_obj_w = np.array(gt_labels_obj_w)
+                gt_labels_rel_w = np.array(gt_labels_rel_w)
+                gt_labels_sbj_w -= 1
+                gt_labels_obj_w -= 1
+                gt_labels_rel_w -= 1
 
             gt_labels_sbj -= 1
             gt_labels_obj -= 1
