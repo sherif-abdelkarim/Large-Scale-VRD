@@ -356,13 +356,13 @@ class Evaluator():
                         self.rel_top10_cnt += 1
 
                     if cfg.MODEL.WEAK_LABELS:
-                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[ind] and det_labels_obj[ind, 0:1] in gt_labels_obj[ind] and det_labels_rel[ind, 0:1] in gt_labels_rel[ind]:
+                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] and det_labels_obj[ind, 0:1] in gt_labels_obj[:, ind] and det_labels_rel[ind, 0:1] in gt_labels_rel[:, ind]:
                             self.tri_top1_w_cnt += 1
-                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[ind]:
+                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind]:
                             self.sbj_top1_w_cnt += 1
-                        if det_labels_obj[ind, 0:1] in gt_labels_obj_w[ind]:
+                        if det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind]:
                             self.obj_top1_w_cnt += 1
-                        if det_labels_rel[ind, 0:1] in gt_labels_rel_w[ind]:
+                        if det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind]:
                             self.rel_top1_w_cnt += 1
 
 
