@@ -93,6 +93,7 @@ class Evaluator():
              'labels_sbj', 'labels_obj', 'labels_rel',
              'scores_sbj', 'scores_obj', 'scores_rel',
              'gt_labels_sbj', 'gt_labels_obj', 'gt_labels_rel',
+             'gt_labels_sbj_w', 'gt_labels_obj_w', 'gt_labels_rel_w',
              'gt_boxes_sbj', 'gt_boxes_obj', 'gt_boxes_rel']
         self.all_dets = {key: [] for key in self.det_list}
 
