@@ -356,13 +356,13 @@ class Evaluator():
                         self.rel_top10_cnt += 1
 
                     if cfg.MODEL.WEAK_LABELS:
-                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] and det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] and det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind]:
+                        if (det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] and det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] and det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind]) or (gt_labels_sbj[ind] in det_labels_sbj[ind, :1] and gt_labels_obj[ind] in det_labels_obj[ind, :1] and gt_labels_rel[ind] in det_labels_rel[ind, :1]):
                             self.tri_top1_w_cnt += 1
-                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind]:
+                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[ind] in det_labels_sbj[ind, :1]:
                             self.sbj_top1_w_cnt += 1
-                        if det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind]:
+                        if det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[ind] in det_labels_obj[ind, :1]:
                             self.obj_top1_w_cnt += 1
-                        if det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind]:
+                        if det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[ind] in det_labels_rel[ind, :1]:
                             self.rel_top1_w_cnt += 1
 
 
@@ -495,10 +495,10 @@ class Evaluator():
             self.rel_top10_acc = float(self.rel_top10_cnt) / float(self.spo_cnt) * 100
 
             if cfg.MODEL.WEAK_LABELS:
-                self.tri_top1_w_acc = float(self.tri_top1_w_cnt + self.tri_top1_cnt) / float(self.spo_cnt) * 100
-                self.sbj_top1_w_acc = float(self.sbj_top1_w_cnt + self.sbj_top1_cnt) / float(self.spo_cnt) * 100
-                self.obj_top1_w_acc = float(self.obj_top1_w_cnt + self.obj_top1_cnt) / float(self.spo_cnt) * 100
-                self.rel_top1_w_acc = float(self.rel_top1_w_cnt + self.rel_top1_cnt) / float(self.spo_cnt) * 100
+                self.tri_top1_w_acc = float(self.tri_top1_w_cnt) / float(self.spo_cnt) * 100
+                self.sbj_top1_w_acc = float(self.sbj_top1_w_cnt) / float(self.spo_cnt) * 100
+                self.obj_top1_w_acc = float(self.obj_top1_w_cnt) / float(self.spo_cnt) * 100
+                self.rel_top1_w_acc = float(self.rel_top1_w_cnt) / float(self.spo_cnt) * 100
 
             self.sbj_mr /= float(self.spo_cnt) / 100
             self.rel_mr /= float(self.spo_cnt) / 100
