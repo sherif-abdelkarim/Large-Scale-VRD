@@ -495,10 +495,10 @@ class Evaluator():
             self.rel_top10_acc = float(self.rel_top10_cnt) / float(self.spo_cnt) * 100
 
             if cfg.MODEL.WEAK_LABELS:
-                self.tri_top1_w_acc = float(self.tri_top1_w_cnt) / float(self.spo_cnt) * 100
-                self.sbj_top1_w_acc = float(self.sbj_top1_w_cnt) / float(self.spo_cnt) * 100
-                self.obj_top1_w_acc = float(self.obj_top1_w_cnt) / float(self.spo_cnt) * 100
-                self.rel_top1_w_acc = float(self.rel_top1_w_cnt) / float(self.spo_cnt) * 100
+                self.tri_top1_w_acc = float(self.tri_top1_w_cnt + self.tri_top1_cnt) / float(self.spo_cnt) * 100
+                self.sbj_top1_w_acc = float(self.sbj_top1_w_cnt + self.sbj_top1_cnt) / float(self.spo_cnt) * 100
+                self.obj_top1_w_acc = float(self.obj_top1_w_cnt + self.obj_top1_cnt) / float(self.spo_cnt) * 100
+                self.rel_top1_w_acc = float(self.rel_top1_w_cnt + self.rel_top1_cnt) / float(self.spo_cnt) * 100
 
             self.sbj_mr /= float(self.spo_cnt) / 100
             self.rel_mr /= float(self.spo_cnt) / 100
