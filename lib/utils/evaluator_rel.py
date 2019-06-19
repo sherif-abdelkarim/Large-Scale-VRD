@@ -612,3 +612,238 @@ class Evaluator():
                 pickle.dump(self.all_prd_vis_embds, f, pickle.HIGHEST_PROTOCOL)
             logger.info('Wrote all_prd_vis_embds to {}'.format(
                 os.path.abspath(all_prd_vis_embds_file)))
+
+    def eval_im_dets_triplet_topk_enriched(self,
+                                           image_idx,
+                                           image_id,
+                                           gt_labels_sbj,
+                                           gt_labels_obj,
+                                           gt_labels_rel,
+                                           gt_boxes_sbj,
+                                           gt_boxes_obj,
+                                           gt_boxes_rel,
+                                           det_boxes_sbj,
+                                           det_boxes_obj,
+                                           det_boxes_rel,
+                                           det_labels_sbj,
+                                           det_labels_obj,
+                                           det_labels_rel,
+                                           det_scores_sbj,
+                                           det_scores_obj,
+                                           det_scores_rel, detections_results_keys):
+
+        detections_results_keys = ['tri_top1', 'tri_top5', 'tri_top10',
+                                   'sbj_top1', 'sbj_top5', 'sbj_top10',
+                                   'obj_top1', 'obj_top5', 'obj_top10',
+                                   'rel_top1', 'rel_top5', 'rel_top10',
+                                   'tri_rr', 'sbj_rr', 'obj_rr', 'rel_rr',
+                                   'tri_mr', 'sbj_mr', 'obj_mr', 'rel_mr']
+
+        detections_results_image = {key: np.zeros((len(gt_labels_sbj), 1)) for key in detections_results_keys}
+
+        #         tri_top1 = np.zeros(( len(gt_labels_sbj),1))
+        #         tri_top5 = np.zeros(( len(gt_labels_sbj),1))
+        #         tri_top10 = np.zeros(( len(gt_labels_sbj),1))
+
+        #         sbj_top1 = np.zeros(( len(gt_labels_sbj),1))
+        #         sbj_top5 = np.zeros(( len(gt_labels_sbj),1))
+        #         sbj_top10 = np.zeros(( len(gt_labels_sbj),1))
+
+        #         obj_top1 = np.zeros(( len(gt_labels_sbj),1))
+        #         obj_top5 = np.zeros(( len(gt_labels_sbj),1))
+        #         obj_top10 = np.zeros(( len(gt_labels_sbj),1))
+
+        #         rel_top1 = np.zeros(( len(gt_labels_sbj),1))
+        #         rel_top5 = np.zeros(( len(gt_labels_sbj),1))
+        #         rel_top10 = np.zeros(( len(gt_labels_sbj),1))
+
+        #         tri_rr = np.zeros(( len(gt_labels_sbj),1))
+        #         sbj_rr = np.zeros(( len(gt_labels_sbj),1))
+        #         obj_rr = np.zeros(( len(gt_labels_sbj),1))
+        #         rel_rr = np.zeros(( len(gt_labels_sbj),1))
+
+        #         tri_mr = np.zeros(( len(gt_labels_sbj),1))
+        #         sbj_mr = np.zeros(( len(gt_labels_sbj),1))
+        #         obj_mr = np.zeros(( len(gt_labels_sbj),1))
+        #         rel_mr = np.zeros(( len(gt_labels_sbj),1))
+        detections_results_keys = ['tri_top1', 'tri_top5', 'tri_top10',
+                                   'sbj_top1', 'sbj_top5', 'sbj_top10',
+                                   'obj_top1', 'obj_top5', 'obj_top10',
+                                   'rel_top1', 'rel_top5', 'rel_top10',
+                                   'tri_rr', 'sbj_rr', 'obj_rr', 'rel_rr',
+                                   'tri_mr', 'sbj_mr', 'obj_mr', 'rel_mr']
+
+        self.spo_cnt += len(gt_labels_sbj)
+        for ind in range(len(gt_labels_sbj)):
+            if gt_labels_sbj[ind] in det_labels_sbj[ind, :1] and \
+                    gt_labels_obj[ind] in det_labels_obj[ind, :1] and \
+                    gt_labels_rel[ind] in det_labels_rel[ind, :1]:
+                detections_results_image['tri_top1'][ind] = 1
+                self.tri_top1_cnt += 1
+            if gt_labels_sbj[ind] in det_labels_sbj[ind, :1]:
+                self.sbj_top1_cnt += 1
+                detections_results_image['sbj_top1'][ind] = 1
+            if gt_labels_obj[ind] in det_labels_obj[ind, :1]:
+                self.obj_top1_cnt += 1
+                detections_results_image['obj_top1'][ind] = 1
+            if gt_labels_rel[ind] in det_labels_rel[ind, :1]:
+                self.rel_top1_cnt += 1
+                detections_results_image['rel_top1'][ind] = 1
+
+            if gt_labels_sbj[ind] in det_labels_sbj[ind, :5] and \
+                    gt_labels_obj[ind] in det_labels_obj[ind, :5] and \
+                    gt_labels_rel[ind] in det_labels_rel[ind, :5]:
+                self.tri_top5_cnt += 1
+                detections_results_image['tri_top5'][ind] = 1
+            if gt_labels_sbj[ind] in det_labels_sbj[ind, :5]:
+                self.sbj_top5_cnt += 1
+                detections_results_image['sbj_top5'][ind] = 1
+            if gt_labels_obj[ind] in det_labels_obj[ind, :5]:
+                self.obj_top5_cnt += 1
+                detections_results_image['obj_top5'][ind] = 1
+            if gt_labels_rel[ind] in det_labels_rel[ind, :5]:
+                self.rel_top5_cnt += 1
+                detections_results_image['rel_top5'][ind] = 1
+
+            if gt_labels_sbj[ind] in det_labels_sbj[ind, :10] and \
+                    gt_labels_obj[ind] in det_labels_obj[ind, :10] and \
+                    gt_labels_rel[ind] in det_labels_rel[ind, :10]:
+                self.tri_top10_cnt += 1
+                detections_results_image['tri_top10'][ind] = 1
+            if gt_labels_sbj[ind] in det_labels_sbj[ind, :10]:
+                self.sbj_top10_cnt += 1
+                detections_results_image['sbj_top10'][ind] = 1
+            if gt_labels_obj[ind] in det_labels_obj[ind, :10]:
+                self.obj_top10_cnt += 1
+                detections_results_image['obj_top10'][ind] = 1
+            if gt_labels_rel[ind] in det_labels_rel[ind, :10]:
+                self.rel_top10_cnt += 1
+                detections_results_image['rel_top10'][ind] = 1
+
+            s_correct = gt_labels_sbj[ind] in det_labels_sbj[ind, :self.rank_k]
+            p_correct = gt_labels_rel[ind] in det_labels_rel[ind, :self.rank_k]
+            o_correct = gt_labels_obj[ind] in det_labels_obj[ind, :self.rank_k]
+            spo_correct = s_correct and p_correct and o_correct
+            s_ind = np.where(
+                det_labels_sbj[ind, :self.rank_k].squeeze() == \
+                gt_labels_sbj[ind])[0]
+            p_ind = np.where(
+                det_labels_rel[ind, :self.rank_k].squeeze() == \
+                gt_labels_rel[ind])[0]
+            o_ind = np.where(
+                det_labels_obj[ind, :self.rank_k].squeeze() == \
+                gt_labels_obj[ind])[0]
+
+            self.sbj_mr += 1
+            self.rel_mr += 1
+            self.obj_mr += 1
+            self.tri_mr += 1
+            if s_correct:
+                s_ind = s_ind[0]
+                self.sbj_rr += 1.0 / (s_ind + 1.0)
+                detections_results_image['sbj_rr'][ind] = 1.0 / (s_ind + 1.0)
+                self.sbj_mr += s_ind / float(self.rank_k) - 1
+                detections_results_image['sbj_mr'][ind] = s_ind / float(self.rank_k) - 1
+            if p_correct:
+                p_ind = p_ind[0]
+                self.rel_rr += 1.0 / (p_ind + 1.0)
+                detections_results_image['rel_rr'][ind] = 1.0 / (p_ind + 1.0)
+                self.rel_mr += p_ind / float(self.rank_k) - 1
+                detections_results_image['rel_mr'][ind] = p_ind / float(self.rank_k) - 1
+            if o_correct:
+                o_ind = o_ind[0]
+                self.obj_rr += 1.0 / (o_ind + 1.0)
+                detections_results_image['obj_rr'][ind] = 1.0 / (o_ind + 1.0)
+                self.obj_mr += o_ind / float(self.rank_k) - 1
+                detections_results_image['obj_mr'][ind] = o_ind / float(self.rank_k) - 1
+            if spo_correct:
+                self.tri_rr += (1.0 / (s_ind + 1.0) + \
+                                1.0 / (p_ind + 1.0) + \
+                                1.0 / (o_ind + 1.0)) / 3.0
+
+                detections_results_image['tri_rr'][ind] = (1.0 / (s_ind + 1.0) + \
+                                                           1.0 / (p_ind + 1.0) + \
+                                                           1.0 / (o_ind + 1.0)) / 3.0
+
+                self.tri_mr += (s_ind / float(self.rank_k) - 1 + \
+                                p_ind / float(self.rank_k) - 1 + \
+                                o_ind / float(self.rank_k) - 1) / 3.0
+
+                detections_results_image['tri_mr'][ind] = (s_ind / float(self.rank_k) - 1 + \
+                                                           p_ind / float(self.rank_k) - 1 + \
+                                                           o_ind / float(self.rank_k) - 1) / 3.0
+
+        sbj_k = 1
+        # rel_k = 70
+        obj_k = 1
+        # det_labels = []
+        # det_boxes = []
+        # gt_labels = []
+        # gt_boxes = []
+        for i, rel_k in enumerate(self.all_rel_k):
+            if det_labels_sbj.shape[0] > 0:
+                topk_labels_sbj = det_labels_sbj[:, :sbj_k]
+                topk_labels_rel = det_labels_rel[:, :rel_k]
+                topk_labels_obj = det_labels_obj[:, :obj_k]
+            else:  # In the ECCV2016 proposals sometimes there is no det box
+                topk_labels_sbj = np.zeros((0, sbj_k), dtype=np.int32)
+                topk_labels_rel = np.zeros((0, rel_k), dtype=np.int32)
+                topk_labels_obj = np.zeros((0, obj_k), dtype=np.int32)
+
+            if det_scores_sbj.shape[0] > 0:
+                topk_scores_sbj = det_scores_sbj[:, :sbj_k]
+                topk_scores_rel = det_scores_rel[:, :rel_k]
+                topk_scores_obj = det_scores_obj[:, :obj_k]
+            else:  # In the ECCV2016 proposals sometimes there is no det box
+                topk_scores_sbj = np.zeros((0, sbj_k), dtype=np.float32)
+                topk_scores_rel = np.zeros((0, rel_k), dtype=np.float32)
+                topk_scores_obj = np.zeros((0, obj_k), dtype=np.float32)
+
+            topk_cube_spo_labels = np.zeros(
+                (topk_labels_sbj.shape[0], sbj_k * obj_k * rel_k, 3), dtype=np.int32)
+            topk_cube_spo_scores = np.zeros(
+                (topk_labels_sbj.shape[0], sbj_k * obj_k * rel_k), dtype=np.float32)
+            topk_cube_p_scores = np.zeros(
+                (topk_labels_sbj.shape[0], sbj_k * obj_k * rel_k), dtype=np.float32)
+            for l in range(sbj_k):
+                for m in range(rel_k):
+                    for n in range(obj_k):
+                        topk_cube_spo_labels[:, l * rel_k * obj_k + m * obj_k + n, 0] = \
+                            topk_labels_sbj[:, l]
+                        topk_cube_spo_labels[:, l * rel_k * obj_k + m * obj_k + n, 1] = \
+                            topk_labels_rel[:, m]
+                        topk_cube_spo_labels[:, l * rel_k * obj_k + m * obj_k + n, 2] = \
+                            topk_labels_obj[:, n]
+                        topk_cube_spo_scores[:, l * rel_k * obj_k + m * obj_k + n] = \
+                            np.exp(topk_scores_sbj[:, l] +
+                                   topk_scores_rel[:, m] +
+                                   topk_scores_obj[:, n])
+
+                        topk_cube_p_scores[:, l * rel_k * obj_k + m * obj_k + n] = \
+                            np.exp(topk_scores_rel[:, m])
+
+            topk_cube_spo_labels_reshape = topk_cube_spo_labels.reshape((-1, 3))
+            topk_cube_spo_scores_reshape = topk_cube_spo_scores.reshape((-1, 1))
+
+            self.all_det_labels[i].append(
+                np.concatenate((topk_cube_spo_scores_reshape[:, 0, np.newaxis],
+                                topk_cube_spo_labels_reshape[:, 0, np.newaxis],
+                                topk_cube_spo_labels_reshape[:, 1, np.newaxis],
+                                topk_cube_spo_labels_reshape[:, 2, np.newaxis]),
+                               axis=1))
+            self.all_det_boxes[i].append(np.repeat(
+                np.concatenate((det_boxes_sbj[:, np.newaxis, :],
+                                det_boxes_obj[:, np.newaxis, :]),
+                               axis=1), sbj_k * rel_k * obj_k, axis=0))
+            self.all_gt_labels[i].append(
+                np.concatenate((gt_labels_sbj[:, np.newaxis],
+                                gt_labels_rel[:, np.newaxis],
+                                gt_labels_obj[:, np.newaxis]),
+                               axis=1))
+            self.all_gt_boxes[i].append(
+                np.concatenate((gt_boxes_sbj[:, np.newaxis, :],
+                                gt_boxes_obj[:, np.newaxis, :]),
+                               axis=1))
+
+        return detections_results_image
+
