@@ -116,20 +116,6 @@ def test():
 
     logger.info('Testing has successfully finished...exiting!')
 
-
-def load_pickle(pickle_file):
-    try:
-        with open(pickle_file, 'rb') as f:
-            pickle_data = pickle.load(f)
-    except UnicodeDecodeError as e:
-        with open(pickle_file, 'rb') as f:
-            pickle_data = pickle.load(f, encoding='latin1')
-    except Exception as e:
-        print('Unable to load data ', pickle_file, ':', e)
-        raise
-    return pickle_data
-
-
 def test_enriched(split, save=False):
     if cfg.MODEL.WEAK_LABELS:
         detections_path = 'checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_no_xpypxn/{}/reldn_detections_w.pkl'.format(
@@ -140,7 +126,10 @@ def test_enriched(split, save=False):
 
     detections = load_pickle(detections_path)
     total_test_iters = len(detections['image_idx'])
-    test_evaluator = evaluator_rel.Evaluator()
+    test_evaluator = evaluator_rel.Evaluator(
+        split=cfg.TEST.DATA_TYPE,
+        roidb_size=total_test_iters)
+
     logger.info('Test epoch iters: {}'.format(total_test_iters))
 
     accumulated_accs = {}
@@ -220,6 +209,20 @@ def test_enriched(split, save=False):
     logger.info('Testing has successfully finished...exiting!')
 
     return accumulated_accs, detections_results
+
+
+def load_pickle(pickle_file):
+    try:
+        with open(pickle_file, 'rb') as f:
+            pickle_data = pickle.load(f)
+    except UnicodeDecodeError as e:
+        with open(pickle_file, 'rb') as f:
+            pickle_data = pickle.load(f, encoding='latin1')
+    except Exception as e:
+        print('Unable to load data ', pickle_file, ':', e)
+        raise
+    return pickle_data
+
 
 
 if __name__ == '__main__':
