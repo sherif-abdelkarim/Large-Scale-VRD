@@ -30,6 +30,7 @@ import utils.metrics_rel as metrics
 from utils import helpers_rel
 from utils import checkpoints_rel
 from utils import evaluator_rel
+import pickle
 
 from caffe2.python import workspace
 
@@ -130,8 +131,13 @@ def load_pickle(pickle_file):
 
 
 def test_enriched(split, save=False):
-    detections_path = 'checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_no_xpypxn/{}/reldn_detections.pkl'.format(
+    if cfg.MODEL.WEAK_LABELS:
+        detections_path = 'checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_no_xpypxn/{}/reldn_detections_w.pkl'.format(
         split)
+    else:
+        detections_path = 'checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_no_xpypxn/{}/reldn_detections.pkl'.format(
+        split)
+
     detections = load_pickle(detections_path)
     total_test_iters = len(detections['image_idx'])
     test_evaluator = evaluator_rel.Evaluator()
