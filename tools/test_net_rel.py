@@ -31,7 +31,6 @@ from utils import helpers_rel
 from utils import checkpoints_rel
 from utils import evaluator_rel
 import pickle
-from tqdm import tqdm
 
 from caffe2.python import workspace
 
@@ -154,7 +153,7 @@ def test_enriched(split, save=False):
 
     test_evaluator.reset()
     print("=> Evaluating results..")
-    for test_iter in tqdm(range(0, total_test_iters)):
+    for test_iter in range(0, total_test_iters):
         image_idx = detections['image_idx'][test_iter]
         image_id = detections['image_id'][test_iter]
         gt_labels_sbj = detections['gt_labels_sbj'][test_iter]
