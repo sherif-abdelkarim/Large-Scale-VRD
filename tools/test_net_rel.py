@@ -205,7 +205,7 @@ def test_enriched(split, save=False):
         with open('./accuracies/accuracies_{}.json'.format(split), 'w') as fp:
             json.dump(accumulated_accs, fp)
         with open('./accuracies/detections_results_{}.json'.format(split), 'w') as fp:
-            json.dump(detections_results, fp)
+            pickle.dump(detections_results, fp, pickle.HIGHEST_PROTOCOL)
 
     logger.info('Testing has successfully finished...exiting!')
 
