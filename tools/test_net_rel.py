@@ -31,6 +31,7 @@ from utils import helpers_rel
 from utils import checkpoints_rel
 from utils import evaluator_rel
 import pickle
+from tqdm import tqdm
 
 from caffe2.python import workspace
 
@@ -237,4 +238,5 @@ if __name__ == '__main__':
     logger.info('Testing with config:')
     logger.info(pprint.pformat(cfg))
 
-    test()
+    # test()
+    test_enriched(cfg.TEST.DATA_TYPE, save=True)
