@@ -329,48 +329,101 @@ class Evaluator():
             if True:
                 self.spo_cnt += len(gt_labels_sbj)
                 for ind in range(len(gt_labels_sbj)):
-                    if gt_labels_sbj[ind] in det_labels_sbj[ind, :1] and \
-                            gt_labels_obj[ind] in det_labels_obj[ind, :1] and \
-                            gt_labels_rel[ind] in det_labels_rel[ind, :1]:
-                        self.tri_top1_cnt += 1
-                    if gt_labels_sbj[ind] in det_labels_sbj[ind, :1]:
-                        self.sbj_top1_cnt += 1
-                    if gt_labels_obj[ind] in det_labels_obj[ind, :1]:
-                        self.obj_top1_cnt += 1
-                    if gt_labels_rel[ind] in det_labels_rel[ind, :1]:
-                        self.rel_top1_cnt += 1
+                    if cfg.TEST.ISA:
+                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1]) and \
+                                is_in(gt_labels_obj[ind], det_labels_obj[ind, :1]) and \
+                                is_in(gt_labels_rel[ind], det_labels_rel[ind, :1]):
+                            self.tri_top1_cnt += 1
+                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1]):
+                            self.sbj_top1_cnt += 1
+                        if is_in(gt_labels_obj[ind], det_labels_obj[ind, :1]):
+                            self.obj_top1_cnt += 1
+                        if is_in(gt_labels_rel[ind], det_labels_rel[ind, :1]):
+                            self.rel_top1_cnt += 1
 
-                    if gt_labels_sbj[ind] in det_labels_sbj[ind, :5] and \
-                            gt_labels_obj[ind] in det_labels_obj[ind, :5] and \
-                            gt_labels_rel[ind] in det_labels_rel[ind, :5]:
-                        self.tri_top5_cnt += 1
-                    if gt_labels_sbj[ind] in det_labels_sbj[ind, :5]:
-                        self.sbj_top5_cnt += 1
-                    if gt_labels_obj[ind] in det_labels_obj[ind, :5]:
-                        self.obj_top5_cnt += 1
-                    if gt_labels_rel[ind] in det_labels_rel[ind, :5]:
-                        self.rel_top5_cnt += 1
+                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5]) and \
+                                is_in(gt_labels_obj[ind], det_labels_obj[ind, :5]) and \
+                                is_in(gt_labels_rel[ind], det_labels_rel[ind, :5]):
+                            self.tri_top5_cnt += 1
+                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5]):
+                            self.sbj_top5_cnt += 1
+                        if is_in(gt_labels_obj[ind], det_labels_obj[ind, :5]):
+                            self.obj_top5_cnt += 1
+                        if is_in(gt_labels_rel[ind], det_labels_rel[ind, :5]):
+                            self.rel_top5_cnt += 1
 
-                    if gt_labels_sbj[ind] in det_labels_sbj[ind, :10] and \
-                            gt_labels_obj[ind] in det_labels_obj[ind, :10] and \
-                            gt_labels_rel[ind] in det_labels_rel[ind, :10]:
-                        self.tri_top10_cnt += 1
-                    if gt_labels_sbj[ind] in det_labels_sbj[ind, :10]:
-                        self.sbj_top10_cnt += 1
-                    if gt_labels_obj[ind] in det_labels_obj[ind, :10]:
-                        self.obj_top10_cnt += 1
-                    if gt_labels_rel[ind] in det_labels_rel[ind, :10]:
-                        self.rel_top10_cnt += 1
+                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10]) and \
+                                is_in(gt_labels_obj[ind], det_labels_obj[ind, :10]) and \
+                                is_in(gt_labels_rel[ind], det_labels_rel[ind, :10]):
+                            self.tri_top10_cnt += 1
+                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10]):
+                            self.sbj_top10_cnt += 1
+                        if is_in(gt_labels_obj[ind], det_labels_obj[ind, :10]):
+                            self.obj_top10_cnt += 1
+                        if is_in(gt_labels_rel[ind], det_labels_rel[ind, :10]):
+                            self.rel_top10_cnt += 1
 
-                    if cfg.MODEL.WEAK_LABELS:
-                        if (det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[ind] in det_labels_sbj[ind, :1]) and (det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[ind] in det_labels_obj[ind, :1]) and (det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[ind] in det_labels_rel[ind, :1]):
-                            self.tri_top1_w_cnt += 1
-                        if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[ind] in det_labels_sbj[ind, :1]:
-                            self.sbj_top1_w_cnt += 1
-                        if det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[ind] in det_labels_obj[ind, :1]:
-                            self.obj_top1_w_cnt += 1
-                        if det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[ind] in det_labels_rel[ind, :1]:
-                            self.rel_top1_w_cnt += 1
+                        if cfg.MODEL.WEAK_LABELS:
+                            if (is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind]) or is_in(gt_labels_sbj[
+                                ind], det_labels_sbj[ind, :1])) and (
+                                    is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind]) or is_in(gt_labels_obj[
+                                ind], det_labels_obj[ind, :1])) and (
+                                    is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind]) or is_in(gt_labels_rel[
+                                ind], det_labels_rel[ind, :1])):
+                                self.tri_top1_w_cnt += 1
+                            if is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind]) or is_in(gt_labels_sbj[
+                                ind], det_labels_sbj[ind, :1]):
+                                self.sbj_top1_w_cnt += 1
+                            if is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind]) or is_in(gt_labels_obj[
+                                ind], det_labels_obj[ind, :1]):
+                                self.obj_top1_w_cnt += 1
+                            if is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind]) or is_in(gt_labels_rel[
+                                ind], det_labels_rel[ind, :1]):
+                                self.rel_top1_w_cnt += 1
+
+                    else:
+                        if gt_labels_sbj[ind] in det_labels_sbj[ind, :1] and \
+                                gt_labels_obj[ind] in det_labels_obj[ind, :1] and \
+                                gt_labels_rel[ind] in det_labels_rel[ind, :1]:
+                            self.tri_top1_cnt += 1
+                        if gt_labels_sbj[ind] in det_labels_sbj[ind, :1]:
+                            self.sbj_top1_cnt += 1
+                        if gt_labels_obj[ind] in det_labels_obj[ind, :1]:
+                            self.obj_top1_cnt += 1
+                        if gt_labels_rel[ind] in det_labels_rel[ind, :1]:
+                            self.rel_top1_cnt += 1
+
+                        if gt_labels_sbj[ind] in det_labels_sbj[ind, :5] and \
+                                gt_labels_obj[ind] in det_labels_obj[ind, :5] and \
+                                gt_labels_rel[ind] in det_labels_rel[ind, :5]:
+                            self.tri_top5_cnt += 1
+                        if gt_labels_sbj[ind] in det_labels_sbj[ind, :5]:
+                            self.sbj_top5_cnt += 1
+                        if gt_labels_obj[ind] in det_labels_obj[ind, :5]:
+                            self.obj_top5_cnt += 1
+                        if gt_labels_rel[ind] in det_labels_rel[ind, :5]:
+                            self.rel_top5_cnt += 1
+
+                        if gt_labels_sbj[ind] in det_labels_sbj[ind, :10] and \
+                                gt_labels_obj[ind] in det_labels_obj[ind, :10] and \
+                                gt_labels_rel[ind] in det_labels_rel[ind, :10]:
+                            self.tri_top10_cnt += 1
+                        if gt_labels_sbj[ind] in det_labels_sbj[ind, :10]:
+                            self.sbj_top10_cnt += 1
+                        if gt_labels_obj[ind] in det_labels_obj[ind, :10]:
+                            self.obj_top10_cnt += 1
+                        if gt_labels_rel[ind] in det_labels_rel[ind, :10]:
+                            self.rel_top10_cnt += 1
+
+                        if cfg.MODEL.WEAK_LABELS:
+                            if (det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[ind] in det_labels_sbj[ind, :1]) and (det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[ind] in det_labels_obj[ind, :1]) and (det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[ind] in det_labels_rel[ind, :1]):
+                                self.tri_top1_w_cnt += 1
+                            if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[ind] in det_labels_sbj[ind, :1]:
+                                self.sbj_top1_w_cnt += 1
+                            if det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[ind] in det_labels_obj[ind, :1]:
+                                self.obj_top1_w_cnt += 1
+                            if det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[ind] in det_labels_rel[ind, :1]:
+                                self.rel_top1_w_cnt += 1
 
 
                     s_correct = gt_labels_sbj[ind] in det_labels_sbj[ind, :self.rank_k]

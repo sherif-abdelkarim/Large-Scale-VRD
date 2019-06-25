@@ -37,6 +37,7 @@ TEST:
   DATA_TYPE: test
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/vg/gt_proposals_test.pkl
   BBOX_REG: False
+  ISA: False
 SOLVER:
   BASE_LR: 0.001
   STEP_SIZES: [125000]
