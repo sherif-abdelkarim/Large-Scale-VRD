@@ -23,12 +23,19 @@ import cPickle as pickle
 
 from core.config_rel import cfg
 from utils import helpers_rel
+from utils import mypylib
 from caffe2.python import workspace
 
 logger = logging.getLogger(__name__)
 
 MIN_OVLP = 0.5
 
+def is_in(word, l):
+    for w in l:
+        if mypylib.isA(word, w)[0] == 1:
+            return True
+    else:
+        return False
 
 class Evaluator():
 
