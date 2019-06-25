@@ -11,8 +11,8 @@ MODEL:
   FC_INIT_STD: 0.01
   ALLOW_INPLACE_SUM: True
   MEMONGER: True
-  WEAK_LABELS: True
-  NUM_WEAK_LABELS: 4
+  WEAK_LABELS: False
+  NUM_WEAK_LABELS: 0
 VISUAL_EMBEDDING:
   WEIGHT_SHARING:  SBJ_OBJ_SHARED #, all_unshared,  sbj_obj_shared, all_unshared
   L2_NORMALIZE: True
@@ -34,9 +34,10 @@ TRAIN:
   EVALUATION_FREQUENCY: 2500  # 50000
 TEST:
   WEIGHTS: checkpoints/vg_wiki_and_relco/latest_final.pkl
-  DATA_TYPE: test
+  DATA_TYPE: val
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/vg/gt_proposals_test.pkl
   BBOX_REG: False
+  ISA: False
 SOLVER:
   BASE_LR: 0.001
   STEP_SIZES: [125000]

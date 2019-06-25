@@ -238,5 +238,5 @@ if __name__ == '__main__':
     logger.info('Testing with config:')
     logger.info(pprint.pformat(cfg))
 
-    # test()
-    test_enriched(cfg.TEST.DATA_TYPE, save=True)
+    test()
+    # test_enriched(cfg.TEST.DATA_TYPE, save=True)
