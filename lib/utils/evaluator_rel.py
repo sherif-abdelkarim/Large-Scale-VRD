@@ -119,6 +119,8 @@ class Evaluator():
             self.all_obj_vis_embds = []
             self.all_prd_vis_embds = []
 
+        self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
+
         self._object_classes = []
         with open(self._data_path + '/object_categories_spo_joined_and_merged.txt') as obj_classes:
             for line in obj_classes:
