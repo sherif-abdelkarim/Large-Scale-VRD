@@ -30,12 +30,8 @@ logger = logging.getLogger(__name__)
 
 MIN_OVLP = 0.5
 
-def is_in(word, l):
-    for w in l:
-        if mypylib.isA(word, w)[0] == 1:
-            return True
-    else:
-        return False
+
+
 
 class Evaluator():
 
@@ -124,6 +120,36 @@ class Evaluator():
             self.all_sbj_vis_embds = []
             self.all_obj_vis_embds = []
             self.all_prd_vis_embds = []
+
+        self._object_classes = []
+        with open(self._data_path + '/object_categories_spo_joined_and_merged.txt') as obj_classes:
+            for line in obj_classes:
+                self._object_classes.append(line[:-1])
+        self._num_object_classes = len(self._object_classes)
+        self._object_class_to_ind = \
+            dict(zip(self._object_classes, range(self._num_object_classes)))
+
+        self._predicate_classes = []
+        with open(self._data_path + '/predicate_categories_spo_joined_and_merged.txt') as prd_classes:
+            for line in prd_classes:
+                self._predicate_classes.append(line[:-1])
+        self._num_predicate_classes = len(self._predicate_classes)
+        self._predicate_class_to_ind = \
+            dict(zip(self._predicate_classes, range(self._num_predicate_classes)))
+
+    def is_in(self, word_id, l_ids, type):
+        if type == 'v':
+            word = self._predicate_classes[word_id]
+            l = [self._predicate_classes[l_id] for l_id in l_ids]
+        if type == 'o':
+            word = self._object_classes[word_id]
+            l = [self._object_classes[l_id] for l_id in l_ids]
+
+        for w in l:
+            if mypylib.isA(word, w)[0] == 1:
+                return True
+        else:
+            return False
 
     def reset(self):
         # this should clear out all the metrics computed so far except the
@@ -330,55 +356,55 @@ class Evaluator():
                 self.spo_cnt += len(gt_labels_sbj)
                 for ind in range(len(gt_labels_sbj)):
                     if cfg.TEST.ISA:
-                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1]) and \
-                                is_in(gt_labels_obj[ind], det_labels_obj[ind, :1]) and \
-                                is_in(gt_labels_rel[ind], det_labels_rel[ind, :1]):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1], type='o') and \
+                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :1], type='o') and \
+                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :1], type='v'):
                             self.tri_top1_cnt += 1
-                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1]):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1], type='o'):
                             self.sbj_top1_cnt += 1
-                        if is_in(gt_labels_obj[ind], det_labels_obj[ind, :1]):
+                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :1], type='o'):
                             self.obj_top1_cnt += 1
-                        if is_in(gt_labels_rel[ind], det_labels_rel[ind, :1]):
+                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :1], type='v'):
                             self.rel_top1_cnt += 1
 
-                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5]) and \
-                                is_in(gt_labels_obj[ind], det_labels_obj[ind, :5]) and \
-                                is_in(gt_labels_rel[ind], det_labels_rel[ind, :5]):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5], type='o') and \
+                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :5], type='o') and \
+                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :5], type='v'):
                             self.tri_top5_cnt += 1
-                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5]):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5], type='o'):
                             self.sbj_top5_cnt += 1
-                        if is_in(gt_labels_obj[ind], det_labels_obj[ind, :5]):
+                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :5], type='o'):
                             self.obj_top5_cnt += 1
-                        if is_in(gt_labels_rel[ind], det_labels_rel[ind, :5]):
+                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :5], type='v'):
                             self.rel_top5_cnt += 1
 
-                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10]) and \
-                                is_in(gt_labels_obj[ind], det_labels_obj[ind, :10]) and \
-                                is_in(gt_labels_rel[ind], det_labels_rel[ind, :10]):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10], type='o') and \
+                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :10], type='o') and \
+                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :10], type='v'):
                             self.tri_top10_cnt += 1
-                        if is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10]):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10], type='o'):
                             self.sbj_top10_cnt += 1
-                        if is_in(gt_labels_obj[ind], det_labels_obj[ind, :10]):
+                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :10], type='o'):
                             self.obj_top10_cnt += 1
-                        if is_in(gt_labels_rel[ind], det_labels_rel[ind, :10]):
+                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :10], type='v'):
                             self.rel_top10_cnt += 1
 
                         if cfg.MODEL.WEAK_LABELS:
-                            if (is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind]) or is_in(gt_labels_sbj[
-                                ind], det_labels_sbj[ind, :1])) and (
-                                    is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind]) or is_in(gt_labels_obj[
-                                ind], det_labels_obj[ind, :1])) and (
-                                    is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind]) or is_in(gt_labels_rel[
-                                ind], det_labels_rel[ind, :1])):
+                            if (self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], type='o') or self.is_in(gt_labels_sbj[
+                                ind], det_labels_sbj[ind, :1], type='o')) and (
+                                    self.is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind], type='o') or self.is_in(gt_labels_obj[
+                                ind], det_labels_obj[ind, :1], type='o')) and (
+                                    self.is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind], type='v') or self.is_in(gt_labels_rel[
+                                ind], det_labels_rel[ind, :1], type='v')):
                                 self.tri_top1_w_cnt += 1
-                            if is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind]) or is_in(gt_labels_sbj[
-                                ind], det_labels_sbj[ind, :1]):
+                            if self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], type='o') or self.is_in(gt_labels_sbj[
+                                ind], det_labels_sbj[ind, :1], type='o'):
                                 self.sbj_top1_w_cnt += 1
-                            if is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind]) or is_in(gt_labels_obj[
-                                ind], det_labels_obj[ind, :1]):
+                            if self.is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind]) or self.is_in(gt_labels_obj[
+                                ind], det_labels_obj[ind, :1], type='o'):
                                 self.obj_top1_w_cnt += 1
-                            if is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind]) or is_in(gt_labels_rel[
-                                ind], det_labels_rel[ind, :1]):
+                            if self.is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind]) or self.is_in(gt_labels_rel[
+                                ind], det_labels_rel[ind, :1], type='v'):
                                 self.rel_top1_w_cnt += 1
 
                     else:
