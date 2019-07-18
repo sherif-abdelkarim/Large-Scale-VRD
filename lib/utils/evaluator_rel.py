@@ -137,11 +137,11 @@ class Evaluator():
         self._predicate_class_to_ind = \
             dict(zip(self._predicate_classes, range(self._num_predicate_classes)))
 
-    def is_in(self, word_id, l_ids, type):
-        if type == 'v':
+    def is_in(self, word_id, l_ids, word_type):
+        if word_type == 'v':
             word = self._predicate_classes[word_id]
             l = [self._predicate_classes[l_id] for l_id in l_ids]
-        if type == 'o':
+        if word_type == 'o':
             word = self._object_classes[word_id]
             l = [self._object_classes[l_id] for l_id in l_ids]
 
@@ -355,62 +355,62 @@ class Evaluator():
                 self.spo_cnt += len(gt_labels_sbj)
                 for ind in range(len(gt_labels_sbj)):
                     if cfg.TEST.ISA:
-                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1], type='o') and \
-                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :1], type='o') and \
-                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :1], type='v'):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1], word_type='o') and \
+                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :1], word_type='o') and \
+                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :1], word_type='v'):
                             self.tri_top1_cnt += 1
-                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1], type='o'):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :1], word_type='o'):
                             self.sbj_top1_cnt += 1
-                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :1], type='o'):
+                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :1], word_type='o'):
                             self.obj_top1_cnt += 1
-                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :1], type='v'):
+                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :1], word_type='v'):
                             self.rel_top1_cnt += 1
 
-                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5], type='o') and \
-                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :5], type='o') and \
-                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :5], type='v'):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5], word_type='o') and \
+                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :5], word_type='o') and \
+                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :5], word_type='v'):
                             self.tri_top5_cnt += 1
-                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5], type='o'):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :5], word_type='o'):
                             self.sbj_top5_cnt += 1
-                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :5], type='o'):
+                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :5], word_type='o'):
                             self.obj_top5_cnt += 1
-                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :5], type='v'):
+                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :5], word_type='v'):
                             self.rel_top5_cnt += 1
 
-                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10], type='o') and \
-                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :10], type='o') and \
-                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :10], type='v'):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10], word_type='o') and \
+                                self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :10], word_type='o') and \
+                                self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :10], word_type='v'):
                             self.tri_top10_cnt += 1
-                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10], type='o'):
+                        if self.is_in(gt_labels_sbj[ind], det_labels_sbj[ind, :10], word_type='o'):
                             self.sbj_top10_cnt += 1
-                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :10], type='o'):
+                        if self.is_in(gt_labels_obj[ind], det_labels_obj[ind, :10], word_type='o'):
                             self.obj_top10_cnt += 1
-                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :10], type='v'):
+                        if self.is_in(gt_labels_rel[ind], det_labels_rel[ind, :10], word_type='v'):
                             self.rel_top10_cnt += 1
 
                         if cfg.MODEL.WEAK_LABELS:
-                            if (self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], type='o') or self.is_in(
+                            if (self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], word_type='o') or self.is_in(
                                     gt_labels_sbj[
-                                        ind], det_labels_sbj[ind, :1], type='o')) and (
+                                        ind], det_labels_sbj[ind, :1], word_type='o')) and (
                                     self.is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind],
-                                               type='o') or self.is_in(gt_labels_obj[
+                                               word_type='o') or self.is_in(gt_labels_obj[
                                                                            ind], det_labels_obj[ind, :1],
-                                                                       type='o')) and (
+                                                                       word_type='o')) and (
                                     self.is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind],
-                                               type='v') or self.is_in(gt_labels_rel[
-                                                                           ind], det_labels_rel[ind, :1], type='v')):
+                                               word_type='v') or self.is_in(gt_labels_rel[
+                                                                           ind], det_labels_rel[ind, :1], word_type='v')):
                                 self.tri_top1_w_cnt += 1
-                            if self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], type='o') or self.is_in(
+                            if self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], word_type='o') or self.is_in(
                                     gt_labels_sbj[
-                                        ind], det_labels_sbj[ind, :1], type='o'):
+                                        ind], det_labels_sbj[ind, :1], word_type='o'):
                                 self.sbj_top1_w_cnt += 1
                             if self.is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind]) or self.is_in(
                                     gt_labels_obj[
-                                        ind], det_labels_obj[ind, :1], type='o'):
+                                        ind], det_labels_obj[ind, :1], word_type='o'):
                                 self.obj_top1_w_cnt += 1
                             if self.is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind]) or self.is_in(
                                     gt_labels_rel[
-                                        ind], det_labels_rel[ind, :1], type='v'):
+                                        ind], det_labels_rel[ind, :1], word_type='v'):
                                 self.rel_top1_w_cnt += 1
 
                     else:
