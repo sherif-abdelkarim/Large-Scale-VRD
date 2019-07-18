@@ -31,8 +31,6 @@ logger = logging.getLogger(__name__)
 MIN_OVLP = 0.5
 
 
-
-
 class Evaluator():
 
     def __init__(self, split, roidb_size):
@@ -179,7 +177,6 @@ class Evaluator():
             self.sbj_top1_w_acc = 0.0
             self.obj_top1_w_acc = 0.0
             self.rel_top1_w_acc = 0.0
-
 
         self.tri_top1_acc = 0.0
         self.tri_top5_acc = 0.0
@@ -390,21 +387,28 @@ class Evaluator():
                             self.rel_top10_cnt += 1
 
                         if cfg.MODEL.WEAK_LABELS:
-                            if (self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], type='o') or self.is_in(gt_labels_sbj[
-                                ind], det_labels_sbj[ind, :1], type='o')) and (
-                                    self.is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind], type='o') or self.is_in(gt_labels_obj[
-                                ind], det_labels_obj[ind, :1], type='o')) and (
-                                    self.is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind], type='v') or self.is_in(gt_labels_rel[
-                                ind], det_labels_rel[ind, :1], type='v')):
+                            if (self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], type='o') or self.is_in(
+                                    gt_labels_sbj[
+                                        ind], det_labels_sbj[ind, :1], type='o')) and (
+                                    self.is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind],
+                                               type='o') or self.is_in(gt_labels_obj[
+                                                                           ind], det_labels_obj[ind, :1],
+                                                                       type='o')) and (
+                                    self.is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind],
+                                               type='v') or self.is_in(gt_labels_rel[
+                                                                           ind], det_labels_rel[ind, :1], type='v')):
                                 self.tri_top1_w_cnt += 1
-                            if self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], type='o') or self.is_in(gt_labels_sbj[
-                                ind], det_labels_sbj[ind, :1], type='o'):
+                            if self.is_in(det_labels_sbj[ind, 0:1], gt_labels_sbj_w[:, ind], type='o') or self.is_in(
+                                    gt_labels_sbj[
+                                        ind], det_labels_sbj[ind, :1], type='o'):
                                 self.sbj_top1_w_cnt += 1
-                            if self.is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind]) or self.is_in(gt_labels_obj[
-                                ind], det_labels_obj[ind, :1], type='o'):
+                            if self.is_in(det_labels_obj[ind, 0:1], gt_labels_obj_w[:, ind]) or self.is_in(
+                                    gt_labels_obj[
+                                        ind], det_labels_obj[ind, :1], type='o'):
                                 self.obj_top1_w_cnt += 1
-                            if self.is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind]) or self.is_in(gt_labels_rel[
-                                ind], det_labels_rel[ind, :1], type='v'):
+                            if self.is_in(det_labels_rel[ind, 0:1], gt_labels_rel_w[:, ind]) or self.is_in(
+                                    gt_labels_rel[
+                                        ind], det_labels_rel[ind, :1], type='v'):
                                 self.rel_top1_w_cnt += 1
 
                     else:
@@ -442,15 +446,22 @@ class Evaluator():
                             self.rel_top10_cnt += 1
 
                         if cfg.MODEL.WEAK_LABELS:
-                            if (det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[ind] in det_labels_sbj[ind, :1]) and (det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[ind] in det_labels_obj[ind, :1]) and (det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[ind] in det_labels_rel[ind, :1]):
+                            if (det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[
+                                ind] in det_labels_sbj[ind, :1]) and (
+                                    det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[
+                                ind] in det_labels_obj[ind, :1]) and (
+                                    det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[
+                                ind] in det_labels_rel[ind, :1]):
                                 self.tri_top1_w_cnt += 1
-                            if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[ind] in det_labels_sbj[ind, :1]:
+                            if det_labels_sbj[ind, 0:1] in gt_labels_sbj_w[:, ind] or gt_labels_sbj[
+                                ind] in det_labels_sbj[ind, :1]:
                                 self.sbj_top1_w_cnt += 1
-                            if det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[ind] in det_labels_obj[ind, :1]:
+                            if det_labels_obj[ind, 0:1] in gt_labels_obj_w[:, ind] or gt_labels_obj[
+                                ind] in det_labels_obj[ind, :1]:
                                 self.obj_top1_w_cnt += 1
-                            if det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[ind] in det_labels_rel[ind, :1]:
+                            if det_labels_rel[ind, 0:1] in gt_labels_rel_w[:, ind] or gt_labels_rel[
+                                ind] in det_labels_rel[ind, :1]:
                                 self.rel_top1_w_cnt += 1
-
 
                     s_correct = gt_labels_sbj[ind] in det_labels_sbj[ind, :self.rank_k]
                     p_correct = gt_labels_rel[ind] in det_labels_rel[ind, :self.rank_k]
@@ -932,4 +943,3 @@ class Evaluator():
                                axis=1))
 
         return detections_results_image
-
