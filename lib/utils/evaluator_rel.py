@@ -26,6 +26,8 @@ from utils import helpers_rel
 from utils import mypylib
 from caffe2.python import workspace
 
+import json
+
 logger = logging.getLogger(__name__)
 
 MIN_OVLP = 0.5
@@ -137,8 +139,8 @@ class Evaluator():
         self._predicate_class_to_ind = \
             dict(zip(self._predicate_classes, range(self._num_predicate_classes)))
 
-        with open(self._data_path + '/words_synsets.pkl', 'rb') as f:
-            self._word_to_synset = pickle.load(f)
+        with open(self._data_path + '/words_synsets.json', 'r') as f:
+            self._word_to_synset = json.load(f)
 
 
 
