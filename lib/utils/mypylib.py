@@ -4,7 +4,7 @@ from nltk.corpus import words
 
 english_vocab = set(w.lower() for w in words.words())
 # import enchant
-d = enchant.Dict("en_US")
+# d = enchant.Dict("en_US")
 
 
 wnl = WordNetLemmatizer()
