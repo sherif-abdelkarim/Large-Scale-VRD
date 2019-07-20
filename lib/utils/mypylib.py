@@ -4,7 +4,7 @@ from nltk.corpus import words
 
 english_vocab = set(w.lower() for w in words.words())
 # import enchant
-# d = enchant.Dict("en_US")
+d = enchant.Dict("en_US")
 
 
 wnl = WordNetLemmatizer()
@@ -63,4 +63,3 @@ def isA (sense1, sense2):
 
 # print get_noun_synsets_wordnet('dog')
 
-    

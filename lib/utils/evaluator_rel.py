@@ -137,16 +137,21 @@ class Evaluator():
         self._predicate_class_to_ind = \
             dict(zip(self._predicate_classes, range(self._num_predicate_classes)))
 
+        with open(self._data_path + '/words_synsets.pkl', 'rb') as f:
+            self._word_to_synset = pickle.load(f)
+
+
+
     def is_in(self, word_id, l_ids, word_type):
         if word_type == 'v':
-            word = self._predicate_classes[word_id]
-            l = [self._predicate_classes[l_id] for l_id in l_ids]
+            synset = self._word_to_synset['verb'][self._predicate_classes[word_id]]
+            l = [self._word_to_synset['verb'][self._predicate_classes[l_id]] for l_id in l_ids]
         if word_type == 'o':
-            word = self._object_classes[word_id]
-            l = [self._object_classes[l_id] for l_id in l_ids]
+            synset = self._word_to_synset['noun'][self._object_classes[word_id]]
+            l = [self._word_to_synset['noun'][self._object_classes[l_id]] for l_id in l_ids]
 
-        for w in l:
-            if mypylib.isA(word, w)[0] == 1:
+        for s in l:
+            if mypylib.isA(synset, s)[0] == 1:
                 return True
         else:
             return False
