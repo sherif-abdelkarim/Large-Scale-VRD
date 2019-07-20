@@ -146,11 +146,11 @@ class Evaluator():
 
     def is_in(self, word_id, l_ids, word_type):
         if word_type == 'v':
-            synset = self._word_to_synset['verb'][self._predicate_classes[word_id]]
-            l = [self._word_to_synset['verb'][self._predicate_classes[l_id]] for l_id in l_ids]
+            synset = self._word_to_synset['verbs'][self._predicate_classes[word_id]]
+            l = [self._word_to_synset['verbs'][self._predicate_classes[l_id]] for l_id in l_ids]
         if word_type == 'o':
-            synset = self._word_to_synset['noun'][self._object_classes[word_id]]
-            l = [self._word_to_synset['noun'][self._object_classes[l_id]] for l_id in l_ids]
+            synset = self._word_to_synset['nouns'][self._object_classes[word_id]]
+            l = [self._word_to_synset['nouns'][self._object_classes[l_id]] for l_id in l_ids]
 
         for s in l:
             if mypylib.isA(synset, s)[0] == 1:
