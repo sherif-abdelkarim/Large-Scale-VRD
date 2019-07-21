@@ -53,6 +53,8 @@ def isA (sense1, sense2):
     wn_sense1 =  wn.synset(sense1);
     wn_sense2 =  wn.synset(sense2);
     s_hypernyms = wn_sense1.lowest_common_hypernyms(wn_sense2)
+    if len(s_hypernyms) == 0:
+        return 0, 0
     s_hypernym = s_hypernyms[0]
     if wn_sense1==s_hypernym:
         return 1, 0
