@@ -153,8 +153,11 @@ class Evaluator():
             l = [self._word_to_synset['nouns'][self._object_classes[l_id]] for l_id in l_ids]
 
         for s in l:
-            if mypylib.isA(synset, s)[0] == 1:
-                return True
+            try:
+                if mypylib.isA(synset, s)[0] == 1:
+                    return True
+            except KeyError:
+                continue
         else:
             return False
 
