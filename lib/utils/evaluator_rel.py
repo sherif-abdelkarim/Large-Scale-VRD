@@ -145,6 +145,9 @@ class Evaluator():
 
 
     def is_in(self, word_id, l_ids, word_type):
+        if word_id in l_ids:
+            return True
+
         if word_type == 'v':
             try:
                 synset = self._word_to_synset['verbs'][self._predicate_classes[word_id]]
@@ -156,7 +159,7 @@ class Evaluator():
             for l_id in l_ids:
                 try:
                     l.append(self._word_to_synset['verbs'][self._predicate_classes[l_id]])
-                except:
+                except KeyError:
                     continue
         if word_type == 'o':
             try:
@@ -168,7 +171,7 @@ class Evaluator():
             for l_id in l_ids:
                 try:
                     l.append(self._word_to_synset['nouns'][self._predicate_classes[l_id]])
-                except:
+                except KeyError:
                     continue
 
         for s in l:
