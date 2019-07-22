@@ -170,7 +170,7 @@ class Evaluator():
             l = []
             for l_id in l_ids:
                 try:
-                    l.append(self._word_to_synset['nouns'][self._predicate_classes[l_id]])
+                    l.append(self._word_to_synset['nouns'][self._object_classes[l_id]])
                 except KeyError:
                     continue
 
