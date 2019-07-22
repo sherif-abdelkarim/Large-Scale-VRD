@@ -32,7 +32,10 @@ class vg_wiki_and_relco(imdb_rel):
     def __init__(self, image_set):
         imdb_rel.__init__(self, 'vg_wiki_and_relco_' + image_set)
         self._image_set = image_set
-        self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
+        if cfg.DATASET == 'GVQA':
+            self._data_path = os.path.join(cfg.DATA_DIR, 'GVQA')
+        else:
+            self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
 
         self._object_classes = ['__background__']
         with open(self._data_path + '/object_categories_spo_joined_and_merged.txt') as obj_classes:
