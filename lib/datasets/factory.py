@@ -22,6 +22,10 @@ for split in ['train', 'val', 'test']:
     name = 'vg_wiki_and_relco_{}'.format(split)
     __sets[name] = (lambda split=split: vg_wiki_and_relco(split))
 
+for split in ['train', 'val']:
+    name = 'gvqa_{}'.format(split)
+    __sets[name] = (lambda split=split: vg_wiki_and_relco(split))
+
 name = 'vg_wiki_and_relco_lan'
 __sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
 
