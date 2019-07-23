@@ -166,16 +166,17 @@ class vg_wiki_and_relco(imdb_rel):
         with open(rel_data_path) as f:
             all_rels = json.load(f)
 
-        rel_w_data_path = os.path.join(
-            self._data_path, 'relationships_weak_labels_top4.json')
-        with open(rel_w_data_path) as f:
-            rels_w = json.load(f)
+        if cfg.MODEL.WEAK_LABELS:
+            rel_w_data_path = os.path.join(
+                self._data_path, 'relationships_weak_labels_top4.json')
+            with open(rel_w_data_path) as f:
+                rels_w = json.load(f)
 
         all_rels_map = {}
         for cnt, rel in enumerate(all_rels):
             all_rels_map[rel['image_id']] = cnt
 
-        if cfg.MODEL.WEAK_LABELS: # temporarily until flag is passed from input command
+        if cfg.MODEL.WEAK_LABELS:
             gt_roidb = \
                 [self._load_vg_annotation_with_weak_labels(all_rels[all_rels_map[index]], rels_w[all_rels_map[index]],
                                                            index, cnt, len(self.image_index))
