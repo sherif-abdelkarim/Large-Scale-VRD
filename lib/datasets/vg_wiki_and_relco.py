@@ -23,7 +23,7 @@ import gensim
 # from autocorrect import spell
 from numpy import linalg as la
 import PIL
-
+import time
 import logging
 logger = logging.getLogger(__name__)
 
@@ -146,6 +146,7 @@ class vg_wiki_and_relco(imdb_rel):
         for key in self.model.vocab.keys():
             new_key = key.lower()
             self.model.vocab[new_key] = self.model.vocab.pop(key)
+        self.model.vocab['t-shirt'] = self.model.vocab['t_shirt']
         print('Wiki words converted to lowercase.')
 
         # Load gt data from scratch
@@ -200,6 +201,7 @@ class vg_wiki_and_relco(imdb_rel):
         """
 
         print("Loading image %d/%d..." % (cnt + 1, length))
+        start_time = time.time()
 
         assert index == img_rels['image_id']  # sanity check
 
@@ -233,8 +235,8 @@ class vg_wiki_and_relco(imdb_rel):
             (num_rels, cfg.INPUT_LANG_EMBEDDING_DIM), dtype=np.float32)
         prd_vecs = np.zeros(
             (num_rels, cfg.INPUT_LANG_EMBEDDING_DIM), dtype=np.float32)
-
         # Load object bounding boxes into a data frame.
+        print('Num rels:', num_rels)
         for ix, rel in enumerate(img_rels['relationships']):
             sbj = rel['subject']
             obj = rel['object']
@@ -352,7 +354,7 @@ class vg_wiki_and_relco(imdb_rel):
         sbj_overlaps = scipy.sparse.csr_matrix(sbj_overlaps)
         obj_overlaps = scipy.sparse.csr_matrix(obj_overlaps)
         rel_overlaps = scipy.sparse.csr_matrix(rel_overlaps)
-
+        print('Elapsed time:', time.time() - start_time)
         return {'sbj_boxes': sbj_boxes,
                 'obj_boxes': obj_boxes,
                 'rel_boxes': rel_boxes,
@@ -379,7 +381,6 @@ class vg_wiki_and_relco(imdb_rel):
         """
 
         print("Loading image %d/%d..." % (cnt + 1, length))
-
         assert index == img_rels['image_id']  # sanity check
 
         num_rels = len(img_rels['relationships'])
