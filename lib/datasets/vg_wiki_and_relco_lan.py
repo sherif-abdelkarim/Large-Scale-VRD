@@ -24,7 +24,10 @@ logger = logging.getLogger(__name__)
 
 class vg_wiki_and_relco_lan():
     def __init__(self):
-        self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
+        if cfg.DATASET == 'gvqa':
+            self._data_path = os.path.join(cfg.DATA_DIR, 'GVQA')
+        else:
+            self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
         assert os.path.exists(self._data_path), \
             'Path does not exist: {}'.format(self._data_path)
 
@@ -43,7 +46,8 @@ class vg_wiki_and_relco_lan():
         print(len(self._predicate_categories))
 
         cache_path = osp.abspath(osp.join(cfg.DATA_DIR, 'cache'))
-        cache_file = os.path.join(cache_path, 'vg_wiki_and_relco_gt_landb.pkl')
+        cache_file = os.path.join(cache_path, cfg.DATASET + '_gt_landb.pkl')
+
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 landb = cPickle.load(fid)

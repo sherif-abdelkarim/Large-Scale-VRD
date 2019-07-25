@@ -29,6 +29,9 @@ for split in ['train', 'val']:
 name = 'vg_wiki_and_relco_lan'
 __sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
 
+name = 'gvqa_lan'
+__sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
+
 
 def get_landb(name):
     if name not in __sets_lan.keys():
