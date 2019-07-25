@@ -145,8 +145,11 @@ class vg_wiki_and_relco(imdb_rel):
         # change everything into lowercase
         for key in self.model.vocab.keys():
             new_key = key.lower()
+            # new_key = new_key.replace('-', '_')
             self.model.vocab[new_key] = self.model.vocab.pop(key)
-        self.model.vocab['t-shirt'] = self.model.vocab['t_shirt']
+        # self.model.vocab['t-shirt'] = self.model.vocab['t_shirt']
+        temp_dict = {x.replace('-', '_'): y for x, y in self.model.vocab.items()}
+        self.model.vocab = temp_dict
         print('Wiki words converted to lowercase.')
 
         # Load gt data from scratch
@@ -201,7 +204,6 @@ class vg_wiki_and_relco(imdb_rel):
         """
 
         print("Loading image %d/%d..." % (cnt + 1, length))
-        start_time = time.time()
 
         assert index == img_rels['image_id']  # sanity check
 
@@ -236,7 +238,6 @@ class vg_wiki_and_relco(imdb_rel):
         prd_vecs = np.zeros(
             (num_rels, cfg.INPUT_LANG_EMBEDDING_DIM), dtype=np.float32)
         # Load object bounding boxes into a data frame.
-        print('Num rels:', num_rels)
         for ix, rel in enumerate(img_rels['relationships']):
             sbj = rel['subject']
             obj = rel['object']
@@ -354,7 +355,6 @@ class vg_wiki_and_relco(imdb_rel):
         sbj_overlaps = scipy.sparse.csr_matrix(sbj_overlaps)
         obj_overlaps = scipy.sparse.csr_matrix(obj_overlaps)
         rel_overlaps = scipy.sparse.csr_matrix(rel_overlaps)
-        print('Elapsed time:', time.time() - start_time)
         return {'sbj_boxes': sbj_boxes,
                 'obj_boxes': obj_boxes,
                 'rel_boxes': rel_boxes,

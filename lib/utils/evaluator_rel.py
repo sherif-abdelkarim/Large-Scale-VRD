@@ -176,7 +176,7 @@ class Evaluator():
 
         for s in l:
             try:
-                if mypylib.isA(synset, s)[0] == 1:
+                if mypylib.isA(s, synset) == (1, 1):
                     return True
             except KeyError:
                 continue
