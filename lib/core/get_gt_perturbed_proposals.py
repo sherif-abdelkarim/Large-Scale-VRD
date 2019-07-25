@@ -158,8 +158,8 @@ def get_gt_perturbed_proposals(gt_roidb):
 
         proposals = all_blobs
 
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
 
         with open(proposal_file, 'wb') as fid:
             pickle.dump(proposals, fid, pickle.HIGHEST_PROTOCOL)
