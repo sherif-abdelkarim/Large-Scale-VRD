@@ -148,7 +148,7 @@ class vg_wiki_and_relco(imdb_rel):
             # new_key = new_key.replace('-', '_')
             self.model.vocab[new_key] = self.model.vocab.pop(key)
         # self.model.vocab['t-shirt'] = self.model.vocab['t_shirt']
-        temp_dict = {x.replace('-', '_'): y for x, y in self.model.vocab.items()}
+        temp_dict = {x.replace('_', '-'): y for x, y in self.model.vocab.items()}
         self.model.vocab = temp_dict
         print('Wiki words converted to lowercase.')
 
