@@ -163,6 +163,9 @@ class vg_wiki_and_relco(imdb_rel):
         for key in self.relco_model.wv.vocab.keys():
             new_key = key.lower()
             self.relco_model.wv.vocab[new_key] = self.relco_model.wv.vocab.pop(key)
+        temp_dict = {x.replace('_', '-'): y for x, y in self.relco_model.wv.vocab.items()}
+        self.relco_model.wv.vocab = temp_dict
+
         print('Relco words converted to lowercase.')
 
         rel_data_path = os.path.join(
