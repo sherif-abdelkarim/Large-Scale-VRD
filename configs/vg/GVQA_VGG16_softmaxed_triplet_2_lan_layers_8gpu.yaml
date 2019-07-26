@@ -35,7 +35,7 @@ TRAIN:
 TEST:
   WEIGHTS: checkpoints/gvqa/latest_final.pkl
   DATA_TYPE: val
-  PROPOSAL_FILE: datasets/large_scale_VRD/proposals/vg/gt_proposals_test.pkl
+  PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
   BBOX_REG: False
   ISA: False
 SOLVER:

@@ -18,8 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 def get_gt_val_test_proposals(split, gt_roidb):
-
-    data_name = 'vg'
+    if cfg.DATASET == 'gvqa':
+        data_name = 'gvqa'
+    else:
+        data_name = 'vg'
     proposal_file = os.path.join(
         cfg.DATA_DIR, 'proposals', data_name, 'gt_proposals_' + split + '.pkl')
     if os.path.exists(proposal_file):
