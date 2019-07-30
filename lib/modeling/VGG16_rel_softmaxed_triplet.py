@@ -75,9 +75,9 @@ def create_model(model):
         model.net.ConstantFill([], 'margin_blob_rel', shape=[1], value=rel_margin)
         model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
 
-        model.net.ConstantFill([], 'hubness_blob_sbj', shape=[1], value=1.0 / 53304)
-        model.net.ConstantFill([], 'hubness_blob_obj', shape=[1], value=1.0 / 29086)
-        model.net.ConstantFill([], 'hubness_blob_rel', shape=[1], value=1.0 / 53304)
+        model.net.ConstantFill([], 'hubness_blob_sbj', shape=[1], value=1.0 / cfg.MODEL.NUM_CLUSTERS_SBJ_OBJ)
+        model.net.ConstantFill([], 'hubness_blob_obj', shape=[1], value=1.0 / cfg.MODEL.NUM_CLASSES_PRD)
+        model.net.ConstantFill([], 'hubness_blob_rel', shape=[1], value=1.0 / cfg.MODEL.NUM_CLUSTERS_SBJ_OBJ)
 
         add_embd_triplet_losses_labeled(model, 'sbj')
         add_embd_triplet_losses_labeled(model, 'obj')

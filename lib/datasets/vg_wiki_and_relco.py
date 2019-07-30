@@ -48,6 +48,7 @@ class vg_wiki_and_relco(imdb_rel):
         self._object_class_to_ind = \
             dict(zip(self._object_classes, range(self._num_object_classes)))
         logger.info(len(self._object_class_to_ind))
+        cfg.MODEL.NUM_CLUSTERS_SBJ_OBJ = self._num_object_classes -1
 
         self._predicate_classes = ['__background__']
         with open(self._data_path + '/predicate_categories_spo_joined_and_merged.txt') as prd_classes:
@@ -57,6 +58,7 @@ class vg_wiki_and_relco(imdb_rel):
         self._predicate_class_to_ind = \
             dict(zip(self._predicate_classes, range(self._num_predicate_classes)))
         logger.info(len(self._predicate_class_to_ind))
+        cfg.MODEL.NUM_CLASSES_PRD = self._num_predicate_classes -1
 
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
@@ -149,7 +151,8 @@ class vg_wiki_and_relco(imdb_rel):
             self.model.vocab[new_key] = self.model.vocab.pop(key)
         # self.model.vocab['t-shirt'] = self.model.vocab['t_shirt']
         temp_dict = {x.replace('_', '-'): y for x, y in self.model.vocab.items()}
-        self.model.vocab = temp_dict
+        temp_dict2 = {**temp_dict, **self.model.vocab}
+        self.model.vocab = temp_dict2
         print('Wiki words converted to lowercase.')
 
         # Load gt data from scratch
@@ -164,7 +167,8 @@ class vg_wiki_and_relco(imdb_rel):
             new_key = key.lower()
             self.relco_model.wv.vocab[new_key] = self.relco_model.wv.vocab.pop(key)
         temp_dict = {x.replace('_', '-'): y for x, y in self.relco_model.wv.vocab.items()}
-        self.relco_model.wv.vocab = temp_dict
+        temp_dict2 = {**temp_dict, **self.relco_model.wv.vocab}
+        self.relco_model.wv.vocab = temp_dict2
 
         print('Relco words converted to lowercase.')
 
