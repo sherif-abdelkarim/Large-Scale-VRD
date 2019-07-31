@@ -70,8 +70,7 @@ class vg_wiki_and_relco_lan():
             new_key = key.lower()
             self.model.vocab[new_key] = self.model.vocab.pop(key)
         temp_dict = {x.replace('_', '-'): y for x, y in self.model.vocab.items()}
-        temp_dict2 = {**temp_dict, **self.model.vocab}
-        self.model.vocab = temp_dict2
+        self.model.vocab.update(temp_dict)
         print('Wiki words converted to lowercase.')
 
         # Load gt data from scratch
@@ -85,8 +84,7 @@ class vg_wiki_and_relco_lan():
             new_key = key.lower()
             self.relco_model.wv.vocab[new_key] = self.relco_model.wv.vocab.pop(key)
         temp_dict = {x.replace('_', '-'): y for x, y in self.relco_model.wv.vocab.items()}
-        temp_dict2 = {**temp_dict, **self.relco_model.wv.vocab}
-        self.relco_model.wv.vocab = temp_dict2
+        self.relco_model.wv.vocab.update(temp_dict)
 
         print('Relco words converted to lowercase.')
 
