@@ -416,14 +416,14 @@ def _sample_rois_triplet_yall(
     # # we want the background amount to be equal to
     # # 0.125 * fg_rois_per_image if not smaller
     rel_bg_size_sbj = min(bg_inds_sbj.size, fg_rois_per_image)
-    if rel_bg_size_sbj == 0:
-        raise ValueError('rel_bg_size_sbj cannot equal zero.')
+    # if rel_bg_size_sbj == 0:
+    #     raise ValueError('rel_bg_size_sbj cannot equal zero.')
     if rel_bg_size_sbj < bg_inds_sbj.size:
         rel_bg_inds_sbj = \
             npr.choice(bg_inds_sbj, size=rel_bg_size_sbj, replace=False)
-        rel_keep_inds_sbj = np.append(fg_inds_sbj, rel_bg_inds_sbj)
-    else:
-        rel_keep_inds_sbj = np.append(fg_inds_sbj, bg_inds_sbj)
+    rel_keep_inds_sbj = np.append(fg_inds_sbj, rel_bg_inds_sbj)
+    # else:
+    #     rel_keep_inds_sbj = np.append(fg_inds_sbj, bg_inds_sbj)
 
     if cfg.TRAIN.OVERSAMPLE_SO:
         real_rois_sbj = rois_sbj[low_shot_ends_sbj[0]:]
@@ -443,15 +443,16 @@ def _sample_rois_triplet_yall(
     # # we want the background amount to be equal to
     # # 0.125 * fg_rois_per_image if not smaller
     rel_bg_size_obj = min(bg_inds_obj.size, fg_rois_per_image)
-    if rel_bg_size_obj == 0:
-        raise ValueError('rel_bg_size_obj cannot equal zero.')
+
+    # if rel_bg_size_obj == 0:
+    #     raise ValueError('rel_bg_size_obj cannot equal zero.')
 
     if rel_bg_size_obj < bg_inds_obj.size:
         rel_bg_inds_obj = \
             npr.choice(bg_inds_obj, size=rel_bg_size_obj, replace=False)
-        rel_keep_inds_obj = np.append(fg_inds_obj, rel_bg_inds_obj)
-    else:
-        rel_keep_inds_obj = np.append(fg_inds_obj, bg_inds_obj)
+    rel_keep_inds_obj = np.append(fg_inds_obj, rel_bg_inds_obj)
+    # else:
+    #     rel_keep_inds_obj = np.append(fg_inds_obj, bg_inds_obj)
 
     if cfg.TRAIN.OVERSAMPLE_SO:
         real_rois_obj = rois_obj[low_shot_ends_obj[0]:]
