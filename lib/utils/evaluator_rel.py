@@ -121,7 +121,10 @@ class Evaluator():
             self.all_obj_vis_embds = []
             self.all_prd_vis_embds = []
 
-        self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
+        if cfg.DATASET == 'gvqa':
+            self._data_path = os.path.join(cfg.DATA_DIR, 'GVQA')
+        else:
+            self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
 
         self._object_classes = []
         with open(self._data_path + '/object_categories_spo_joined_and_merged.txt') as obj_classes:
@@ -139,8 +142,9 @@ class Evaluator():
         self._predicate_class_to_ind = \
             dict(zip(self._predicate_classes, range(self._num_predicate_classes)))
 
-        with open(self._data_path + '/words_synsets.json', 'r') as f:
-            self._word_to_synset = json.load(f)
+        if cfg.TEST.ISA:
+            with open(self._data_path + '/words_synsets.json', 'r') as f:
+                self._word_to_synset = json.load(f)
 
 
 
