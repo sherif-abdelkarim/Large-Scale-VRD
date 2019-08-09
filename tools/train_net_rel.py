@@ -98,6 +98,7 @@ if __name__ == '__main__':
     logger.info('Training model built.')
     start_model_iter = 0
     params_ckp_file = checkpoints_rel.get_checkpoint_resume_file(checkpoint_dir)
+    logger.info('params_ckp_file = ', params_ckp_file, ', CHECKPOINT.CHECKPOINT_MODEL =', cfg.CHECKPOINT.CHECKPOINT_MODEL )
     if (cfg.CHECKPOINT.CHECKPOINT_MODEL and params_ckp_file is not None):
         params_ckp_file = checkpoints_rel.get_checkpoint_resume_file(checkpoint_dir)
         start_model_iter = int(os.path.basename(params_ckp_file).replace('.pkl', '').replace('c2_model_iter', ''))
@@ -111,6 +112,12 @@ if __name__ == '__main__':
         val_model, _, _ = \
             model_builder_rel.create(cfg.MODEL.MODEL_NAME, train=False, split='val')
         logger.info('Validation model built.')
+        if (cfg.CHECKPOINT.CHECKPOINT_MODEL and params_ckp_file is not None):
+            params_ckp_file = checkpoints_rel.get_checkpoint_resume_file(checkpoint_dir)
+            checkpoints_rel.initialize_params_from_file(model=val_model,
+                                                        weights_file=params_ckp_file,
+                                                        num_devices=cfg.NUM_DEVICES,
+                                                        )
         total_val_iters = int(math.ceil(
             float(len(val_model.roi_data_loader._roidb)) / float(cfg.NUM_DEVICES))) + 5
         val_evaluator = evaluator_rel.Evaluator(
