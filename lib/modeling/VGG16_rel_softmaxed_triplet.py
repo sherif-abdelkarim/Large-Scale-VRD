@@ -639,14 +639,19 @@ def add_embd_triplet_losses_labeled(model, label):
 
         if (cfg.TRAIN.HUBNESS):
             # pf = (1/batch_size) * sum(xp_yall_prob, axis=0)
+            # xp_yall_prob  = Bp x K, where K is the number of classes, P is the positive image regions, B = (Bp+Bn) is the batch size, Bn is the negative image rengions
             model.Transpose(['xp_yall_prob' + suffix], ['xp_yall_probT' + suffix])
             # op = caffe2core.CreateOperator('Reshape_xpyall'+suffix, ['xp_yall_probT' + suffix], ['xp_yall_probT_reshaped'+suffix, 'old_shape'+suffix], shape=(0,1, -1) )
+            # xp_yall_probT = K x Bp. This is Pij in https://www.aclweb.org/anthology/P19-1399
             model.net.Reshape(['xp_yall_probT' + suffix],
                                    ['xp_yall_probT_reshaped' + suffix, 'xp_yall_probT_old_shape' + suffix],
                                    shape=(0, 1, -1, 1))
+            # xp_yall_probT_reshaped is K x 1 x Bp x 1
             xp_yall_probT_average_reshape_suffix = model.net.AveragePool(['xp_yall_probT_reshaped' + suffix], [
             'xp_yall_probT_average_reshape' + suffix], global_pooling=True)
             # op = core.CreateOperator('Reshape_xpyall_final'+suffix, ['xp_yall_probT_average_reshape' + suffix], ['xp_yall_probT_reshaped'+suffix, 'old_shape'+suffix], shape=(0,^) )
+            # xp_yall_probT_average_reshape_suffix is K x 1 x 1 x 1
+            # xp_yall_probT_average_reshape is pfj  in the paper https://www.aclweb.org/anthology/P19-1399
             hubness_dist_suffix = model.net.Sub(
             ['xp_yall_probT_average_reshape' + suffix, 'hubness_blob' + suffix], 'hubness_dist' + suffix, broadcast=1)
             hubness_dist_suffix_sqr = model.net.Sqr(['hubness_dist' + suffix], ['hubness_dist_sqr' + suffix])
