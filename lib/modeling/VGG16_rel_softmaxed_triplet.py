@@ -633,9 +633,11 @@ def add_embd_triplet_losses_labeled(model, label):
                 scale=1. / cfg.NUM_DEVICES)
         else:
             if cfg.MODEL.FOCAL_LOSS:
-                _, loss_xp_yall = model.net.SoftmaxFocalLoss(
-                    ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
-                    ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
+                model.AddMetrics(['fg_num' + suffix, 'bg_num' + suffix])
+                loss_xp_yall, _ = model.net.SoftmaxFocalLoss(
+                    ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32',
+                     'fg_num' + suffix],
+                    ['loss_xp_yall' + suffix, 'xp_yall_prob' + suffix],
                     gamma=cfg.MODEL.FOCAL_LOSS_GAMMA,
                     alpha=cfg.MODEL.FOCAL_LOSS_ALPHA,
                     scale=1. / cfg.NUM_DEVICES)
