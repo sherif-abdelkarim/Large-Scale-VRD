@@ -413,6 +413,7 @@ def _sample_rois_triplet_yall(
         bg_inds_sbj = np.where(all_labels_sbj == 0)[0]
     # # Only consider positive sbj rois for rel
     # # because during testing we assume each sbj roi is positive
+    num_fg_sbj, num_bg_sbj = fg_inds_sbj.size, bg_inds_sbj.size
     # # we want the background amount to be equal to
     # # 0.125 * fg_rois_per_image if not smaller
     rel_bg_size_sbj = min(bg_inds_sbj.size, fg_rois_per_image)
@@ -440,6 +441,7 @@ def _sample_rois_triplet_yall(
         bg_inds_obj = np.where(all_labels_obj == 0)[0]
     # # Only consider positive obj rois for rel
     # # because during testing we assume each obj roi is positive
+    num_fg_obj, num_bg_obj = fg_inds_obj.size, bg_inds_obj.size
     # # we want the background amount to be equal to
     # # 0.125 * fg_rois_per_image if not smaller
     rel_bg_size_obj = min(bg_inds_obj.size, fg_rois_per_image)
@@ -507,6 +509,7 @@ def _sample_rois_triplet_yall(
         rel_bg_inds = npr.choice(rel_bg_inds,
                                  size=rel_bg_rois_per_this_image,
                                  replace=False)
+    num_fg_rel, num_bg_rel = rel_fg_inds.size, rel_bg_inds.size
 
     # This oversampling method has redundant computation on those
     # low-shot ROIs, but it's flexible in that those low-shot ROIs
@@ -587,6 +590,12 @@ def _sample_rois_triplet_yall(
         sbj_pos_labels_int32=sbj_pos_labels.astype(np.int32, copy=False),
         obj_pos_labels_int32=obj_pos_labels.astype(np.int32, copy=False),
         rel_pos_labels_int32=rel_pos_labels.astype(np.int32, copy=False),
+        num_fg_sbj=num_fg_sbj,
+        num_bg_sbj=num_bg_sbj,
+        num_fg_obj=num_fg_obj,
+        num_bg_obj=num_bg_obj,
+        num_fg_rel=num_fg_rel,
+        num_bg_rel=num_bg_rel,
         sbj_neg_affinity_mask=neg_affinity_mask_sbj,
         obj_neg_affinity_mask=neg_affinity_mask_obj,
         rel_neg_affinity_mask=neg_affinity_mask_rel,
