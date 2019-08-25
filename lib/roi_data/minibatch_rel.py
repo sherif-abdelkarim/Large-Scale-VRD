@@ -64,6 +64,13 @@ def get_minibatch_blob_names(split):
                 blob_names += ['sbj_pos_labels_int32_w_' + str(i)]
                 blob_names += ['obj_pos_labels_int32_w_' + str(i)]
                 blob_names += ['rel_pos_labels_int32_w_' + str(i)]
+        if cfg.MODEL.FOCAL_LOSS:
+            blob_names += ['fg_num_sbj']
+            blob_names += ['bg_num_sbj']
+            blob_names += ['fg_num_obj']
+            blob_names += ['bg_num_obj']
+            blob_names += ['fg_num_rel']
+            blob_names += ['bg_num_rel']
         blob_names += ['sbj_pos_starts']
         blob_names += ['obj_pos_starts']
         blob_names += ['rel_pos_starts']
