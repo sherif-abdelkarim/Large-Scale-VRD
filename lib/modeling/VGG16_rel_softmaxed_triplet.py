@@ -632,10 +632,19 @@ def add_embd_triplet_losses_labeled(model, label):
                 ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
                 scale=1. / cfg.NUM_DEVICES)
         else:
-            _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
-                ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-                scale=1. / cfg.NUM_DEVICES)
+            if cfg.MODEL.FOCAL_LOSS:
+                _, loss_xp_yall = model.net.SoftmaxFocalLoss(
+                    ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
+                    ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
+                    gamma=cfg.MODEL.FOCAL_LOSS_GAMMA,
+                    alpha=cfg.MODEL.FOCAL_LOSS_ALPHA,
+                    scale=1. / cfg.NUM_DEVICES)
+
+            else:
+                _, loss_xp_yall = model.net.SoftmaxWithLoss(
+                    ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
+                    ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
+                    scale=1. / cfg.NUM_DEVICES)
 
         if (cfg.TRAIN.HUBNESS):
             # pf = (1/batch_size) * sum(xp_yall_prob, axis=0)

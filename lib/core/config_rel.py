@@ -96,6 +96,7 @@ __C.TRAIN.BATCH_SIZE_PER_IM = 128
 # HUBNESS Loss
 __C.TRAIN.HUBNESS = False
 __C.TRAIN.HUBNESS_scale= 1.0
+
 # Fraction of minibatch that is labeled foreground (i.e. class > 0)
 __C.TRAIN.FG_FRACTION = 0.25
 # Overlap threshold for a ROI to be considered foreground (if >= FG_THRESH)
@@ -247,6 +248,13 @@ __C.MODEL.FASTER_RCNN = False
 __C.MODEL.TRIPLET_RATIO = 1.0
 __C.MODEL.CLUSTER_RATIO = 0.0
 __C.MODEL.SOFTMAX_RATIO = 0.0
+
+# Focal Loss
+__C.MODEL.FOCAL_LOSS = False
+# Focal loss parameter: gamma
+__C.MODEL.FOCAL_LOSS_GAMMA = 2.0
+# Focal loss parameter: alpha
+__C.MODEL.FOCAL_LOSS_ALPHA = 0.25
 
 # weak labels
 __C.MODEL.WEAK_LABELS = False
