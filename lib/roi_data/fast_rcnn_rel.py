@@ -270,8 +270,10 @@ def add_fast_rcnn_blobs(
         # Concat the training blob lists into tensors
         for k, v in blobs.items():
             if isinstance(v, list) and len(v) > 0:
-                blobs[k] = np.concatenate(v)
-
+                try:
+                    blobs[k] = np.concatenate(v)
+                except ValueError:
+                    blobs[k] = np.stack(v)
         return True
 
 
