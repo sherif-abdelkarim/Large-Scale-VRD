@@ -111,6 +111,13 @@ def get_minibatch_blob_names(split):
         blob_names += ['image_scale']
         blob_names += ['subbatch_id']
         blob_names += ['num_proposals']
+        if cfg.MODEL.FOCAL_LOSS:
+            blob_names += ['fg_num_sbj']
+            blob_names += ['bg_num_sbj']
+            blob_names += ['fg_num_obj']
+            blob_names += ['bg_num_obj']
+            blob_names += ['fg_num_rel']
+            blob_names += ['bg_num_rel']
 
     return blob_names
 
