@@ -523,7 +523,7 @@ def _sample_rois_triplet_yall(
                                  size=rel_bg_rois_per_this_image,
                                  replace=False)
     num_fg_rel, num_bg_rel = len(rel_fg_inds), len(rel_bg_inds)
-    out_num_fg_rel = np.array([num_fg + 1.0], dtype=np.float32)
+    out_num_fg_rel = np.array([num_fg_rel + 1.0], dtype=np.float32)
     out_num_bg_rel = (
         np.array([num_bg_rel + 1.0]) * (cfg.MODEL.NUM_CLASSES_PRD - 1) +
         out_num_fg_rel * (cfg.MODEL.NUM_CLASSES_PRD - 2))
