@@ -91,21 +91,12 @@ def add_fast_rcnn_blobs(
                 np.array(subbatch_id)[np.newaxis].astype(np.float32)
             frcn_blobs['num_proposals'] = \
                 np.array(num_proposals)[np.newaxis].astype(np.float32)
-            frcn_blobs['fg_num_sbj'] = frcn_blobs['num_proposals']
-            frcn_blobs['bg_num_sbj'] = frcn_blobs['num_proposals']
-            frcn_blobs['fg_num_obj'] = frcn_blobs['num_proposals']
-            frcn_blobs['bg_num_obj'] = frcn_blobs['num_proposals']
-            frcn_blobs['fg_num_rel'] = frcn_blobs['num_proposals']
-            frcn_blobs['bg_num_rel'] = frcn_blobs['num_proposals']
             for k, v in frcn_blobs.items():
                 blobs[k].append(v)
         # Concat the training blob lists into tensors
         for k, v in blobs.items():
             if isinstance(v, list) and len(v) > 0:
-                try:
-                    blobs[k] = np.concatenate(v)
-                except ValueError:
-                    blobs[k] = np.stack(v)
+                blobs[k] = np.concatenate(v)
         return True
     else:
         for im_i, entry in enumerate(roidb):
