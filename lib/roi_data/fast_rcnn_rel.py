@@ -268,10 +268,7 @@ def add_fast_rcnn_blobs(
         # Concat the training blob lists into tensors
         for k, v in blobs.items():
             if isinstance(v, list) and len(v) > 0:
-                try:
-                    blobs[k] = np.concatenate(v)
-                except ValueError:
-                    blobs[k] = np.stack(v)
+                blobs[k] = np.concatenate(v)
         return True
 
 
@@ -598,12 +595,12 @@ def _sample_rois_triplet_yall(
         sbj_pos_labels_int32=sbj_pos_labels.astype(np.int32, copy=False),
         obj_pos_labels_int32=obj_pos_labels.astype(np.int32, copy=False),
         rel_pos_labels_int32=rel_pos_labels.astype(np.int32, copy=False),
-        fg_num_sbj=out_num_fg_sbj,
-        bg_num_sbj=out_num_bg_sbj,
-        fg_num_obj=out_num_fg_obj,
-        bg_num_obj=out_num_bg_obj,
-        fg_num_rel=out_num_fg_rel,
-        bg_num_rel=out_num_bg_rel,
+        fg_num_sbj=out_num_fg_sbj.astype(np.float32),
+        bg_num_sbj=out_num_bg_sbj.astype(np.float32),
+        fg_num_obj=out_num_fg_obj.astype(np.float32),
+        bg_num_obj=out_num_bg_obj.astype(np.float32),
+        fg_num_rel=out_num_fg_rel.astype(np.float32),
+        bg_num_rel=out_num_bg_rel.astype(np.float32),
         sbj_neg_affinity_mask=neg_affinity_mask_sbj,
         obj_neg_affinity_mask=neg_affinity_mask_obj,
         rel_neg_affinity_mask=neg_affinity_mask_rel,
