@@ -98,7 +98,7 @@ if __name__ == '__main__':
     logger.info('Training model built.')
     start_model_iter = 0
     params_ckp_file = checkpoints_rel.get_checkpoint_resume_file(checkpoint_dir)
-    logger.info('params_ckp_file = ', params_ckp_file, ', CHECKPOINT.CHECKPOINT_MODEL =', cfg.CHECKPOINT.CHECKPOINT_MODEL )
+    logger.info('params_ckp_file = {}, CHECKPOINT.CHECKPOINT_MODEL ={}'.format(params_ckp_file, cfg.CHECKPOINT.CHECKPOINT_MODEL))
     if (cfg.CHECKPOINT.CHECKPOINT_MODEL and params_ckp_file is not None):
         params_ckp_file = checkpoints_rel.get_checkpoint_resume_file(checkpoint_dir)
         start_model_iter = int(os.path.basename(params_ckp_file).replace('.pkl', '').replace('c2_model_iter', ''))
