@@ -19,20 +19,24 @@ from datasets.vg_wiki_and_relco_lan import vg_wiki_and_relco_lan
 __sets = {}
 __sets_lan = {}
 
-if cfg.DATASET == 'vg_wiki_and_relco':
-    for split in ['train', 'val', 'test']:
-        name = 'vg_wiki_and_relco_{}'.format(split)
-        __sets[name] = (lambda split=split: vg_wiki_and_relco(split))
-
-    name = 'vg_wiki_and_relco_lan'
-    __sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
-
-if cfg.DATASET == 'gvqa':
-    for split in ['train', 'val', 'test']:
-        name = 'gvqa_{}'.format(split)
-        __sets[name] = (lambda split=split: vg_wiki_and_relco(split))
-    name = 'gvqa_lan'
-    __sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
+# if cfg.DATASET == 'vg_wiki_and_relco':
+#     __sets = {}
+#     __sets_lan = {}
+#     for split in ['train', 'val', 'test']:
+#         name = 'vg_wiki_and_relco_{}'.format(split)
+#         __sets[name] = (lambda split=split: vg_wiki_and_relco(split))
+#
+#     name = 'vg_wiki_and_relco_lan'
+#     __sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
+#
+# if cfg.DATASET == 'gvqa':
+__sets = {}
+__sets_lan = {}
+for split in ['train', 'val', 'test']:
+    name = 'gvqa_{}'.format(split)
+    __sets[name] = (lambda split=split: vg_wiki_and_relco(split))
+name = 'gvqa_lan'
+__sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
 
 
 def get_landb(name):

@@ -32,12 +32,13 @@ class vg_wiki_and_relco(imdb_rel):
     def __init__(self, image_set):
         if cfg.DATASET == 'gvqa':
             imdb_rel.__init__(self, 'gvqa_' + image_set)
-        else:
+        if cfg.DATASET == 'vg_wiki_and_relco':
             imdb_rel.__init__(self, 'vg_wiki_and_relco_' + image_set)
         self._image_set = image_set
+
         if cfg.DATASET == 'gvqa':
             self._data_path = os.path.join(cfg.DATA_DIR, 'GVQA')
-        else:
+        if cfg.DATASET == 'vg_wiki_and_relco':
             self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
 
         self._object_classes = ['__background__']

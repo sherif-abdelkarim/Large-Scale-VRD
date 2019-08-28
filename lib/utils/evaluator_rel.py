@@ -123,7 +123,7 @@ class Evaluator():
 
         if cfg.DATASET == 'gvqa':
             self._data_path = os.path.join(cfg.DATA_DIR, 'GVQA')
-        else:
+        if cfg.DATASET == 'vg_wiki_and_relco':
             self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
 
         self._object_classes = []
