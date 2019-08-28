@@ -633,6 +633,10 @@ def add_embd_triplet_losses_labeled(model, label):
                 scale=1. / cfg.NUM_DEVICES)
         else:
             if cfg.MODEL.FOCAL_LOSS:
+                if suffix in ['_sbj', '_obj']:
+                    num_classes = cfg.MODEL.NUM_CLASSES_SBJ_OBJ
+                if suffix in ['_rel']:
+                    num_classes = cfg.MODEL.NUM_CLASSES_PRD
                 model.net.Reshape(['sim_xp_yall' + suffix],
                                   ['sim_xp_yall_reshaped' + suffix, 'sim_xp_yall_old_shape' + suffix],
                                   shape=(0, 0, 1, 1))
@@ -643,7 +647,8 @@ def add_embd_triplet_losses_labeled(model, label):
                     ['loss_xp_yall' + suffix, 'xp_yall_prob' + suffix],
                     gamma=cfg.MODEL.FOCAL_LOSS_GAMMA,
                     alpha=cfg.MODEL.FOCAL_LOSS_ALPHA,
-                    scale=1. / cfg.NUM_DEVICES)
+                    scale=1. / cfg.NUM_DEVICES,
+                    num_classes=num_classes)
 
             else:
                 _, loss_xp_yall = model.net.SoftmaxWithLoss(
