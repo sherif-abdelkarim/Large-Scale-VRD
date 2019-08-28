@@ -11,7 +11,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from core.config_rel import cfg
 from datasets.vg_wiki_and_relco import vg_wiki_and_relco
 from datasets.vg_wiki_and_relco_lan import vg_wiki_and_relco_lan
 
