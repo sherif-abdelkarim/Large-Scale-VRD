@@ -48,7 +48,7 @@ class vg_wiki_and_relco(imdb_rel):
         self._object_class_to_ind = \
             dict(zip(self._object_classes, range(self._num_object_classes)))
         logger.info(len(self._object_class_to_ind))
-        cfg.MODEL.NUM_CLASSES_SBJ_OBJ = self._num_object_classes -1
+        # cfg.MODEL.NUM_CLASSES_SBJ_OBJ = self._num_object_classes -1
 
         self._predicate_classes = ['__background__']
         with open(self._data_path + '/predicate_categories_spo_joined_and_merged.txt') as prd_classes:
@@ -58,7 +58,7 @@ class vg_wiki_and_relco(imdb_rel):
         self._predicate_class_to_ind = \
             dict(zip(self._predicate_classes, range(self._num_predicate_classes)))
         logger.info(len(self._predicate_class_to_ind))
-        cfg.MODEL.NUM_CLASSES_PRD = self._num_predicate_classes -1
+        # cfg.MODEL.NUM_CLASSES_PRD = self._num_predicate_classes -1
 
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
