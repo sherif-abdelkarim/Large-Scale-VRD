@@ -55,8 +55,11 @@ def get_gt_perturbed_proposals(gt_roidb):
     data_dir = os.path.join(cfg.DATA_DIR, 'proposals')
     if cfg.DATASET == 'gvqa':
         proposal_file_path = os.path.join(data_dir, 'gvqa')
-    if cfg.DATASET == 'vg_wiki_and_relco':
+    elif cfg.DATASET == 'vg_wiki_and_relco':
         proposal_file_path = os.path.join(data_dir, 'vg')
+    else:
+        raise NotImplementedError
+
     proposal_name = 'gt_perturbed_proposals_flipped.pkl'
     proposal_file = os.path.join(proposal_file_path, proposal_name)
     logger.info('proposal file: {}'.format(proposal_file))

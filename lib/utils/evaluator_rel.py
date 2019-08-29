@@ -123,8 +123,11 @@ class Evaluator():
 
         if cfg.DATASET == 'gvqa':
             self._data_path = os.path.join(cfg.DATA_DIR, 'GVQA')
-        if cfg.DATASET == 'vg_wiki_and_relco':
+        elif cfg.DATASET == 'vg_wiki_and_relco':
             self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
+        else:
+            raise NotImplementedError
+
 
         self._object_classes = []
         with open(self._data_path + '/object_categories_spo_joined_and_merged.txt') as obj_classes:
