@@ -151,6 +151,8 @@ if __name__ == '__main__':
     )
     checkpoints = {}
 
+    best_avg_top1_acc = 0.0
+
     for curr_iter in range(start_model_iter, cfg.SOLVER.NUM_ITERATIONS):
 
         lr = model_builder_rel.add_variable_stepsize_lr(
@@ -219,6 +221,16 @@ if __name__ == '__main__':
                 iter_accs = val_evaluator.calculate_and_plot_accuracy()
                 for key in iter_accs.keys():
                     accumulated_accs[key].append(iter_accs[key])
+                curr_avg_top1_acc = (iter_accs['rel_top1_acc'] + iter_accs['obj_top1_acc'] + iter_accs['sbj_top1_acc']) / 3.0
+                if curr_avg_top1_acc > best_avg_top1_acc:
+                    print('Found new best validation accuracy at {}%'.format(curr_avg_top1_acc))
+                    print('Saving best model..')
+                    best_avg_top1_acc = curr_avg_top1_acc
+                    params_file = os.path.join(checkpoint_dir, 'best.pkl')
+                    checkpoints_rel.save_model_params(
+                        model=train_model, params_file=params_file,
+                        model_iter=curr_iter, checkpoint_dir=checkpoint_dir
+                    )
 
     train_model.roi_data_loader.shutdown()
     if True:
