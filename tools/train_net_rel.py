@@ -151,7 +151,15 @@ if __name__ == '__main__':
     )
     checkpoints = {}
 
-    best_avg_top1_acc = 0.0
+    if os.path.exists(os.path.join(checkpoint_dir, 'best.json')):
+        best = json.load(open(os.path.join(checkpoint_dir, 'best.json')))
+    else:
+        best = {}
+        best['best_avg_top1_acc'] = 0.0
+        best['iteration'] = 0
+        best['accuracies'] = []
+        json.dump(best, open(os.path.join(checkpoint_dir, 'best.json'), 'w'))
+
 
     for curr_iter in range(start_model_iter, cfg.SOLVER.NUM_ITERATIONS):
 
@@ -222,15 +230,19 @@ if __name__ == '__main__':
                 for key in iter_accs.keys():
                     accumulated_accs[key].append(iter_accs[key])
                 curr_avg_top1_acc = (iter_accs['rel_top1_acc'] + iter_accs['obj_top1_acc'] + iter_accs['sbj_top1_acc']) / 3.0
-                if curr_avg_top1_acc > best_avg_top1_acc:
+                best = json.load(open(os.path.join(checkpoint_dir, 'best.json')))
+                if curr_avg_top1_acc > best['best_avg_top1_acc']:
                     print('Found new best validation accuracy at {}%'.format(curr_avg_top1_acc))
                     print('Saving best model..')
-                    best_avg_top1_acc = curr_avg_top1_acc
+                    best['best_avg_top1_acc'] = curr_avg_top1_acc
+                    best['iteration'] = curr_iter
+                    best['accuracies'] = [iter_accs]
                     params_file = os.path.join(checkpoint_dir, 'best.pkl')
                     checkpoints_rel.save_model_params(
                         model=train_model, params_file=params_file,
                         model_iter=curr_iter, checkpoint_dir=checkpoint_dir
                     )
+                    json.dump(best, open(os.path.join(checkpoint_dir, 'best.json'), 'w'))
 
     train_model.roi_data_loader.shutdown()
     if True:
