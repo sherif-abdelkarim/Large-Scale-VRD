@@ -32,14 +32,18 @@ class vg_wiki_and_relco(imdb_rel):
     def __init__(self, image_set):
         if cfg.DATASET == 'gvqa':
             imdb_rel.__init__(self, 'gvqa_' + image_set)
-        if cfg.DATASET == 'vg_wiki_and_relco':
+        elif cfg.DATASET == 'vg_wiki_and_relco':
             imdb_rel.__init__(self, 'vg_wiki_and_relco_' + image_set)
+        else:
+            raise NotImplementedError
         self._image_set = image_set
 
         if cfg.DATASET == 'gvqa':
             self._data_path = os.path.join(cfg.DATA_DIR, 'GVQA')
-        if cfg.DATASET == 'vg_wiki_and_relco':
+        elif cfg.DATASET == 'vg_wiki_and_relco':
             self._data_path = os.path.join(cfg.DATA_DIR, 'Visual_Genome')
+        else:
+            raise NotImplementedError
 
         self._object_classes = ['__background__']
         with open(self._data_path + '/object_categories_spo_joined_and_merged.txt') as obj_classes:
