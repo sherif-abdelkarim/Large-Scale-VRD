@@ -638,14 +638,14 @@ class Evaluator():
                 self.obj_top1_w_acc = float(self.obj_top1_w_cnt) / float(self.spo_cnt) * 100
                 self.rel_top1_w_acc = float(self.rel_top1_w_cnt) / float(self.spo_cnt) * 100
 
-            self.sbj_mr /= float(self.spo_cnt) / 100
-            self.rel_mr /= float(self.spo_cnt) / 100
-            self.obj_mr /= float(self.spo_cnt) / 100
-            self.tri_mr /= float(self.spo_cnt) / 100
-            self.sbj_rr /= float(self.spo_cnt) / 100
-            self.rel_rr /= float(self.spo_cnt) / 100
-            self.obj_rr /= float(self.spo_cnt) / 100
-            self.tri_rr /= float(self.spo_cnt) / 100
+            self.sbj_mr /= float(self.spo_cnt) * 100
+            self.rel_mr /= float(self.spo_cnt) * 100
+            self.obj_mr /= float(self.spo_cnt) * 100
+            self.tri_mr /= float(self.spo_cnt) * 100
+            self.sbj_rr /= float(self.spo_cnt) * 100
+            self.rel_rr /= float(self.spo_cnt) * 100
+            self.obj_rr /= float(self.spo_cnt) * 100
+            self.tri_rr /= float(self.spo_cnt) * 100
 
             print('triplet top 1 accuracy: {:f}'.format(self.tri_top1_acc))
             print('triplet top 5 accuracy: {:f}'.format(self.tri_top5_acc))
