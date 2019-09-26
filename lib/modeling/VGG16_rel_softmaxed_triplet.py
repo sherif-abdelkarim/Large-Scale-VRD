@@ -87,6 +87,32 @@ def create_model(model):
     model.AddLosses(model.loss_set)
     return loss_gradients if model.train else None
 
+def centroids_cal(data, num_classes, feature_dim):
+
+    centroids = torch.zeros(num_classes, feature_dim).cuda()
+
+    print('Calculating centroids.')
+
+    for model in self.networks.values():
+        model.eval()
+
+    # Calculate initial centroids only on training data.
+    with torch.set_grad_enabled(False):
+
+        for inputs, labels, _ in tqdm(data):
+            inputs, labels = inputs.to(self.device), labels.to(self.device)
+            # Calculate Features of each training data
+            self.batch_forward(inputs, feature_ext=True)
+            # Add all calculated features to center tensor
+            for i in range(len(labels)):
+                label = labels[i]
+                centroids[label] += self.features[i]
+
+    # Average summed features with class count
+    centroids /= torch.tensor(class_count(data)).float().unsqueeze(1).cuda()
+
+    return centroids
+
 
 def add_VGG16_conv5_body(model):
     model.Conv('data', 'conv1_1', 3, 64, 3, pad=1, stride=1)
@@ -758,3 +784,40 @@ def add_labels_and_scores_topk(model, label):
         all_lan_embd = 'all_prd_lan_embds'
     model.net.MatMul(['x' + suffix, all_lan_embd], 'all_Y' + suffix, trans_b=1)
     model.net.TopK('all_Y' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
+
+
+def add_memory_module(model, centroids):
+    # storing direct feature
+    direct_feature = x
+
+    batch_size = x.size(0)
+    feat_size = x.size(1)
+
+    # set up visual memory
+    x_expand = x.unsqueeze(1).expand(-1, self.num_classes, -1)
+    centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
+    keys_memory = centroids
+
+    # computing reachability
+    dist_cur = torch.norm(x_expand - centroids_expand, 2, 2)
+    values_nn, labels_nn = torch.sort(dist_cur, 1)
+    scale = 10.0
+    reachability = (scale / values_nn[:, 0]).unsqueeze(1).expand(-1, feat_size)
+
+    # computing memory feature by querying and associating visual memory
+    values_memory = self.fc_hallucinator(x)
+    values_memory = values_memory.softmax(dim=1)
+    memory_feature = torch.matmul(values_memory, keys_memory)
+
+    # computing concept selector
+    concept_selector = self.fc_selector(x)
+    concept_selector = concept_selector.tanh()
+    x = reachability * (direct_feature + concept_selector * memory_feature)
+
+    # storing infused feature
+    infused_feature = concept_selector * memory_feature
+
+    logits = self.cosnorm_classifier(x)
+
+    return logits, [direct_feature, infused_feature]
+
