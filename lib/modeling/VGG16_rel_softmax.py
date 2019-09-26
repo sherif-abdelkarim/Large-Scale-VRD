@@ -237,25 +237,14 @@ def add_visual_embedding(model,
     # model.net.Normalize('x_rel_prd_raw', 'x_rel')
 
 
-def add_embd_pos_neg_splits(model, label, sublabel=''):
+def add_embd_pos_neg_splits(model, label):
     preprefix = label + '_'
-    if sublabel == '':
-        prefix = preprefix
-        suffix = '_' + label
-    else:
-        prefix = preprefix + sublabel + '_'
-        suffix = '_' + label + '_' + sublabel
+    suffix = '_' + label
 
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         model.net.Slice(['x' + suffix, preprefix + 'pos_starts',
                         preprefix + 'pos_ends'], 'xp' + suffix)
         model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
-        if suffix == '_rel':
-            model.net.Slice(['x_rel_raw_final', prefix + 'pos_starts',
-                            prefix + 'pos_ends'], 'xp_rel_raw_final')
-        else:
-            model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
-                            prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
         model.net.Alias('x' + suffix, 'xp' + suffix)
 
