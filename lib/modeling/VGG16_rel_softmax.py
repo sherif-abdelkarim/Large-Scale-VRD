@@ -56,6 +56,10 @@ def create_model(model):
 
     # # 2. language modules and losses
     if model.train:
+        add_embd_pos_neg_splits(model, 'sbj')
+        add_embd_pos_neg_splits(model, 'obj')
+        add_embd_pos_neg_splits(model, 'rel')
+
         add_softmax_losses(model, 'sbj')
         add_softmax_losses(model, 'obj')
         add_softmax_losses(model, 'rel')
@@ -254,210 +258,17 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
                             prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
         model.net.Alias('x' + suffix, 'xp' + suffix)
-    model.net.Alias(prefix + 'pos_lan_embds', 'yp' + suffix)
 
 def add_softmax_losses(model, label):
     prefix = label + '_'
     suffix = '_' + label
 
     _, loss_xp_yall = model.net.SoftmaxWithLoss(
-        ['x' + suffix, prefix + 'pos_labels_int32'],
+        ['scaled_xp' + suffix, prefix + 'pos_labels_int32'],
         ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
         scale=1. / cfg.NUM_DEVICES)
 
     model.loss_set.extend([loss_xp_yall])
-
-def add_embd_triplet_losses_labeled(model, label):
-
-    prefix = label + '_'
-    suffix = '_' + label
-
-    if label.find('rel') >= 0:
-        num_neg_classes = len(model.roi_data_loader._landb._predicate_categories) - 1
-    else:
-        num_neg_classes = len(model.roi_data_loader._landb._object_categories) - 1
-    model.net.ConstantFill(
-        [], 'reciprocal_num_neg_classes_blob' + suffix,
-        shape=[1], value=1.0 / float(num_neg_classes))
-
-    model.net.SquaredL2Distance(['xp' + suffix, 'yp' + suffix],
-                                'dist_xp_yp' + suffix)
-
-    if label.find('rel') >= 0:
-        yall_name = 'all_prd_lan_embds'
-    else:
-        yall_name = 'all_obj_lan_embds'
-
-    model.net.MatMul(['scaled_xp' + suffix, 'scaled_' + yall_name],
-                     'sim_xp_yall' + suffix, trans_b=1)
-
-    if cfg.MODEL.WEAK_LABELS:
-        if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
-                ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
-                 cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
-            _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                ['sim_xp_yall' + suffix,
-                 prefix + 'pos_labels_int32',
-                 prefix + 'pos_weights'],
-                ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-                scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
-
-            model.loss_set.extend([loss_xp_yall])
-
-            for w in range(cfg.MODEL.NUM_WEAK_LABELS):
-                _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                    ['sim_xp_yall' + suffix,
-                     prefix + 'pos_labels_int32_w_' + str(w),
-                     prefix + 'pos_weights'],
-                    ['xp_yall_prob' + suffix + '_w_' + str(w), 'loss_xp_yall' + suffix + '_w_' + str(w)],
-                    scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
-
-                model.loss_set.extend([loss_xp_yall])
-
-        else:
-            _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
-                ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-                scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
-
-            model.loss_set.extend([loss_xp_yall])
-
-            for w in range(cfg.MODEL.NUM_WEAK_LABELS):
-                _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                    ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32_w_' + str(w)],
-                    ['xp_yall_prob' + suffix + '_w_' + str(w), 'loss_xp_yall' + suffix + '_w_' + str(w)],
-                    scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
-
-                model.loss_set.extend([loss_xp_yall])
-
-    else:
-        if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
-            ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
-             cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
-            _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                ['sim_xp_yall' + suffix,
-                 prefix + 'pos_labels_int32',
-                 prefix + 'pos_weights'],
-                ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-                scale=1. / cfg.NUM_DEVICES)
-        else:
-            if cfg.MODEL.FOCAL_LOSS:
-                if suffix in ['_sbj', '_obj']:
-                    num_classes = cfg.MODEL.NUM_CLASSES_SBJ_OBJ
-                if suffix in ['_rel']:
-                    num_classes = cfg.MODEL.NUM_CLASSES_PRD
-                model.net.Reshape(['sim_xp_yall' + suffix],
-                                  ['sim_xp_yall_reshaped' + suffix, 'sim_xp_yall_old_shape' + suffix],
-                                  shape=(0, 0, 1, 1))
-                model.AddMetrics(['fg_num' + suffix, 'bg_num' + suffix])
-                loss_xp_yall, _ = model.net.SoftmaxFocalLoss(
-                    ['sim_xp_yall_reshaped' + suffix, prefix + 'pos_labels_int32',
-                     'fg_num' + suffix],
-                    ['loss_xp_yall' + suffix, 'xp_yall_prob' + suffix],
-                    gamma=cfg.MODEL.FOCAL_LOSS_GAMMA,
-                    alpha=cfg.MODEL.FOCAL_LOSS_ALPHA,
-                    scale=1. / cfg.NUM_DEVICES,
-                    num_classes=num_classes)
-
-            else:
-                _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                    ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
-                    ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-                    scale=1. / cfg.NUM_DEVICES)
-
-        if (cfg.TRAIN.HUBNESS):
-            # pf = (1/batch_size) * sum(xp_yall_prob, axis=0)
-            # xp_yall_prob  = Bp x K, where K is the number of classes, P is the positive image regions, B = (Bp+Bn) is the batch size, Bn is the negative image rengions
-            model.Transpose(['xp_yall_prob' + suffix], ['xp_yall_probT' + suffix])
-            # op = caffe2core.CreateOperator('Reshape_xpyall'+suffix, ['xp_yall_probT' + suffix], ['xp_yall_probT_reshaped'+suffix, 'old_shape'+suffix], shape=(0,1, -1) )
-            # xp_yall_probT = K x Bp. This is Pij in https://www.aclweb.org/anthology/P19-1399
-            model.net.Reshape(['xp_yall_probT' + suffix],
-                                   ['xp_yall_probT_reshaped' + suffix, 'xp_yall_probT_old_shape' + suffix],
-                                   shape=(0, 1, -1, 1))
-            # xp_yall_probT_reshaped is K x 1 x Bp x 1
-            xp_yall_probT_average_reshape_suffix = model.net.AveragePool(['xp_yall_probT_reshaped' + suffix], [
-            'xp_yall_probT_average_reshape' + suffix], global_pooling=True)
-            # op = core.CreateOperator('Reshape_xpyall_final'+suffix, ['xp_yall_probT_average_reshape' + suffix], ['xp_yall_probT_reshaped'+suffix, 'old_shape'+suffix], shape=(0,^) )
-            # xp_yall_probT_average_reshape_suffix is K x 1 x 1 x 1
-            # xp_yall_probT_average_reshape is pfj  in the paper https://www.aclweb.org/anthology/P19-1399
-            hubness_dist_suffix = model.net.Sub(
-            ['xp_yall_probT_average_reshape' + suffix, 'hubness_blob' + suffix], 'hubness_dist' + suffix, broadcast=1)
-            hubness_dist_suffix_sqr = model.net.Sqr(['hubness_dist' + suffix], ['hubness_dist_sqr' + suffix])
-
-            hubness_dist_suffix_sqr_scaled = model.Scale(['hubness_dist_sqr' + suffix],
-                                                              ['hubness_dist_sqr_scaled' + suffix],
-                                                              scale=cfg.TRAIN.HUBNESS_scale)
-
-            # scale=scale
-            # loss_hubness=   cfg.TRAIN.HUBNESS_scale* hubness_dist_suffix_sqr.AveragedLoss([], ['loss_hubness' + suffix])
-            loss_hubness = hubness_dist_suffix_sqr_scaled.AveragedLoss([], ['loss_hubness' + suffix])
-            # loss_hubness_scaled= loss_hubness.Scale(, scale=cfg.TRAIN.HUBNESS_scale, )
-            model.loss_set.extend([loss_hubness])
-            # loss_h = sum(pf - 1/k)
-
-        model.loss_set.extend([loss_xp_yall])
-
-    if cfg.MODEL.SPECS.find('no_xpypxn') < 0:
-        model.net.MatMul(['yp' + suffix, 'x' + suffix],
-                         'sim_yp_xall_raw' + suffix, trans_b=1)
-        model.net.Sub(['sim_yp_xall_raw' + suffix, 'one_blob'],
-                      'neg_dist_yp_xall' + suffix, broadcast=1)
-        model.net.Add(['neg_dist_yp_xall' + suffix, 'dist_xp_yp' + suffix],
-                      'diff_dist_xp_yp_xall' + suffix, broadcast=1, axis=0)
-        model.net.Add(['diff_dist_xp_yp_xall' + suffix, 'margin_blob' + suffix],
-                      'margin_xp_yp_xall' + suffix, broadcast=1)
-        model.net.Relu('margin_xp_yp_xall' + suffix, 'max_margin_xp_yp_xall' + suffix)
-        model.net.Mul(['max_margin_xp_yp_xall' + suffix, prefix + 'neg_affinity_mask'],
-                      'max_margin_xp_yp_xn' + suffix)
-        mean_max_margin_xp_yp_xn = model.net.ReduceBackMean(
-            'max_margin_xp_yp_xn' + suffix, 'mean_max_margin_xp_yp_xn' + suffix)
-        if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
-            ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
-             cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
-            mean_max_margin_xp_yp_xn = model.net.Mul(
-                ['mean_max_margin_xp_yp_xn' + suffix, prefix + 'pos_weights'],
-                'mean_max_margin_xp_yp_xn_weighted' + suffix)
-        loss_yp_xn = mean_max_margin_xp_yp_xn.AveragedLoss([], ['loss_yp_xn' + suffix])
-
-        model.loss_set.extend([loss_yp_xn])
-
-    if cfg.MODEL.SPECS.find('w_cluster') >= 0:
-        # 1. get neg_dist_xp_xn
-        model.net.MatMul(['xp' + suffix, 'x' + suffix],
-                         'sim_xp_xall_raw' + suffix, trans_b=1)
-        model.net.Sub(['sim_xp_xall_raw' + suffix, 'one_blob'],
-                      'neg_dist_xp_xall' + suffix, broadcast=1)
-        model.net.Mul(['neg_dist_xp_xall' + suffix, prefix + 'neg_affinity_mask'],
-                      'neg_dist_xp_xn' + suffix)
-        # 2. get mean_max_dist_xp_xp
-        model.net.Negative('neg_dist_xp_xall' + suffix, 'dist_xp_xall' + suffix)
-        model.net.Sub([prefix + 'neg_affinity_mask', 'one_blob'],
-                      prefix + 'neg_pos_affinity_mask', broadcast=1)
-        model.net.Negative(prefix + 'neg_pos_affinity_mask',
-                           prefix + 'pos_affinity_mask')
-        model.net.Mul(['dist_xp_xall' + suffix, prefix + 'pos_affinity_mask'],
-                      'dist_xp_xp' + suffix)
-        model.net.TopK('dist_xp_xp' + suffix,
-                       ['max_dist_xp_xp' + suffix, '_idx_max_dist_xp_xp' + suffix], k=1)
-        model.net.Squeeze('max_dist_xp_xp' + suffix,
-                          'max_dist_xp_xp' + suffix, dims=[1])
-        model.net.Add(['neg_dist_xp_xn' + suffix, 'max_dist_xp_xp' + suffix],
-                      'diff_dist_xp_xp_xn' + suffix, broadcast=1, axis=0)
-        model.net.Add(['diff_dist_xp_xp_xn' + suffix, 'margin_blob' + suffix],
-                      'margin_xp_xp_xn' + suffix, broadcast=1)
-        model.net.Relu('margin_xp_xp_xn' + suffix, 'max_margin_xp_xp_xn' + suffix)
-        mean_max_margin_xp_xp_xn = model.net.ReduceBackMean(
-            'max_margin_xp_xp_xn' + suffix, 'mean_max_margin_xp_xp_xn' + suffix)
-        if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
-            ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
-             cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
-            mean_max_margin_xp_xp_xn = model.net.Mul(
-                ['mean_max_margin_xp_xp_xn' + suffix, prefix + 'pos_weights'],
-                'mean_max_margin_xp_xp_xn_weighted' + suffix)
-        loss_xp_xn = mean_max_margin_xp_xp_xn.AveragedLoss([], ['loss_xp_xn' + suffix])
-
-        model.loss_set.extend([loss_xp_xn])
-
 
 def add_labels_and_scores_topk(model, label):
     suffix = '_' + label
