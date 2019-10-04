@@ -49,7 +49,7 @@ def create_model(model):
         blob_rel_sbj, dim_rel_sbj,
         blob_rel_obj, dim_rel_obj)
 
-    load_centroids(model)
+    load_centroids()
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
     model.net.ConstantFill([], 'scale_10_blob', shape=[1], value=10.0)
@@ -405,9 +405,9 @@ def add_cosnorm_classifier(input, suffix, in_dims, out_dims):
                            'x' + suffix, trans_b=1)
     return out
 
-def load_centroids(model):
-    centroids_obj = load_pickle('/centroids/centroids_obj.pkl')
-    centroids_rel = load_pickle('/centroids/centroids_rel.pkl')
+def load_centroids():
+    centroids_obj = load_pickle('/mnt/scratch/kwc/vision/Mohamed/large_scale_VRD.caffe2/sherif_github/Large-Scale-VRD/centroids/centroids_obj.pkl')
+    centroids_rel = load_pickle('/mnt/scratch/kwc/vision/Mohamed/large_scale_VRD.caffe2/sherif_github/Large-Scale-VRD/centroids/centroids_rel.pkl')
     workspace.FeedBlob('centroids_obj', centroids_obj)
     workspace.FeedBlob('centroids_rel', centroids_rel)
 
