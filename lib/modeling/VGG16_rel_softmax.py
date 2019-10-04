@@ -15,6 +15,7 @@ from caffe2.python import core as caffe2core
 from caffe2.python import workspace
 from core.config_rel import cfg
 import utils.blob as blob_utils
+import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +49,14 @@ def create_model(model):
         blob_rel_sbj, dim_rel_sbj,
         blob_rel_obj, dim_rel_obj)
 
+    load_centroids(model)
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
     model.net.ConstantFill([], 'scale_10_blob', shape=[1], value=10.0)
 
-    add_memory_module(model, centroids, 'sbj')
-    add_memory_module(model, centroids, 'obj')
-    add_memory_module(model, centroids, 'rel')
+    add_memory_module(model, 'centroids_obj', 'sbj')
+    add_memory_module(model, 'centroids_obj', 'obj')
+    add_memory_module(model, 'centroids_rel', 'rel')
     # During testing, get topk labels and scores
     if not model.train:
         add_labels_and_scores_topk(model, 'sbj')
@@ -270,7 +272,7 @@ def add_labels_and_scores_topk(model, label):
     model.net.TopK('x' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
 
 
-def add_memory_module(model, centroids, label, num_classes):
+def add_memory_module(model, centroids_blob_name, label, num_classes):
     prefix = label + '_'
     suffix = '_' + label
 
@@ -292,14 +294,14 @@ def add_memory_module(model, centroids, label, num_classes):
                       shape=(-1, num_classes, -1))
 
     # centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
-    model.net.ExpandDims(['centroids' + suffix],
+    model.net.ExpandDims([centroids_blob_name],
                          ['centroids_expanddims' + suffix],
                          dims=[0])
 
-    model.net.Reshape(['centroids' + suffix],
+    model.net.Reshape([centroids_blob_name],
                       ['centroids_expand' + suffix, 'centroids_old_shape' + suffix],
                       shape=(batch_size, -1, -1))
-    keys_memory = centroids
+    keys_memory = workspace.FetchBlob(centroids_blob_name)
 
     # computing reachability
     # dist_cur = torch.norm(x_expand - centroids_expand, 2, 2)
@@ -402,3 +404,22 @@ def add_cosnorm_classifier(input, suffix, in_dims, out_dims):
     out = model.net.MatMul(['scaled_ex' + suffix, 'ew' + suffix],
                            'x' + suffix, trans_b=1)
     return out
+
+def load_centroids(model):
+    centroids_obj = load_pickle('/centroids/centroids_obj.pkl')
+    centroids_rel = load_pickle('/centroids/centroids_rel.pkl')
+    workspace.FeedBlob('centroids_obj', centroids_obj)
+    workspace.FeedBlob('centroids_rel', centroids_rel)
+
+def load_pickle(pickle_file):
+    try:
+        with open(pickle_file, 'rb') as f:
+            pickle_data = pickle.load(f)
+    except UnicodeDecodeError as e:
+        with open(pickle_file, 'rb') as f:
+            pickle_data = pickle.load(f, encoding='latin1')
+    except Exception as e:
+        print('Unable to load data ', pickle_file, ':', e)
+        raise
+    return pickle_data
+
