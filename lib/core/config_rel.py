@@ -256,6 +256,9 @@ __C.MODEL.FOCAL_LOSS_GAMMA = 2.0
 # Focal loss parameter: alpha
 __C.MODEL.FOCAL_LOSS_ALPHA = 0.25
 
+# Memory Module
+__C.MODEL.MEMORY_MODULE = False
+
 # weak labels
 __C.MODEL.WEAK_LABELS = False
 __C.MODEL.NUM_WEAK_LABELS = 0
