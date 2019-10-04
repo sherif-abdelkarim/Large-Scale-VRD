@@ -811,6 +811,9 @@ def _sample_rois_softmax_yall(
     std = 1. / math.sqrt(weight_rel.shape[1])
     weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM))
 
+    centroids_obj = load_pickle('/mnt/scratch/kwc/vision/Mohamed/large_scale_VRD.caffe2/sherif_github/Large-Scale-VRD/centroids/centroids_obj.pkl')
+    centroids_rel = load_pickle('/mnt/scratch/kwc/vision/Mohamed/large_scale_VRD.caffe2/sherif_github/Large-Scale-VRD/centroids/centroids_rel.pkl')
+
     blob = dict(
         sbj_rois=rois_sbj,
         obj_rois=rois_obj,
@@ -841,6 +844,9 @@ def _sample_rois_softmax_yall(
         blob['weight_sbj'] = weight_sbj
         blob['weight_obj'] = weight_obj
         blob['weight_rel'] = weight_rel
+        blob['centroids_sbj'] = centroids_obj
+        blob['centroids_obj'] = centroids_obj
+        blob['centroids_rel'] = centroids_rel
 
     return blob
 
