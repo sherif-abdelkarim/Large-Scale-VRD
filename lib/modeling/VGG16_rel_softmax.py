@@ -251,11 +251,11 @@ def add_embd_pos_neg_splits(model, label):
     suffix = '_' + label
 
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-        model.net.Slice(['x' + suffix, preprefix + 'pos_starts',
+        model.net.Slice(['logits' + suffix, preprefix + 'pos_starts',
                          preprefix + 'pos_ends'], 'xp' + suffix)
         model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
     else:
-        model.net.Alias('x' + suffix, 'xp' + suffix)
+        model.net.Alias('logits' + suffix, 'xp' + suffix)
 
 
 def add_softmax_losses(model, label):
@@ -272,7 +272,7 @@ def add_softmax_losses(model, label):
 
 def add_labels_and_scores_topk(model, label):
     suffix = '_' + label
-    model.net.TopK('x' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
+    model.net.TopK('logits' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
 
 
 def add_memory_module(model, x, centroids_blob_name, label, num_classes):
@@ -303,7 +303,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     model.net.Reshape([centroids_blob_name],
                       ['centroids_expand' + suffix, 'centroids_old_shape' + suffix],
                       shape=(batch_size, -1, -1))
-    keys_memory = workspace.FetchBlob(centroids_blob_name)
+    keys_memory = centroids_blob_name
 
     # computing reachability
     # dist_cur = torch.norm(x_expand - centroids_expand, 2, 2)
@@ -355,7 +355,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     infused_feature = model.net.Mul([concept_selector, memory_feature],
                                         'infused_feature' + suffix)
 
-    logits = add_cosnorm_classifier(x_out)
+    logits = add_cosnorm_classifier(x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
 
     return logits, [direct_feature, infused_feature]
 
@@ -373,13 +373,6 @@ def add_selector(model, input_blob_name, output_blob_name, feat_dim):
 
 
 def add_cosnorm_classifier(input, suffix, in_dims, out_dims):
-    weight_np = np.array((out_dims, in_dims), dtype=np.float64)
-    std = 1. / math.sqrt(weight_np.shape[1])
-
-    weight_np = np.random.uniform(-std, std, (out_dims, in_dims))
-
-    workspace.FeedBlob('weight' + suffix, weight_np)
-
     model.net.LpNorm([input],
                      'norm' + suffix, p=2)
 
@@ -404,7 +397,7 @@ def add_cosnorm_classifier(input, suffix, in_dims, out_dims):
     model.net.Mul(['scale_blob', 'ex' + suffix],
                      'scaled_ex' + suffix, broadcast=1)
     out = model.net.MatMul(['scaled_ex' + suffix, 'ew' + suffix],
-                           'x' + suffix, trans_b=1)
+                           'logits' + suffix, trans_b=1)
     return out
 
 def load_centroids():

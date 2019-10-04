@@ -801,6 +801,16 @@ def _sample_rois_softmax_yall(
     neg_starts_rel = np.array([rel_fg_inds.size, 0], dtype=np.int32)
     neg_ends_rel = np.array([-1, -1], dtype=np.int32)
 
+    weight_sbj = np.array((cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float64)
+    std = 1. / math.sqrt(weight_sbj.shape[1])
+    weight_sbj = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM))
+
+    weight_obj = weight_sbj
+
+    weight_rel = np.array((cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float64)
+    std = 1. / math.sqrt(weight_rel.shape[1])
+    weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM))
+
     blob = dict(
         sbj_rois=rois_sbj,
         obj_rois=rois_obj,
@@ -827,6 +837,10 @@ def _sample_rois_softmax_yall(
     if cfg.TRAIN.ADD_LOSS_WEIGHTS_SO:
         blob['sbj_pos_weights'] = sbj_pos_weights
         blob['obj_pos_weights'] = obj_pos_weights
+    if cfg.MODEL.MEMORY_MODULE:
+        blob['weight_sbj'] = weight_sbj
+        blob['weight_obj'] = weight_obj
+        blob['weight_rel'] = weight_rel
 
     return blob
 
