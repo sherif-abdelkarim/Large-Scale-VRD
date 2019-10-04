@@ -43,20 +43,19 @@ def create_model(model):
     spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
         model, blob, dim, spatial_scale)
 
-    add_visual_embedding(
-        model, blob_sbj, dim_sbj, blob_obj, dim_obj,
-        blob_rel_prd, dim_rel_prd,
-        blob_rel_sbj, dim_rel_sbj,
-        blob_rel_obj, dim_rel_obj)
+    x_sbj, x_obj, x_rel = add_visual_embedding(model, blob_sbj, dim_sbj, blob_obj, dim_obj,
+                                                blob_rel_prd, dim_rel_prd,
+                                                blob_rel_sbj, dim_rel_sbj,
+                                                blob_rel_obj, dim_rel_obj)
 
     load_centroids()
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
     model.net.ConstantFill([], 'scale_10_blob', shape=[1], value=10.0)
 
-    add_memory_module(model, 'centroids_obj', 'sbj')
-    add_memory_module(model, 'centroids_obj', 'obj')
-    add_memory_module(model, 'centroids_rel', 'rel')
+    add_memory_module(model, x_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    add_memory_module(model, x_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    add_memory_module(model, x_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
     # During testing, get topk labels and scores
     if not model.train:
         add_labels_and_scores_topk(model, 'sbj')
@@ -227,20 +226,24 @@ def add_visual_embedding(model,
                          blob_rel_prd, dim_rel_prd,
                          blob_rel_sbj, dim_rel_sbj,
                          blob_rel_obj, dim_rel_obj):
-    model.add_FC_layer_with_weight_name(
-        'x_sbj_and_obj',
-        blob_sbj, 'x_sbj', dim_sbj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-    model.add_FC_layer_with_weight_name(
-        'x_sbj_and_obj',
-        blob_obj, 'x_obj', dim_obj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-    model.FC(
-        blob_rel_prd, 'x_rel',
-        dim_rel_prd, cfg.MODEL.NUM_CLASSES_PRD)
+    x_sbj = model.add_FC_layer_with_weight_name(
+            'x_sbj_and_obj',
+            blob_sbj, 'x_sbj', dim_sbj, cfg.OUTPUT_EMBEDDING_DIM)
+            # blob_sbj, 'x_sbj', dim_sbj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    x_obj = model.add_FC_layer_with_weight_name(
+            'x_sbj_and_obj',
+            blob_obj, 'x_obj', dim_obj, cfg.OUTPUT_EMBEDDING_DIM)
+            # blob_obj, 'x_obj', dim_obj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    x_rel = model.FC(
+            blob_rel_prd, 'x_rel',
+            dim_rel_prd, cfg.OUTPUT_EMBEDDING_DIM)
+            # dim_rel_prd, cfg.MODEL.NUM_CLASSES_PRD)
 
     # model.net.Alias('x_rel_prd_raw_1', 'x_rel_prd_raw')
     # model.net.Normalize('x_sbj_raw', 'x_sbj')
     # model.net.Normalize('x_obj_raw', 'x_obj')
     # model.net.Normalize('x_rel_prd_raw', 'x_rel')
+    return x_sbj, x_obj, x_rel
 
 
 def add_embd_pos_neg_splits(model, label):
@@ -272,16 +275,15 @@ def add_labels_and_scores_topk(model, label):
     model.net.TopK('x' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
 
 
-def add_memory_module(model, centroids_blob_name, label, num_classes):
+def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     prefix = label + '_'
     suffix = '_' + label
 
     # storing direct feature
-    x = workspace.FetchBlob('x' + suffix)
     direct_feature = x
 
-    batch_size = x.shape[0]
-    feat_size = x.shape[1]
+    batch_size = 1
+    feat_size = cfg.OUTPUT_EMBEDDING_DIM
 
     # set up visual memory
     # x_expand = x.unsqueeze(1).expand(-1, self.num_classes, -1)
