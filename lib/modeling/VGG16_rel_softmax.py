@@ -357,7 +357,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     infused_feature = model.net.Mul([concept_selector, memory_feature],
                                         'infused_feature' + suffix)
 
-    logits = add_cosnorm_classifier(x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
+    logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
 
     return logits, [direct_feature, infused_feature]
 
@@ -374,7 +374,7 @@ def add_selector(model, input_blob_name, output_blob_name, feat_size):
     return out
 
 
-def add_cosnorm_classifier(input, suffix, in_dims, out_dims):
+def add_cosnorm_classifier(model, input, suffix, in_dims, out_dims):
     model.net.LpNorm([input],
                      'norm' + suffix, p=2)
 
