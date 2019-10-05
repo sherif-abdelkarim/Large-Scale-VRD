@@ -333,7 +333,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     # computing memory feature by querying and associating visual memory
 
     # values_memory = self.fc_hallucinator(x)
-    values_memory = add_hallucinator(model, 'x' + suffix, 'values_memory' + suffix, feat_dim, num_classes)
+    values_memory = add_hallucinator(model, 'x' + suffix, 'values_memory' + suffix, feat_size, num_classes)
     # values_memory = values_memory.softmax(dim=1)
     values_memory = model.net.softmax(values_memory, axis=1)
     # memory_feature = torch.matmul(values_memory, keys_memory)
@@ -342,7 +342,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
 
     # computing concept selector
     # concept_selector = self.fc_selector(x)
-    concept_selector = add_selector(model, 'x' + suffix, 'concept_selector' + suffix, feat_dim)
+    concept_selector = add_selector(model, 'x' + suffix, 'concept_selector' + suffix, feat_size)
     # concept_selector = concept_selector.tanh()
     concept_selector = model.net.tanh(concept_selector)
     # x = reachability * (direct_feature + concept_selector * memory_feature)
@@ -362,15 +362,15 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     return logits, [direct_feature, infused_feature]
 
 
-def add_hallucinator(model, input_blob_name, output_blob_name, feat_dim, num_classes):
+def add_hallucinator(model, input_blob_name, output_blob_name, feat_size, num_classes):
     out = model.FC(input_blob_name, output_blob_name,
-                   feat_dim, num_classes)
+                   feat_size, num_classes)
     return out
 
 
-def add_selector(model, input_blob_name, output_blob_name, feat_dim):
+def add_selector(model, input_blob_name, output_blob_name, feat_size):
     out = model.FC(input_blob_name, output_blob_name,
-                   feat_dim, feat_dim)
+                   feat_size, feat_size)
     return out
 
 
