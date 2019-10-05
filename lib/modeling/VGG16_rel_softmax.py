@@ -344,7 +344,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     # concept_selector = self.fc_selector(x)
     concept_selector = add_selector(model, 'x' + suffix, 'concept_selector' + suffix, feat_size)
     # concept_selector = concept_selector.tanh()
-    concept_selector = model.net.tanh(concept_selector)
+    concept_selector = model.net.Tanh(concept_selector)
     # x = reachability * (direct_feature + concept_selector * memory_feature)
     model.net.Mul([concept_selector, memory_feature],
                      'matmul_concep_memory' + suffix)
