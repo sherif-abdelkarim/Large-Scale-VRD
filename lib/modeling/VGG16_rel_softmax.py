@@ -44,9 +44,9 @@ def create_model(model):
         model, blob, dim, spatial_scale)
 
     x_sbj, x_obj, x_rel = add_visual_embedding(model, blob_sbj, dim_sbj, blob_obj, dim_obj,
-                                                blob_rel_prd, dim_rel_prd,
-                                                blob_rel_sbj, dim_rel_sbj,
-                                                blob_rel_obj, dim_rel_obj)
+                                               blob_rel_prd, dim_rel_prd,
+                                               blob_rel_sbj, dim_rel_sbj,
+                                               blob_rel_obj, dim_rel_obj)
 
     # load_centroids()
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
@@ -227,17 +227,17 @@ def add_visual_embedding(model,
                          blob_rel_sbj, dim_rel_sbj,
                          blob_rel_obj, dim_rel_obj):
     x_sbj = model.add_FC_layer_with_weight_name(
-            'x_sbj_and_obj',
-            blob_sbj, 'x_sbj', dim_sbj, cfg.OUTPUT_EMBEDDING_DIM)
-            # blob_sbj, 'x_sbj', dim_sbj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        'x_sbj_and_obj',
+        blob_sbj, 'x_sbj', dim_sbj, cfg.OUTPUT_EMBEDDING_DIM)
+    # blob_sbj, 'x_sbj', dim_sbj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
     x_obj = model.add_FC_layer_with_weight_name(
-            'x_sbj_and_obj',
-            blob_obj, 'x_obj', dim_obj, cfg.OUTPUT_EMBEDDING_DIM)
-            # blob_obj, 'x_obj', dim_obj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        'x_sbj_and_obj',
+        blob_obj, 'x_obj', dim_obj, cfg.OUTPUT_EMBEDDING_DIM)
+    # blob_obj, 'x_obj', dim_obj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
     x_rel = model.FC(
-            blob_rel_prd, 'x_rel',
-            dim_rel_prd, cfg.OUTPUT_EMBEDDING_DIM)
-            # dim_rel_prd, cfg.MODEL.NUM_CLASSES_PRD)
+        blob_rel_prd, 'x_rel',
+        dim_rel_prd, cfg.OUTPUT_EMBEDDING_DIM)
+    # dim_rel_prd, cfg.MODEL.NUM_CLASSES_PRD)
 
     # model.net.Alias('x_rel_prd_raw_1', 'x_rel_prd_raw')
     # model.net.Normalize('x_sbj_raw', 'x_sbj')
@@ -291,18 +291,20 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
                          ['x_expanddims' + suffix],
                          dims=[1])
 
-    model.net.Reshape(['x_expanddims' + suffix],
-                      ['x_expand' + suffix, 'x_old_shape' + suffix],
-                      shape=(-1, num_classes, -1))
+    model.net.Tile(['x_expanddims' + suffix],
+                   ['x_expand' + suffix, 'x_old_shape' + suffix],
+                   tile=num_classes,
+                   axis=1)
 
     # centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
     model.net.ExpandDims([centroids_blob_name],
                          ['centroids_expanddims' + suffix],
                          dims=[0])
 
-    model.net.Reshape([centroids_blob_name],
-                      ['centroids_expand' + suffix, 'centroids_old_shape' + suffix],
-                      shape=(batch_size, -1, -1))
+    model.net.Tile([centroids_blob_name],
+                   ['centroids_expand' + suffix, 'centroids_old_shape' + suffix],
+                   tile=batch_size,
+                   axis=0)
     keys_memory = centroids_blob_name
 
     # computing reachability
@@ -322,14 +324,15 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     # reachability = (scale / values_nn[:, 0]).unsqueeze(1).expand(-1, feat_size)
 
     # sliced_values_nn = model.net.Slice([values_nn], 'sliced_values_nn' + suffix, starts=[0, 0], ends=[-1, 1]) # TODO check if model.net.Slice() is the correct way to slice in caffe2
-    model.net.Div(['scale_10_blob', 'min_dis' + suffix], 'scale_over_values'+ suffix, broadcast=1)
+    model.net.Div(['scale_10_blob', 'min_dis' + suffix], 'scale_over_values' + suffix, broadcast=1)
     model.net.ExpandDims(['scale_over_values' + suffix],
                          'scale_over_values_expand' + suffix,
                          dims=[1])
 
-    reachability = model.net.Reshape(['scale_over_values_expand' + suffix],
-                                      'reachability' + suffix,
-                                      shape=(-1, feat_size))
+    reachability = model.net.Tile(['scale_over_values_expand' + suffix],
+                                  'reachability' + suffix,
+                                  tile=feat_size,
+                                  axis=1)
     # computing memory feature by querying and associating visual memory
 
     # values_memory = self.fc_hallucinator(x)
@@ -347,15 +350,15 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     concept_selector = model.net.Tanh(concept_selector)
     # x = reachability * (direct_feature + concept_selector * memory_feature)
     model.net.Mul([concept_selector, memory_feature],
-                     'matmul_concep_memory' + suffix)
+                  'matmul_concep_memory' + suffix)
     model.net.Add([direct_feature, 'matmul_concep_memory' + suffix], 'add_matmul_conc_mem' + suffix)
     x_out = model.net.Mul([reachability, 'add_matmul_conc_mem' + suffix],
-                             'x_out' + suffix)
+                          'x_out' + suffix)
 
     # storing infused feature
     # infused_feature = concept_selector * memory_feature
     infused_feature = model.net.Mul([concept_selector, memory_feature],
-                                        'infused_feature' + suffix)
+                                    'infused_feature' + suffix)
 
     logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
 
@@ -380,24 +383,24 @@ def add_cosnorm_classifier(model, input, suffix, in_dims, out_dims):
 
     # ex = (norm_x / (1 + norm_x)) * (input / norm_x)
     model.net.Add(['norm' + suffix, 'one_blob'],
-                  'one_plus_norm' + suffix, broadcast=1)        # (1 + norm_x)
+                  'one_plus_norm' + suffix, broadcast=1)  # (1 + norm_x)
 
     model.net.Div(['norm' + suffix, 'one_plus_norm' + suffix],
-                  'norm_over_one_plus_norm' + suffix)           # (norm_x / (1 + norm_x))
+                  'norm_over_one_plus_norm' + suffix)  # (norm_x / (1 + norm_x))
 
     model.net.Div([input, 'norm' + suffix],
-                  'input_over_norm' + suffix)                   # (input / norm_x)
+                  'input_over_norm' + suffix)  # (input / norm_x)
 
     model.net.Mul(['norm_over_one_plus_norm' + suffix,
-                           'input_over_norm' + suffix],
-                          'ex' + suffix)                        # (norm_x / (1 + norm_x)) * (input / norm_x)
+                   'input_over_norm' + suffix],
+                  'ex' + suffix)  # (norm_x / (1 + norm_x)) * (input / norm_x)
 
     # ew = self.weight / torch.norm(self.weight, 2, 1, keepdim=True)
     model.net.LpNorm(['weight' + suffix], 'weight_norm' + suffix, p=2)
     model.net.Div(['weight' + suffix, 'weight_norm' + suffix],
                   'ew' + suffix)
     model.net.Mul(['scale_blob', 'ex' + suffix],
-                     'scaled_ex' + suffix, broadcast=1)
+                  'scaled_ex' + suffix, broadcast=1)
     out = model.net.MatMul(['scaled_ex' + suffix, 'ew' + suffix],
                            'logits' + suffix, trans_b=1)
     return out
@@ -414,4 +417,3 @@ def load_pickle(pickle_file):
         print('Unable to load data ', pickle_file, ':', e)
         raise
     return pickle_data
-
