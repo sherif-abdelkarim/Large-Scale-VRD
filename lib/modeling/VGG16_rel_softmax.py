@@ -313,14 +313,16 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
                      'dist_cur' + suffix, p=2)
 
     # values_nn, labels_nn = torch.sort(dist_cur, 1)
-    model.net.Sort(['dist_cur' + suffix],
-                   ['values_nn' + suffix, 'labels_nn' + suffix])  # TODO: not an actual function, to be done
+    # model.net.Sort(['dist_cur' + suffix],
+    #                ['values_nn' + suffix, 'labels_nn' + suffix])  # TODO: not an actual function, to be done
+    model.net.Min(['dist_cur' + suffix],
+                  'min_dis' + suffix)
 
     # scale = 10.0
     # reachability = (scale / values_nn[:, 0]).unsqueeze(1).expand(-1, feat_size)
 
-    sliced_values_nn = model.net.Slice([values_nn], 'sliced_values_nn' + suffix, starts=[0, 0], ends=[-1, 1]) # TODO check if model.net.Slice() is the correct way to slice in caffe2
-    model.net.Div(['scale_10_blob', sliced_values_nn], 'scale_over_values'+ suffix, broadcast=1)
+    # sliced_values_nn = model.net.Slice([values_nn], 'sliced_values_nn' + suffix, starts=[0, 0], ends=[-1, 1]) # TODO check if model.net.Slice() is the correct way to slice in caffe2
+    model.net.Div(['scale_10_blob', 'min_dis' + suffix], 'scale_over_values'+ suffix, broadcast=1)
     model.net.ExpandDims(['scale_over_values' + suffix],
                          'scale_over_values_expand' + suffix,
                          dims=[1])
