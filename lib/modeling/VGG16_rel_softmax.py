@@ -335,7 +335,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     # values_memory = self.fc_hallucinator(x)
     values_memory = add_hallucinator(model, 'x' + suffix, 'values_memory' + suffix, feat_size, num_classes)
     # values_memory = values_memory.softmax(dim=1)
-    values_memory = model.net.softmax(values_memory, axis=1)
+    values_memory = model.net.Softmax(values_memory, axis=1)
     # memory_feature = torch.matmul(values_memory, keys_memory)
     memory_feature = model.net.MatMul([values_memory, keys_memory],
                                       'memory_feature' + suffix, trans_b=1)
