@@ -17,6 +17,8 @@ from core.config_rel import cfg
 import utils.blob as blob_utils
 import pickle
 
+
+
 logger = logging.getLogger(__name__)
 
 dropout_ratio = cfg.TRAIN.DROPOUT
@@ -51,7 +53,15 @@ def create_model(model):
     # load_centroids()
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
-    model.net.ConstantFill([], 'scale_10_blob', shape=[1], value=10.0)
+    model.net.ConstantFill([], 'scale_10_blob', shape=[128, 1], value=10.0)
+    model.net.ConstantFill([], 'neg_two_blob_sbj', shape=[128, cfg.MODEL.NUM_CLASSES_SBJ_OBJ], value=-2.0)
+    model.net.ConstantFill([], 'neg_two_blob_obj', shape=[128, cfg.MODEL.NUM_CLASSES_SBJ_OBJ], value=-2.0)
+    model.net.ConstantFill([], 'neg_two_blob_rel', shape=[128, cfg.MODEL.NUM_CLASSES_PRD], value=-2.0)
+    model.net.ConstantFill([], 'zero_blob_x', shape=[128, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+    model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+    model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+    model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+    
 
     add_memory_module(model, x_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
     add_memory_module(model, x_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
@@ -236,7 +246,7 @@ def add_visual_embedding(model,
     # blob_obj, 'x_obj', dim_obj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
     x_rel = model.FC(
         blob_rel_prd, 'x_rel',
-        dim_rel_prd, cfg.OUTPUT_EMBEDDING_DIM)
+        dim_rel_prd, cfg.OUTPUT_EMBEDDING_DIM, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
     # dim_rel_prd, cfg.MODEL.NUM_CLASSES_PRD)
 
     # model.net.Alias('x_rel_prd_raw_1', 'x_rel_prd_raw')
@@ -282,57 +292,117 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     # storing direct feature
     direct_feature = x
 
-    batch_size = 1
+    batch_size = 128
     feat_size = cfg.OUTPUT_EMBEDDING_DIM
 
     # set up visual memory
     # x_expand = x.unsqueeze(1).expand(-1, self.num_classes, -1)
-    model.net.ExpandDims(['x' + suffix],
-                         ['x_expanddims' + suffix],
-                         dims=[1])
+    #model.net.ExpandDims(['x' + suffix],
+    #                     ['x_expanddims' + suffix],
+    #                     dims=[1])
 
-    model.net.Tile(['x_expanddims' + suffix],
-                   ['x_expand' + suffix, 'x_old_shape' + suffix],
-                   tile=num_classes,
-                   axis=1)
+    #model.net.Tile('x_expanddims' + suffix,
+    #               'x_expand' + suffix,
+    #               tiles=num_classes,
+    #               axis=1)
 
     # centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
-    model.net.ExpandDims([centroids_blob_name],
-                         ['centroids_expanddims' + suffix],
-                         dims=[0])
+    #model.net.ExpandDims([centroids_blob_name],
+    #                     ['centroids_expanddims' + suffix],
+    #                     dims=[0])
 
-    model.net.Tile([centroids_blob_name],
-                   ['centroids_expand' + suffix, 'centroids_old_shape' + suffix],
-                   tile=batch_size,
-                   axis=0)
+    #model.net.Tile('centroids_expanddims' + suffix,
+    #               'centroids_expand' + suffix,
+    #               tiles=batch_size,
+    #               axis=0)
     keys_memory = centroids_blob_name
 
+
+    # X^2 - 2 * XC_t + C^2
+    # X: x + suffix: (128, 1024)
+    # C: centroids + suffix: (1703, 1024)
+    # X^2: (128,)
+    model.net.SquaredL2Distance(['x' + suffix, 'zero_blob_x'], 'x_norm' + suffix)
+    model.net.ExpandDims(['x_norm' + suffix],
+                        'x_norm_expand' + suffix,
+                        dims=[1])
+    model.net.Tile(['x_norm_expand' + suffix],
+                    'x_norm_tile' + suffix,
+                    tiles=num_classes,
+                    axis=1)
+    #model.net.Print(model.net.Shape('x_norm' + suffix, 'x_norm' + suffix + '_shape'), []) 
+    # C^2: (1703,)
+    model.net.SquaredL2Distance([centroids_blob_name, 'zero_blob_c' + suffix], 'c_norm' + suffix)
+    model.net.ExpandDims(['c_norm' + suffix],
+                        'c_norm_expand' + suffix,
+                        dims=[1])
+    model.net.Tile(['c_norm_expand' + suffix],
+                    'c_norm_tile' + suffix,
+                    tiles=128,
+                    axis=1)
+    model.Transpose(['c_norm_tile' + suffix], ['c_norm_tile_T' + suffix])
+    
+    #model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), []) 
+    
+    # XC_t: (128, 1703)
+    model.net.MatMul(['x' + suffix, centroids_blob_name], 'xc_t' + suffix, trans_b=1)
+
+    # -2 * XC_t
+    model.net.Mul(['neg_two_blob' + suffix, 'xc_t' + suffix], 'neg_2_xc_t' + suffix)
+
+    # X^2 - 2 * XC_t + C^2
+    #model.net.Print(model.net.Shape('x_norm_tile' + suffix, 'x_norm_tile' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('neg_2_xc_t' + suffix, 'neg_2_xc_t' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), [])
+    model.net.Sum(['x_norm_tile' + suffix, 'neg_2_xc_t' + suffix, 'c_norm_tile_T' + suffix], 'dist_cur' + suffix)
+    #model.net.Sum(['temp_sum' + suffix, 'neg_2_xc_t' + suffix],  'dist_cur' + suffix)
+    #model.net.Print(model.net.Shape('dist_cur' + suffix, 'dist_cur' + suffix + '_shape'), [])
     # computing reachability
     # dist_cur = torch.norm(x_expand - centroids_expand, 2, 2)
-    model.net.Sub(['x_expand' + suffix, 'centroids_expand' + suffix],
-                  'sub_x_expand_centroids_expand' + suffix)
-    model.net.LpNorm(['sub_x_expand_centroids_expand' + suffix],
-                     'dist_cur' + suffix, p=2)
-
+    #model.net.Print(model.net.Shape('centroids_expand' + suffix, 'centroids_expand' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('x_expand' + suffix, 'x_expand' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('x' + suffix, 'x' + suffix + '_shape'), [])
+    #sub = model.net.Sub(['x_expand' + suffix, 'centroids_expand' + suffix],
+    #              'sub_x_expand_centroids_expand' + suffix)
+    #model.net.Print('sub_x_expand_centroids_expand' + suffix, [])
+    #model.net.LpNorm('sub_x_expand_centroids_expand' + suffix,
+    #                 'dist_cur' + suffix, p=2, average=False)
+    #distances = model.net.ReduceSum('sub_x_expand_centroids_expand' + suffix, axes=[2], keepdims=0)
+    #model.net.Alias(distances, 'dist_cur' + suffix)
+    #model.net.Alias('sub_x_expand_centroids_expand' + suffix, 'dist_cur' + suffix)
     # values_nn, labels_nn = torch.sort(dist_cur, 1)
     # model.net.Sort(['dist_cur' + suffix],
     #                ['values_nn' + suffix, 'labels_nn' + suffix])  # TODO: not an actual function, to be done
-    model.net.Min(['dist_cur' + suffix],
-                  'min_dis' + suffix)
 
+    split = tuple([1 for i in range(num_classes)])
+    tensors_list_names = ['tensor' + str(i) + suffix for i in range(num_classes)]
+    tensors_list = model.net.Split('dist_cur' + suffix, tensors_list_names, axis=1, split=split)
+    #model.net.Print(model.net.Shape(tensors_list, 'tensors_list' + suffix + '_shape'), [])
+    minm = model.net.Min(tensors_list,
+                        'min_dis' + suffix)
+    #minm = model.net.ArgMin('dist_cur' + suffix,
+    #        'min_idx' + suffix, axis=1)
+    
+    #shape = model.net.Shape(minm)
     # scale = 10.0
     # reachability = (scale / values_nn[:, 0]).unsqueeze(1).expand(-1, feat_size)
 
     # sliced_values_nn = model.net.Slice([values_nn], 'sliced_values_nn' + suffix, starts=[0, 0], ends=[-1, 1]) # TODO check if model.net.Slice() is the correct way to slice in caffe2
-    model.net.Div(['scale_10_blob', 'min_dis' + suffix], 'scale_over_values' + suffix, broadcast=1)
+    #print('shape', shape)
+    #model.net.Print(model.net.Shape('min_idx' + suffix, 'min_idx' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('dist_cur' + suffix, 'dist_cur' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('min_dis' + suffix, 'min_dis' + suffix + '_shape'), [])
+    model.net.Div(['scale_10_blob', 'min_dis' + suffix], 'scale_over_values' + suffix)
+    
     model.net.ExpandDims(['scale_over_values' + suffix],
                          'scale_over_values_expand' + suffix,
                          dims=[1])
 
-    reachability = model.net.Tile(['scale_over_values_expand' + suffix],
+    reachability = model.net.Tile('scale_over_values_expand' + suffix,
                                   'reachability' + suffix,
-                                  tile=feat_size,
+                                  tiles=feat_size,
                                   axis=1)
+    # model.net.Print(model.net.Shape(reachability, 'reachability' + suffix + '_shape'), [])
     # computing memory feature by querying and associating visual memory
 
     # values_memory = self.fc_hallucinator(x)
@@ -341,8 +411,8 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     values_memory = model.net.Softmax(values_memory, axis=1)
     # memory_feature = torch.matmul(values_memory, keys_memory)
     memory_feature = model.net.MatMul([values_memory, keys_memory],
-                                      'memory_feature' + suffix, trans_b=1)
-
+                                      'memory_feature' + suffix)
+    
     # computing concept selector
     # concept_selector = self.fc_selector(x)
     concept_selector = add_selector(model, 'x' + suffix, 'concept_selector' + suffix, feat_size)
@@ -352,35 +422,38 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     model.net.Mul([concept_selector, memory_feature],
                   'matmul_concep_memory' + suffix)
     model.net.Add([direct_feature, 'matmul_concep_memory' + suffix], 'add_matmul_conc_mem' + suffix)
-    x_out = model.net.Mul([reachability, 'add_matmul_conc_mem' + suffix],
-                          'x_out' + suffix)
-
+    
+    #x_out = model.net.Mul([reachability, 'add_matmul_conc_mem' + suffix],
+    #                      'x_out' + suffix)
+    model.net.Alias('add_matmul_conc_mem' + suffix, 'x_out' + suffix)
     # storing infused feature
     # infused_feature = concept_selector * memory_feature
-    infused_feature = model.net.Mul([concept_selector, memory_feature],
-                                    'infused_feature' + suffix)
+    #infused_feature = model.net.Mul([concept_selector, memory_feature],
+    #                                'infused_feature' + suffix)
 
-    logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
+    logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
 
-    return logits, [direct_feature, infused_feature]
+    #logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
+
+    return logits#, [direct_feature, infused_feature]
 
 
 def add_hallucinator(model, input_blob_name, output_blob_name, feat_size, num_classes):
     out = model.FC(input_blob_name, output_blob_name,
-                   feat_size, num_classes)
+                   feat_size, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
     return out
 
 
 def add_selector(model, input_blob_name, output_blob_name, feat_size):
     out = model.FC(input_blob_name, output_blob_name,
-                   feat_size, feat_size)
+                   feat_size, feat_size, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
     return out
 
 
-def add_cosnorm_classifier(model, input, suffix, in_dims, out_dims):
-    model.net.LpNorm([input],
-                     'norm' + suffix, p=2)
-
+def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
+    #model.net.LpNorm([input_],
+    #                 'norm' + suffix, p=2)
+    model.net.Alias(input_, 'norm' + suffix)
     # ex = (norm_x / (1 + norm_x)) * (input / norm_x)
     model.net.Add(['norm' + suffix, 'one_blob'],
                   'one_plus_norm' + suffix, broadcast=1)  # (1 + norm_x)
@@ -388,7 +461,7 @@ def add_cosnorm_classifier(model, input, suffix, in_dims, out_dims):
     model.net.Div(['norm' + suffix, 'one_plus_norm' + suffix],
                   'norm_over_one_plus_norm' + suffix)  # (norm_x / (1 + norm_x))
 
-    model.net.Div([input, 'norm' + suffix],
+    model.net.Div([input_, 'norm' + suffix],
                   'input_over_norm' + suffix)  # (input / norm_x)
 
     model.net.Mul(['norm_over_one_plus_norm' + suffix,
@@ -396,7 +469,8 @@ def add_cosnorm_classifier(model, input, suffix, in_dims, out_dims):
                   'ex' + suffix)  # (norm_x / (1 + norm_x)) * (input / norm_x)
 
     # ew = self.weight / torch.norm(self.weight, 2, 1, keepdim=True)
-    model.net.LpNorm(['weight' + suffix], 'weight_norm' + suffix, p=2)
+    #model.net.LpNorm(['weight' + suffix], 'weight_norm' + suffix, p=2)
+    model.net.Alias('weight' + suffix, 'weight_norm' + suffix)
     model.net.Div(['weight' + suffix, 'weight_norm' + suffix],
                   'ew' + suffix)
     model.net.Mul(['scale_blob', 'ex' + suffix],
