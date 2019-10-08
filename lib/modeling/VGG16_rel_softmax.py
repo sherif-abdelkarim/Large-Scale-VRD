@@ -53,11 +53,11 @@ def create_model(model):
     # load_centroids()
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
-    model.net.ConstantFill([], 'scale_10_blob', shape=[128, 1], value=10.0)
-    model.net.ConstantFill([], 'neg_two_blob_sbj', shape=[128, cfg.MODEL.NUM_CLASSES_SBJ_OBJ], value=-2.0)
-    model.net.ConstantFill([], 'neg_two_blob_obj', shape=[128, cfg.MODEL.NUM_CLASSES_SBJ_OBJ], value=-2.0)
-    model.net.ConstantFill([], 'neg_two_blob_rel', shape=[128, cfg.MODEL.NUM_CLASSES_PRD], value=-2.0)
-    model.net.ConstantFill([], 'zero_blob_x', shape=[128, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+    model.net.ConstantFill([], 'scale_10_blob', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, 1], value=10.0)
+    model.net.ConstantFill([], 'neg_two_blob_sbj', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ], value=-2.0)
+    model.net.ConstantFill([], 'neg_two_blob_obj', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ], value=-2.0)
+    model.net.ConstantFill([], 'neg_two_blob_rel', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, cfg.MODEL.NUM_CLASSES_PRD], value=-2.0)
+    model.net.ConstantFill([], 'zero_blob_x', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
@@ -292,7 +292,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     # storing direct feature
     direct_feature = x
 
-    batch_size = 128
+    batch_size = cfg.TRAIN.BATCH_SIZE_PER_IM
     feat_size = cfg.OUTPUT_EMBEDDING_DIM
 
     # set up visual memory
@@ -318,10 +318,11 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     keys_memory = centroids_blob_name
 
 
-    # X^2 - 2 * XC_t + C^2
-    # X: x + suffix: (128, 1024)
-    # C: centroids + suffix: (1703, 1024)
+    # distance = X^2 - 2 * XC_t + C^2
+    # X: 'x' + suffix: (128, 1024)
+    # C: 'centroids' + suffix + suffix: (1703, 1024)
     # X^2: (128,)
+    # X^2_tiled: (128, 1703)
     model.net.SquaredL2Distance(['x' + suffix, 'zero_blob_x'], 'x_norm' + suffix)
     model.net.ExpandDims(['x_norm' + suffix],
                         'x_norm_expand' + suffix,
@@ -338,7 +339,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
                         dims=[1])
     model.net.Tile(['c_norm_expand' + suffix],
                     'c_norm_tile' + suffix,
-                    tiles=128,
+                    tiles=batch_size,
                     axis=1)
     model.Transpose(['c_norm_tile' + suffix], ['c_norm_tile_T' + suffix])
     
