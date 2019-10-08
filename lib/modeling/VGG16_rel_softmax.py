@@ -395,15 +395,15 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     #model.net.Print(model.net.Shape('min_dis' + suffix, 'min_dis' + suffix + '_shape'), [])
     model.net.Div(['scale_10_blob', 'min_dis' + suffix], 'scale_over_values' + suffix)
     
-    model.net.ExpandDims(['scale_over_values' + suffix],
-                         'scale_over_values_expand' + suffix,
-                         dims=[1])
+    #model.net.ExpandDims(['scale_over_values' + suffix],
+    #                     'scale_over_values_expand' + suffix,
+    #                     dims=[1])
 
-    reachability = model.net.Tile('scale_over_values_expand' + suffix,
+    reachability = model.net.Tile('scale_over_values' + suffix,
                                   'reachability' + suffix,
                                   tiles=feat_size,
                                   axis=1)
-    # model.net.Print(model.net.Shape(reachability, 'reachability' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape(reachability, 'reachability' + suffix + '_shape'), [])
     # computing memory feature by querying and associating visual memory
 
     # values_memory = self.fc_hallucinator(x)
@@ -423,10 +423,10 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     model.net.Mul([concept_selector, memory_feature],
                   'matmul_concep_memory' + suffix)
     model.net.Add([direct_feature, 'matmul_concep_memory' + suffix], 'add_matmul_conc_mem' + suffix)
-    
-    #x_out = model.net.Mul([reachability, 'add_matmul_conc_mem' + suffix],
-    #                      'x_out' + suffix)
-    model.net.Alias('add_matmul_conc_mem' + suffix, 'x_out' + suffix)
+    #model.net.Print(model.net.Shape('add_matmul_conc_mem' + suffix, 'add_matmul_conc_mem' + suffix + '_shape'), [])
+    x_out = model.net.Mul([reachability, 'add_matmul_conc_mem' + suffix],
+                          'x_out' + suffix)
+    #model.net.Alias('add_matmul_conc_mem' + suffix, 'x_out' + suffix)
     # storing infused feature
     # infused_feature = concept_selector * memory_feature
     #infused_feature = model.net.Mul([concept_selector, memory_feature],
