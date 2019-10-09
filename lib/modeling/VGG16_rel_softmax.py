@@ -49,7 +49,12 @@ def create_model(model):
                                                blob_rel_prd, dim_rel_prd,
                                                blob_rel_sbj, dim_rel_sbj,
                                                blob_rel_obj, dim_rel_obj)
-
+    #x_sbj_shape = model.net.Shape(x_sbj, 'x_sbj_shape')
+    #x_obj_shape = model.net.Shape(x_sbj, 'x_obj_shape')
+    #x_rel_shape = model.net.Shape(x_sbj, 'x_rel_shape')
+    #batch_size = model.net.Slice([x_sbj_shape], 'batch_size', starts=[0], ends=[1])
+    #model.net.Print(batch_size, [])
+    #print('x_sbj_shape', x_sbj_shape)
     # load_centroids()
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
@@ -432,9 +437,9 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     #infused_feature = model.net.Mul([concept_selector, memory_feature],
     #                                'infused_feature' + suffix)
 
-    logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
+    #logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
 
-    #logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
+    logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
 
     return logits#, [direct_feature, infused_feature]
 
@@ -474,7 +479,7 @@ def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     model.net.Alias('weight' + suffix, 'weight_norm' + suffix)
     model.net.Div(['weight' + suffix, 'weight_norm' + suffix],
                   'ew' + suffix)
-    model.net.Mul(['scale_blob', 'ex' + suffix],
+    model.net.Mul(['ex' + suffix, 'scale_blob'],
                   'scaled_ex' + suffix, broadcast=1)
     out = model.net.MatMul(['scaled_ex' + suffix, 'ew' + suffix],
                            'logits' + suffix, trans_b=1)
