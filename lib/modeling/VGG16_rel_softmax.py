@@ -357,58 +357,23 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     model.net.Mul(['xc_t' + suffix, 'neg_two_blob'], 'neg_2_xc_t' + suffix, broadcast=1)
 
     # X^2 - 2 * XC_t + C^2
-    #model.net.Print(model.net.Shape('x_norm_tile' + suffix, 'x_norm_tile' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape('neg_2_xc_t' + suffix, 'neg_2_xc_t' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), [])
     model.net.Sum(['x_norm_tile' + suffix, 'neg_2_xc_t' + suffix, 'c_norm_tile_T' + suffix], 'dist_cur' + suffix)
-    #model.net.Sum(['temp_sum' + suffix, 'neg_2_xc_t' + suffix],  'dist_cur' + suffix)
-    #model.net.Print(model.net.Shape('dist_cur' + suffix, 'dist_cur' + suffix + '_shape'), [])
+
     # computing reachability
-    # dist_cur = torch.norm(x_expand - centroids_expand, 2, 2)
-    #model.net.Print(model.net.Shape('centroids_expand' + suffix, 'centroids_expand' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape('x_expand' + suffix, 'x_expand' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape('x' + suffix, 'x' + suffix + '_shape'), [])
-    #sub = model.net.Sub(['x_expand' + suffix, 'centroids_expand' + suffix],
-    #              'sub_x_expand_centroids_expand' + suffix)
-    #model.net.Print('sub_x_expand_centroids_expand' + suffix, [])
-    #model.net.LpNorm('sub_x_expand_centroids_expand' + suffix,
-    #                 'dist_cur' + suffix, p=2, average=False)
-    #distances = model.net.ReduceSum('sub_x_expand_centroids_expand' + suffix, axes=[2], keepdims=0)
-    #model.net.Alias(distances, 'dist_cur' + suffix)
-    #model.net.Alias('sub_x_expand_centroids_expand' + suffix, 'dist_cur' + suffix)
-    # values_nn, labels_nn = torch.sort(dist_cur, 1)
-    # model.net.Sort(['dist_cur' + suffix],
-    #                ['values_nn' + suffix, 'labels_nn' + suffix])  # TODO: not an actual function, to be done
 
     split = tuple([1 for i in range(num_classes)])
     tensors_list_names = ['tensor' + str(i) + suffix for i in range(num_classes)]
     tensors_list = model.net.Split('dist_cur' + suffix, tensors_list_names, axis=1, split=split)
-    #model.net.Print(model.net.Shape(tensors_list, 'tensors_list' + suffix + '_shape'), [])
-    minm = model.net.Min(tensors_list,
-                        'min_dis' + suffix)
-    #minm = model.net.ArgMin('dist_cur' + suffix,
-    #        'min_idx' + suffix, axis=1)
-    
-    #shape = model.net.Shape(minm)
-    # scale = 10.0
-    # reachability = (scale / values_nn[:, 0]).unsqueeze(1).expand(-1, feat_size)
 
-    # sliced_values_nn = model.net.Slice([values_nn], 'sliced_values_nn' + suffix, starts=[0, 0], ends=[-1, 1]) # TODO check if model.net.Slice() is the correct way to slice in caffe2
-    #print('shape', shape)
-    #model.net.Print(model.net.Shape('min_idx' + suffix, 'min_idx' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape('dist_cur' + suffix, 'dist_cur' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape('min_dis' + suffix, 'min_dis' + suffix + '_shape'), [])
+    model.net.Min(tensors_list,
+                        'min_dis' + suffix)
+
     model.net.Div(['scale_10_blob', 'min_dis' + suffix], 'scale_over_values' + suffix)
     
-    #model.net.ExpandDims(['scale_over_values' + suffix],
-    #                     'scale_over_values_expand' + suffix,
-    #                     dims=[1])
-
     reachability = model.net.Tile('scale_over_values' + suffix,
                                   'reachability' + suffix,
                                   tiles=feat_size,
                                   axis=1)
-    #model.net.Print(model.net.Shape(reachability, 'reachability' + suffix + '_shape'), [])
     # computing memory feature by querying and associating visual memory
 
     # values_memory = self.fc_hallucinator(x)
