@@ -59,10 +59,10 @@ def create_model(model):
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
     model.net.ConstantFill([], 'scale_10_blob', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, 1], value=10.0)
-    model.net.ConstantFill([], 'neg_two_blob_sbj', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ], value=-2.0)
-    model.net.ConstantFill([], 'neg_two_blob_obj', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ], value=-2.0)
-    model.net.ConstantFill([], 'neg_two_blob_rel', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, cfg.MODEL.NUM_CLASSES_PRD], value=-2.0)
-    model.net.ConstantFill([], 'zero_blob_x', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+    model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
+    model.net.ConstantFill([x_sbj], 'zero_blob_x_sbj', value=0.0)
+    model.net.ConstantFill([x_obj], 'zero_blob_x_obj', value=0.0)
+    model.net.ConstantFill([x_rel], 'zero_blob_x_rel', value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
@@ -328,7 +328,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     # C: 'centroids' + suffix + suffix: (1703, 1024)
     # X^2: (128,)
     # X^2_tiled: (128, 1703)
-    model.net.SquaredL2Distance(['x' + suffix, 'zero_blob_x'], 'x_norm' + suffix)
+    model.net.SquaredL2Distance(['x' + suffix, 'zero_blob_x' + suffix], 'x_norm' + suffix)
     model.net.ExpandDims(['x_norm' + suffix],
                         'x_norm_expand' + suffix,
                         dims=[1])
@@ -354,7 +354,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     model.net.MatMul(['x' + suffix, centroids_blob_name], 'xc_t' + suffix, trans_b=1)
 
     # -2 * XC_t
-    model.net.Mul(['neg_two_blob' + suffix, 'xc_t' + suffix], 'neg_2_xc_t' + suffix)
+    model.net.Mul(['xc_t' + suffix, 'neg_two_blob'], 'neg_2_xc_t' + suffix, broadcast=1)
 
     # X^2 - 2 * XC_t + C^2
     #model.net.Print(model.net.Shape('x_norm_tile' + suffix, 'x_norm_tile' + suffix + '_shape'), [])
