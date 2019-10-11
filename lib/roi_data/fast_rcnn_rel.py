@@ -11,6 +11,8 @@ from __future__ import unicode_literals
 
 import numpy as np
 import numpy.random as npr
+import math
+import pickle
 
 from core.config_rel import cfg
 import utils.boxes as box_utils
@@ -624,6 +626,19 @@ def _sample_rois_triplet_yall(
     return blob
 
 
+def load_pickle(pickle_file):
+    try:
+        with open(pickle_file, 'rb') as f:
+            pickle_data = pickle.load(f)
+    except UnicodeDecodeError as e:
+        with open(pickle_file, 'rb') as f:
+            pickle_data = pickle.load(f, encoding='latin1')
+    except Exception as e:
+        print('Unable to load data ', pickle_file, ':', e)
+        raise
+    return pickle_data
+
+
 def _sample_rois_softmax_yall(
         unique_all_rois_sbj, unique_all_rois_obj,
         unique_sbj_gt_boxes, unique_obj_gt_boxes,
@@ -801,18 +816,21 @@ def _sample_rois_softmax_yall(
     neg_starts_rel = np.array([rel_fg_inds.size, 0], dtype=np.int32)
     neg_ends_rel = np.array([-1, -1], dtype=np.int32)
 
-    weight_sbj = np.array((cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float64)
+    weight_sbj = np.zeros((cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
     std = 1. / math.sqrt(weight_sbj.shape[1])
-    weight_sbj = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM))
+    weight_sbj = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)).astype(np.float32)
 
     weight_obj = weight_sbj
 
-    weight_rel = np.array((cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float64)
+    weight_rel = np.zeros((cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
     std = 1. / math.sqrt(weight_rel.shape[1])
-    weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM))
+    weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)).astype(np.float32)
 
     centroids_obj = load_pickle('/mnt/scratch/kwc/vision/Mohamed/large_scale_VRD.caffe2/sherif_github/Large-Scale-VRD/centroids/centroids_obj.pkl')
     centroids_rel = load_pickle('/mnt/scratch/kwc/vision/Mohamed/large_scale_VRD.caffe2/sherif_github/Large-Scale-VRD/centroids/centroids_rel.pkl')
+    
+    centroids_obj = centroids_obj.astype(np.float32)
+    centroids_rel = centroids_rel.astype(np.float32)
 
     blob = dict(
         sbj_rois=rois_sbj,
