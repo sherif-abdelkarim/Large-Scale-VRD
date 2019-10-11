@@ -45,23 +45,24 @@ def create_model(model):
     spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
         model, blob, dim, spatial_scale)
 
-    x_sbj, x_obj, x_rel = add_visual_embedding(model, blob_sbj, dim_sbj, blob_obj, dim_obj,
-                                               blob_rel_prd, dim_rel_prd,
-                                               blob_rel_sbj, dim_rel_sbj,
-                                               blob_rel_obj, dim_rel_obj)
-    x_sbj_shape = model.net.Shape(x_sbj, 'x_sbj_shape')
-    x_obj_shape = model.net.Shape(x_obj, 'x_obj_shape')
-    x_rel_shape = model.net.Shape(x_rel, 'x_rel_shape')
-    model.net.Slice([x_sbj_shape], 'batch_size_sbj', starts=[0], ends=[1])
-    model.net.Slice([x_obj_shape], 'batch_size_obj', starts=[0], ends=[1])
-    model.net.Slice([x_rel_shape], 'batch_size_rel', starts=[0], ends=[1])
-    single_row_sbj = model.net.Slice([x_sbj], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
-    single_row_obj = model.net.Slice([x_obj], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
-    single_row_rel = model.net.Slice([x_rel], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
-    
-    #model.net.Print(single_row_sbj, [])
-    #print('x_sbj_shape', x_sbj_shape)
-    # load_centroids()
+    add_visual_embedding(
+        model, blob_sbj, dim_sbj, blob_obj, dim_obj,
+        blob_rel_prd, dim_rel_prd,
+        blob_rel_sbj, dim_rel_sbj,
+        blob_rel_obj, dim_rel_obj)
+
+    add_embd_fusion_for_p(model)
+
+    model.net.Shape('x_sbj', 'x_sbj_shape')
+    model.net.Shape('x_obj', 'x_obj_shape')
+    model.net.Shape('x_rel', 'x_rel_shape')
+    model.net.Slice(['x_sbj_shape'], 'batch_size_sbj', starts=[0], ends=[1])
+    model.net.Slice(['x_obj_shape'], 'batch_size_obj', starts=[0], ends=[1])
+    model.net.Slice(['x_rel_shape'], 'batch_size_rel', starts=[0], ends=[1])
+    model.net.Slice(['x_sbj'], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
+    model.net.Slice(['x_obj'], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
+    model.net.Slice(['x_rel'], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
+
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
     model.net.ConstantFill([single_row_sbj], 'scale_10_blob_sbj', value=10.0)
@@ -249,24 +250,125 @@ def add_visual_embedding(model,
                          blob_rel_prd, dim_rel_prd,
                          blob_rel_sbj, dim_rel_sbj,
                          blob_rel_obj, dim_rel_obj):
-    x_sbj = model.add_FC_layer_with_weight_name(
+    model.add_FC_layer_with_weight_name(
         'x_sbj_and_obj',
-        blob_sbj, 'x_sbj', dim_sbj, cfg.OUTPUT_EMBEDDING_DIM)
-    # blob_sbj, 'x_sbj', dim_sbj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-    x_obj = model.add_FC_layer_with_weight_name(
+        blob_sbj, 'x_sbj_raw', dim_sbj, cfg.OUTPUT_EMBEDDING_DIM,
+        weight_init=('GaussianFill', {'std': 0.01}),
+        bias_init=('ConstantFill', {'value': 0.}))
+    model.add_FC_layer_with_weight_name(
         'x_sbj_and_obj',
-        blob_obj, 'x_obj', dim_obj, cfg.OUTPUT_EMBEDDING_DIM)
-    # blob_obj, 'x_obj', dim_obj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-    x_rel = model.FC(
-        blob_rel_prd, 'x_rel',
-        dim_rel_prd, cfg.OUTPUT_EMBEDDING_DIM, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
-    # dim_rel_prd, cfg.MODEL.NUM_CLASSES_PRD)
+        blob_obj, 'x_obj_raw', dim_obj, cfg.OUTPUT_EMBEDDING_DIM,
+        weight_init=('GaussianFill', {'std': 0.01}),
+        bias_init=('ConstantFill', {'value': 0.}))
+    if cfg.MODEL.SUBTYPE.find('w_ishans') == 0:
+        model.FC(
+            blob_rel_prd, 'x_rel_prd_raw_1',
+            dim_rel_prd, 4 * cfg.OUTPUT_EMBEDDING_DIM,
+            weight_init=('GaussianFill', {'std': 0.01}),
+            bias_init=('ConstantFill', {'value': 0.}))
+        model.LeakyRelu('x_rel_prd_raw_1', 'x_rel_prd_raw_1', alpha=0.1)
+        model.FC(
+            'x_rel_prd_raw_1', 'x_rel_prd_raw_2',
+            4 * cfg.OUTPUT_EMBEDDING_DIM, 2 * cfg.OUTPUT_EMBEDDING_DIM,
+            weight_init=('GaussianFill', {'std': 0.01}),
+            bias_init=('ConstantFill', {'value': 0.}))
+        model.LeakyRelu('x_rel_prd_raw_2', 'x_rel_prd_raw_2', alpha=0.1)
+        model.FC(
+            'x_rel_prd_raw_2', 'x_rel_prd_raw_3',
+            2 * cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM,
+            weight_init=('GaussianFill', {'std': 0.01}),
+            bias_init=('ConstantFill', {'value': 0.}))
+        model.net.Alias('x_rel_prd_raw_3', 'x_rel_prd_raw')
+    else:
+        model.FC(
+            blob_rel_prd, 'x_rel_prd_raw_1',
+            dim_rel_prd, cfg.OUTPUT_EMBEDDING_DIM,
+            weight_init=('GaussianFill', {'std': 0.01}),
+            bias_init=('ConstantFill', {'value': 0.}))
+        if cfg.MODEL.SUBTYPE.find('w_ishans') == 0:
+            model.Relu('x_rel_prd_raw_1', 'x_rel_prd_raw_1')
+            model.FC(
+                'x_rel_prd_raw_1', 'x_rel_prd_raw_2',
+                cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM,
+                weight_init=('GaussianFill', {'std': 0.01}),
+                bias_init=('ConstantFill', {'value': 0.}))
+            model.net.Alias('x_rel_prd_raw_2', 'x_rel_prd_raw')
+        else:
+            model.net.Alias('x_rel_prd_raw_1', 'x_rel_prd_raw')
+    model.net.Normalize('x_sbj_raw', 'x_sbj')
+    model.net.Normalize('x_obj_raw', 'x_obj')
+    model.net.Normalize('x_rel_prd_raw', 'x_rel_prd')
 
-    # model.net.Alias('x_rel_prd_raw_1', 'x_rel_prd_raw')
-    # model.net.Normalize('x_sbj_raw', 'x_sbj')
-    # model.net.Normalize('x_obj_raw', 'x_obj')
-    # model.net.Normalize('x_rel_prd_raw', 'x_rel')
-    return x_sbj, x_obj, x_rel
+    # get x_rel_sbj and x_rel_obj for the p branch
+    if model.train and cfg.MODEL.SUBTYPE.find('embd_fusion') >= 0:
+        model.add_FC_layer_with_weight_name(
+            'x_sbj_and_obj',
+            blob_rel_sbj, 'x_rel_sbj_raw',
+            dim_rel_sbj, cfg.OUTPUT_EMBEDDING_DIM,
+            weight_init=('GaussianFill', {'std': 0.01}),
+            bias_init=('ConstantFill', {'value': 0.}))
+        model.add_FC_layer_with_weight_name(
+            'x_sbj_and_obj',
+            blob_rel_obj, 'x_rel_obj_raw',
+            dim_rel_obj, cfg.OUTPUT_EMBEDDING_DIM,
+            weight_init=('GaussianFill', {'std': 0.01}),
+            bias_init=('ConstantFill', {'value': 0.}))
+        x_rel_sbj = model.net.Normalize('x_rel_sbj_raw', 'x_rel_sbj')
+        x_rel_obj = model.net.Normalize('x_rel_obj_raw', 'x_rel_obj')
+        if cfg.MODEL.SPECS.find('not_stop_gradient') < 0:
+            # this is to stop gradients from x_rel_sbj and x_rel_obj
+            model.StopGradient(x_rel_sbj, x_rel_sbj)
+            model.StopGradient(x_rel_obj, x_rel_obj)
+
+
+def add_embd_fusion_for_p(model):
+    if cfg.MODEL.SUBTYPE.find('embd_fusion') < 0:
+        model.net.Alias('x_rel_prd', 'x_rel_raw_final')
+    else:
+        if model.train:
+            x_spo = model.Concat(
+                ['x_rel_sbj', 'x_rel_obj', 'x_rel_prd'], 'x_spo')
+            dim_x_spo = cfg.OUTPUT_EMBEDDING_DIM * 3
+        else:
+            x_spo = model.Concat(
+                ['x_sbj', 'x_obj', 'x_rel_prd'], 'x_spo')
+            dim_x_spo = cfg.OUTPUT_EMBEDDING_DIM * 3
+        if cfg.MODEL.SUBTYPE.find('w_ishans') >= 0:
+            model.FC(
+                x_spo, 'x_rel_raw',
+                dim_x_spo, 4 * cfg.OUTPUT_EMBEDDING_DIM,
+                weight_init=('GaussianFill', {'std': 0.01}),
+                bias_init=('ConstantFill', {'value': 0.}))
+            model.LeakyRelu('x_rel_raw', 'x_rel_raw', alpha=0.1)
+            model.FC(
+                'x_rel_raw', 'x_rel_raw_2',
+                4 * cfg.OUTPUT_EMBEDDING_DIM, 2 * cfg.OUTPUT_EMBEDDING_DIM,
+                weight_init=('GaussianFill', {'std': 0.01}),
+                bias_init=('ConstantFill', {'value': 0.}))
+            model.LeakyRelu('x_rel_raw_2', 'x_rel_raw_2', alpha=0.1)
+            model.FC(
+                'x_rel_raw_2', 'x_rel_raw_3',
+                2 * cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM,
+                weight_init=('GaussianFill', {'std': 0.01}),
+                bias_init=('ConstantFill', {'value': 0.}))
+            model.net.Alias('x_rel_raw_3', 'x_rel_raw_final')
+        else:
+            model.FC(
+                x_spo, 'x_rel_raw',
+                dim_x_spo, cfg.OUTPUT_EMBEDDING_DIM,
+                weight_init=('GaussianFill', {'std': 0.01}),
+                bias_init=('ConstantFill', {'value': 0.}))
+            if cfg.MODEL.SUBTYPE.find('w_relu') >= 0:
+                model.Relu('x_rel_raw', 'x_rel_raw')
+                model.FC(
+                    'x_rel_raw', 'x_rel_raw_2',
+                    cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM,
+                    weight_init=('GaussianFill', {'std': 0.01}),
+                    bias_init=('ConstantFill', {'value': 0.}))
+                model.net.Alias('x_rel_raw_2', 'x_rel_raw_final')
+            else:
+                model.net.Alias('x_rel_raw', 'x_rel_raw_final')
+    model.net.Normalize('x_rel_raw_final', 'x_rel')
 
 
 def add_embd_pos_neg_splits(model, label):
