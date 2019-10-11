@@ -39,7 +39,7 @@ TRAIN:
   EVALUATION_FREQUENCY: 2500  # 50000
 TEST:
   WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_focal_loss_g025/train/best.pkl
-  DATA_TYPE: train
+  DATA_TYPE: test
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
   BBOX_REG: False
   ISA: False
