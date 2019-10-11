@@ -380,7 +380,7 @@ def add_embd_pos_neg_splits(model, label):
                          preprefix + 'pos_ends'], 'xp' + suffix)
         model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
     else:
-        model.net.Alias('logits' + suffix, 'xp' + suffix)
+        model.net.Alias('logits' + suffix, 'scaled_xp' + suffix)
 
 
 def add_softmax_losses(model, label):
