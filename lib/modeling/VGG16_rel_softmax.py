@@ -50,8 +50,8 @@ def create_model(model):
                                                blob_rel_sbj, dim_rel_sbj,
                                                blob_rel_obj, dim_rel_obj)
     x_sbj_shape = model.net.Shape(x_sbj, 'x_sbj_shape')
-    x_obj_shape = model.net.Shape(x_sbj, 'x_obj_shape')
-    x_rel_shape = model.net.Shape(x_sbj, 'x_rel_shape')
+    x_obj_shape = model.net.Shape(x_obj, 'x_obj_shape')
+    x_rel_shape = model.net.Shape(x_rel, 'x_rel_shape')
     model.net.Slice([x_sbj_shape], 'batch_size_sbj', starts=[0], ends=[1])
     model.net.Slice([x_obj_shape], 'batch_size_obj', starts=[0], ends=[1])
     model.net.Slice([x_rel_shape], 'batch_size_rel', starts=[0], ends=[1])
