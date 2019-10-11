@@ -17,7 +17,6 @@ import utils.blob as blob_utils
 
 logger = logging.getLogger(__name__)
 
-
 dropout_ratio = cfg.TRAIN.DROPOUT
 
 
@@ -49,6 +48,36 @@ def create_model(model):
         blob_rel_obj, dim_rel_obj)
 
     add_embd_fusion_for_p(model)
+
+    model.net.Shape('x_sbj', 'x_sbj_shape')
+    model.net.Shape('x_obj', 'x_obj_shape')
+    model.net.Shape('x_rel', 'x_rel_shape')
+    model.net.Slice(['x_sbj_shape'], 'batch_size_sbj', starts=[0], ends=[1])
+    model.net.Slice(['x_obj_shape'], 'batch_size_obj', starts=[0], ends=[1])
+    model.net.Slice(['x_rel_shape'], 'batch_size_rel', starts=[0], ends=[1])
+    model.net.Slice(['x_sbj'], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
+    model.net.Slice(['x_obj'], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
+    model.net.Slice(['x_rel'], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
+
+    model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
+    model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
+    model.net.ConstantFill(['single_row_sbj'], 'scale_10_blob_sbj', value=10.0)
+    model.net.ConstantFill(['single_row_obj'], 'scale_10_blob_obj', value=10.0)
+    model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
+    model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
+    model.net.ConstantFill(['x_sbj'], 'zero_blob_x_sbj', value=0.0)
+    model.net.ConstantFill(['x_obj'], 'zero_blob_x_obj', value=0.0)
+    model.net.ConstantFill(['x_rel'], 'zero_blob_x_rel', value=0.0)
+    model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
+                           value=0.0)
+    model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
+                           value=0.0)
+    model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
+                           value=0.0)
+
+    add_memory_module(model, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    add_memory_module(model, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    add_memory_module(model, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
 
     add_language_embedding_for_vocab(model)
 

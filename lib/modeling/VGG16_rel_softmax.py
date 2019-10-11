@@ -371,14 +371,25 @@ def add_embd_fusion_for_p(model):
     model.net.Normalize('x_rel_raw_final', 'x_rel')
 
 
-def add_embd_pos_neg_splits(model, label):
+def add_embd_pos_neg_splits(model, label, sublabel=''):
     preprefix = label + '_'
-    suffix = '_' + label
+    if sublabel == '':
+        prefix = preprefix
+        suffix = '_' + label
+    else:
+        prefix = preprefix + sublabel + '_'
+        suffix = '_' + label + '_' + sublabel
 
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         model.net.Slice(['logits' + suffix, preprefix + 'pos_starts',
                          preprefix + 'pos_ends'], 'xp' + suffix)
         model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
+        if suffix == '_rel':
+            model.net.Slice(['x_rel_raw_final', prefix + 'pos_starts',
+                            prefix + 'pos_ends'], 'xp_rel_raw_final')
+        else:
+            model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
+                            prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
         model.net.Alias('logits' + suffix, 'scaled_xp' + suffix)
 
