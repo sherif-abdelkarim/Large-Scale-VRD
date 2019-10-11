@@ -49,16 +49,24 @@ def create_model(model):
                                                blob_rel_prd, dim_rel_prd,
                                                blob_rel_sbj, dim_rel_sbj,
                                                blob_rel_obj, dim_rel_obj)
-    #x_sbj_shape = model.net.Shape(x_sbj, 'x_sbj_shape')
-    #x_obj_shape = model.net.Shape(x_sbj, 'x_obj_shape')
-    #x_rel_shape = model.net.Shape(x_sbj, 'x_rel_shape')
-    #batch_size = model.net.Slice([x_sbj_shape], 'batch_size', starts=[0], ends=[1])
-    #model.net.Print(batch_size, [])
+    x_sbj_shape = model.net.Shape(x_sbj, 'x_sbj_shape')
+    x_obj_shape = model.net.Shape(x_sbj, 'x_obj_shape')
+    x_rel_shape = model.net.Shape(x_sbj, 'x_rel_shape')
+    model.net.Slice([x_sbj_shape], 'batch_size_sbj', starts=[0], ends=[1])
+    model.net.Slice([x_obj_shape], 'batch_size_obj', starts=[0], ends=[1])
+    model.net.Slice([x_rel_shape], 'batch_size_rel', starts=[0], ends=[1])
+    single_row_sbj = model.net.Slice([x_sbj], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
+    single_row_obj = model.net.Slice([x_obj], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
+    single_row_rel = model.net.Slice([x_rel], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
+    
+    #model.net.Print(single_row_sbj, [])
     #print('x_sbj_shape', x_sbj_shape)
     # load_centroids()
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
-    model.net.ConstantFill([], 'scale_10_blob', shape=[cfg.TRAIN.BATCH_SIZE_PER_IM, 1], value=10.0)
+    model.net.ConstantFill([single_row_sbj], 'scale_10_blob_sbj', value=10.0)
+    model.net.ConstantFill([single_row_obj], 'scale_10_blob_obj', value=10.0)
+    model.net.ConstantFill([single_row_rel], 'scale_10_blob_rel', value=10.0)
     model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
     model.net.ConstantFill([x_sbj], 'zero_blob_x_sbj', value=0.0)
     model.net.ConstantFill([x_obj], 'zero_blob_x_obj', value=0.0)
@@ -297,7 +305,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     # storing direct feature
     direct_feature = x
 
-    batch_size = cfg.TRAIN.BATCH_SIZE_PER_IM
+    #batch_size = cfg.TRAIN.BATCH_SIZE_PER_IM
     feat_size = cfg.OUTPUT_EMBEDDING_DIM
 
     # set up visual memory
@@ -342,13 +350,14 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     model.net.ExpandDims(['c_norm' + suffix],
                         'c_norm_expand' + suffix,
                         dims=[1])
-    model.net.Tile(['c_norm_expand' + suffix],
-                    'c_norm_tile' + suffix,
-                    tiles=batch_size,
-                    axis=1)
-    model.Transpose(['c_norm_tile' + suffix], ['c_norm_tile_T' + suffix])
-    
+    model.Transpose(['c_norm_expand' + suffix], ['c_norm_expand_T' + suffix])
+    model.net.Tile(['c_norm_expand_T' + suffix, 'batch_size' + suffix],
+                    'c_norm_tile_T' + suffix,
+                    #tiles=batch_size,
+                    axis=0
+                    )
     #model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), []) 
+    #model.net.Print(model.net.Shape('c_norm_expand' + suffix, 'c_norm_expand' + suffix + '_shape'), []) 
     
     # XC_t: (128, 1703)
     model.net.MatMul(['x' + suffix, centroids_blob_name], 'xc_t' + suffix, trans_b=1)
@@ -368,7 +377,7 @@ def add_memory_module(model, x, centroids_blob_name, label, num_classes):
     model.net.Min(tensors_list,
                         'min_dis' + suffix)
 
-    model.net.Div(['scale_10_blob', 'min_dis' + suffix], 'scale_over_values' + suffix)
+    model.net.Div(['scale_10_blob' + suffix, 'min_dis' + suffix], 'scale_over_values' + suffix)
     
     reachability = model.net.Tile('scale_over_values' + suffix,
                                   'reachability' + suffix,
