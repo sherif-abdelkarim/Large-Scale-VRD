@@ -53,33 +53,36 @@ def create_model(model):
 
     add_embd_fusion_for_p(model)
 
-    model.net.Shape('x_sbj', 'x_sbj_shape')
-    model.net.Shape('x_obj', 'x_obj_shape')
-    model.net.Shape('x_rel', 'x_rel_shape')
-    model.net.Slice(['x_sbj_shape'], 'batch_size_sbj', starts=[0], ends=[1])
-    model.net.Slice(['x_obj_shape'], 'batch_size_obj', starts=[0], ends=[1])
-    model.net.Slice(['x_rel_shape'], 'batch_size_rel', starts=[0], ends=[1])
-    model.net.Slice(['x_sbj'], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
-    model.net.Slice(['x_obj'], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
-    model.net.Slice(['x_rel'], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
-
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
-    model.net.ConstantFill(['single_row_sbj'], 'scale_10_blob_sbj', value=10.0)
-    model.net.ConstantFill(['single_row_obj'], 'scale_10_blob_obj', value=10.0)
-    model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
-    model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
-    model.net.ConstantFill(['x_sbj'], 'zero_blob_x_sbj', value=0.0)
-    model.net.ConstantFill(['x_obj'], 'zero_blob_x_obj', value=0.0)
-    model.net.ConstantFill(['x_rel'], 'zero_blob_x_rel', value=0.0)
-    model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
-    model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
-    model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
-    
 
-    add_memory_module(model, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-    add_memory_module(model, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-    add_memory_module(model, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+    if cfg.MODEL.MEMORY_MODULE:
+        model.net.Shape('x_sbj', 'x_sbj_shape')
+        model.net.Shape('x_obj', 'x_obj_shape')
+        model.net.Shape('x_rel', 'x_rel_shape')
+        model.net.Slice(['x_sbj_shape'], 'batch_size_sbj', starts=[0], ends=[1])
+        model.net.Slice(['x_obj_shape'], 'batch_size_obj', starts=[0], ends=[1])
+        model.net.Slice(['x_rel_shape'], 'batch_size_rel', starts=[0], ends=[1])
+        model.net.Slice(['x_sbj'], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
+        model.net.Slice(['x_obj'], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
+        model.net.Slice(['x_rel'], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
+
+        model.net.ConstantFill(['single_row_sbj'], 'scale_10_blob_sbj', value=10.0)
+        model.net.ConstantFill(['single_row_obj'], 'scale_10_blob_obj', value=10.0)
+        model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
+        model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
+        model.net.ConstantFill(['x_sbj'], 'zero_blob_x_sbj', value=0.0)
+        model.net.ConstantFill(['x_obj'], 'zero_blob_x_obj', value=0.0)
+        model.net.ConstantFill(['x_rel'], 'zero_blob_x_rel', value=0.0)
+        model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+        model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+        model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
+
+
+        add_memory_module(model, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        add_memory_module(model, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        add_memory_module(model, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+
     # During testing, get topk labels and scores
     if not model.train:
         add_labels_and_scores_topk(model, 'sbj')
@@ -88,9 +91,9 @@ def create_model(model):
 
     # # 2. language modules and losses
     if model.train:
-        add_embd_pos_neg_splits(model, 'sbj')
-        add_embd_pos_neg_splits(model, 'obj')
-        add_embd_pos_neg_splits(model, 'rel')
+        # add_embd_pos_neg_splits(model, 'sbj')
+        # add_embd_pos_neg_splits(model, 'obj')
+        # add_embd_pos_neg_splits(model, 'rel')
 
         add_softmax_losses(model, 'sbj')
         add_softmax_losses(model, 'obj')
@@ -381,8 +384,8 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
         suffix = '_' + label + '_' + sublabel
 
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-        model.net.Slice(['logits' + suffix, preprefix + 'pos_starts',
-                         preprefix + 'pos_ends'], 'xp' + suffix)
+        model.net.Slice(['x' + suffix, preprefix + 'pos_starts',
+                        preprefix + 'pos_ends'], 'xp' + suffix)
         model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
         if suffix == '_rel':
             model.net.Slice(['x_rel_raw_final', prefix + 'pos_starts',
@@ -391,7 +394,7 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
             model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
                             prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
-        model.net.Alias('logits' + suffix, 'scaled_xp' + suffix)
+        model.net.Alias('x' + suffix, 'xp' + suffix)
 
 
 def add_softmax_losses(model, label):
@@ -399,7 +402,7 @@ def add_softmax_losses(model, label):
     suffix = '_' + label
 
     _, loss_xp_yall = model.net.SoftmaxWithLoss(
-        ['scaled_xp' + suffix, prefix + 'pos_labels_int32'],
+        ['logits' + suffix, prefix + 'pos_labels_int32'],
         ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
         scale=1. / cfg.NUM_DEVICES)
 
