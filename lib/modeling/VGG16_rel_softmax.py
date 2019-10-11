@@ -65,21 +65,21 @@ def create_model(model):
 
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
-    model.net.ConstantFill([single_row_sbj], 'scale_10_blob_sbj', value=10.0)
-    model.net.ConstantFill([single_row_obj], 'scale_10_blob_obj', value=10.0)
-    model.net.ConstantFill([single_row_rel], 'scale_10_blob_rel', value=10.0)
+    model.net.ConstantFill(['single_row_sbj'], 'scale_10_blob_sbj', value=10.0)
+    model.net.ConstantFill(['single_row_obj'], 'scale_10_blob_obj', value=10.0)
+    model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
     model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
-    model.net.ConstantFill([x_sbj], 'zero_blob_x_sbj', value=0.0)
-    model.net.ConstantFill([x_obj], 'zero_blob_x_obj', value=0.0)
-    model.net.ConstantFill([x_rel], 'zero_blob_x_rel', value=0.0)
+    model.net.ConstantFill(['x_sbj'], 'zero_blob_x_sbj', value=0.0)
+    model.net.ConstantFill(['x_obj'], 'zero_blob_x_obj', value=0.0)
+    model.net.ConstantFill(['x_rel'], 'zero_blob_x_rel', value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
     model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
     
 
-    add_memory_module(model, x_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-    add_memory_module(model, x_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-    add_memory_module(model, x_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+    add_memory_module(model, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    add_memory_module(model, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    add_memory_module(model, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
     # During testing, get topk labels and scores
     if not model.train:
         add_labels_and_scores_topk(model, 'sbj')
@@ -400,12 +400,12 @@ def add_labels_and_scores_topk(model, label):
     model.net.TopK('logits' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
 
 
-def add_memory_module(model, x, centroids_blob_name, label, num_classes):
+def add_memory_module(model, centroids_blob_name, label, num_classes):
     prefix = label + '_'
     suffix = '_' + label
 
     # storing direct feature
-    direct_feature = x
+    direct_feature = 'x' + suffix
 
     #batch_size = cfg.TRAIN.BATCH_SIZE_PER_IM
     feat_size = cfg.OUTPUT_EMBEDDING_DIM
