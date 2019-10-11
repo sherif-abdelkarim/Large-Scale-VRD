@@ -56,32 +56,45 @@ def create_model(model):
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
 
+    if model.train:
+        add_embd_pos_neg_splits(model, 'sbj')
+        add_embd_pos_neg_splits(model, 'obj')
+        add_embd_pos_neg_splits(model, 'rel')
+    else:
+        model.net.Alias('x_sbj', 'scaled_xp_sbj')
+        model.net.Alias('x_obj', 'scaled_xp_obj')
+        model.net.Alias('x_rel', 'scaled_xp_rel')
+
     if cfg.MODEL.MEMORY_MODULE:
-        model.net.Shape('x_sbj', 'x_sbj_shape')
-        model.net.Shape('x_obj', 'x_obj_shape')
-        model.net.Shape('x_rel', 'x_rel_shape')
+        x_blob_sbj = 'scaled_xp_sbj'
+        x_blob_obj = 'scaled_xp_obj'
+        x_blob_rel = 'scaled_xp_rel'
+
+        model.net.Shape(x_blob_sbj, 'x_sbj_shape')
+        model.net.Shape(x_blob_obj, 'x_obj_shape')
+        model.net.Shape(x_blob_rel, 'x_rel_shape')
         model.net.Slice(['x_sbj_shape'], 'batch_size_sbj', starts=[0], ends=[1])
         model.net.Slice(['x_obj_shape'], 'batch_size_obj', starts=[0], ends=[1])
         model.net.Slice(['x_rel_shape'], 'batch_size_rel', starts=[0], ends=[1])
-        model.net.Slice(['x_sbj'], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
-        model.net.Slice(['x_obj'], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
-        model.net.Slice(['x_rel'], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
+        model.net.Slice([x_blob_sbj], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
+        model.net.Slice([x_blob_obj], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
+        model.net.Slice([x_blob_rel], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
 
         model.net.ConstantFill(['single_row_sbj'], 'scale_10_blob_sbj', value=10.0)
         model.net.ConstantFill(['single_row_obj'], 'scale_10_blob_obj', value=10.0)
         model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
         model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
-        model.net.ConstantFill(['x_sbj'], 'zero_blob_x_sbj', value=0.0)
-        model.net.ConstantFill(['x_obj'], 'zero_blob_x_obj', value=0.0)
-        model.net.ConstantFill(['x_rel'], 'zero_blob_x_rel', value=0.0)
+        model.net.ConstantFill([x_blob_sbj], 'zero_blob_x_sbj', value=0.0)
+        model.net.ConstantFill([x_blob_obj], 'zero_blob_x_obj', value=0.0)
+        model.net.ConstantFill([x_blob_rel], 'zero_blob_x_rel', value=0.0)
         model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
         model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
         model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM], value=0.0)
 
 
-        add_memory_module(model, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        add_memory_module(model, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        add_memory_module(model, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+        add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
 
     # During testing, get topk labels and scores
     if not model.train:
@@ -91,10 +104,6 @@ def create_model(model):
 
     # # 2. language modules and losses
     if model.train:
-        # add_embd_pos_neg_splits(model, 'sbj')
-        # add_embd_pos_neg_splits(model, 'obj')
-        # add_embd_pos_neg_splits(model, 'rel')
-
         add_softmax_losses(model, 'sbj')
         add_softmax_losses(model, 'obj')
         add_softmax_losses(model, 'rel')
@@ -391,10 +400,10 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
             model.net.Slice(['x_rel_raw_final', prefix + 'pos_starts',
                             prefix + 'pos_ends'], 'xp_rel_raw_final')
         else:
-            model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
+            model.net.Slice(['x' + label + '_raw', prefix + 'pos_starts',
                             prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
-        model.net.Alias('x' + suffix, 'xp' + suffix)
+        model.net.Alias('x' + suffix, 'scaled_xp' + suffix)
 
 
 def add_softmax_losses(model, label):
@@ -414,19 +423,19 @@ def add_labels_and_scores_topk(model, label):
     model.net.TopK('logits' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
 
 
-def add_memory_module(model, centroids_blob_name, label, num_classes):
+def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     prefix = label + '_'
     suffix = '_' + label
 
     # storing direct feature
-    direct_feature = 'x' + suffix
+    direct_feature = x_blob
 
     #batch_size = cfg.TRAIN.BATCH_SIZE_PER_IM
     feat_size = cfg.OUTPUT_EMBEDDING_DIM
 
     # set up visual memory
     # x_expand = x.unsqueeze(1).expand(-1, self.num_classes, -1)
-    #model.net.ExpandDims(['x' + suffix],
+    #model.net.ExpandDims([x_blob],
     #                     ['x_expanddims' + suffix],
     #                     dims=[1])
 
@@ -448,11 +457,11 @@ def add_memory_module(model, centroids_blob_name, label, num_classes):
 
 
     # distance = X^2 - 2 * XC_t + C^2
-    # X: 'x' + suffix: (128, 1024)
+    # X: x_blob: (128, 1024)
     # C: 'centroids' + suffix + suffix: (1703, 1024)
     # X^2: (128,)
     # X^2_tiled: (128, 1703)
-    model.net.SquaredL2Distance(['x' + suffix, 'zero_blob_x' + suffix], 'x_norm' + suffix)
+    model.net.SquaredL2Distance([x_blob, 'zero_blob_x' + suffix], 'x_norm' + suffix)
     model.net.ExpandDims(['x_norm' + suffix],
                         'x_norm_expand' + suffix,
                         dims=[1])
@@ -476,7 +485,7 @@ def add_memory_module(model, centroids_blob_name, label, num_classes):
     #model.net.Print(model.net.Shape('c_norm_expand' + suffix, 'c_norm_expand' + suffix + '_shape'), []) 
     
     # XC_t: (128, 1703)
-    model.net.MatMul(['x' + suffix, centroids_blob_name], 'xc_t' + suffix, trans_b=1)
+    model.net.MatMul([x_blob, centroids_blob_name], 'xc_t' + suffix, trans_b=1)
 
     # -2 * XC_t
     model.net.Mul(['xc_t' + suffix, 'neg_two_blob'], 'neg_2_xc_t' + suffix, broadcast=1)
@@ -502,7 +511,7 @@ def add_memory_module(model, centroids_blob_name, label, num_classes):
     # computing memory feature by querying and associating visual memory
 
     # values_memory = self.fc_hallucinator(x)
-    values_memory = add_hallucinator(model, 'x' + suffix, 'values_memory' + suffix, feat_size, num_classes)
+    values_memory = add_hallucinator(model, x_blob, 'values_memory' + suffix, feat_size, num_classes)
     # values_memory = values_memory.softmax(dim=1)
     values_memory = model.net.Softmax(values_memory, axis=1)
     # memory_feature = torch.matmul(values_memory, keys_memory)
@@ -511,7 +520,7 @@ def add_memory_module(model, centroids_blob_name, label, num_classes):
     
     # computing concept selector
     # concept_selector = self.fc_selector(x)
-    concept_selector = add_selector(model, 'x' + suffix, 'concept_selector' + suffix, feat_size)
+    concept_selector = add_selector(model, x_blob, 'concept_selector' + suffix, feat_size)
     # concept_selector = concept_selector.tanh()
     concept_selector = model.net.Tanh(concept_selector)
     # x = reachability * (direct_feature + concept_selector * memory_feature)
