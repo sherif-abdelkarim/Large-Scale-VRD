@@ -400,7 +400,7 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
             model.net.Slice(['x_rel_raw_final', prefix + 'pos_starts',
                             prefix + 'pos_ends'], 'xp_rel_raw_final')
         else:
-            model.net.Slice(['x' + label + '_raw', prefix + 'pos_starts',
+            model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
                             prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
         model.net.Alias('x' + suffix, 'scaled_xp' + suffix)
