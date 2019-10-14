@@ -99,11 +99,11 @@ def create_model(model):
 
     else:
         model.add_FC_layer_with_weight_name(
-            'x_sbj_and_obj',
+            'x_sbj_and_obj_out',
             x_blob_sbj, 'logits_sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         model.add_FC_layer_with_weight_name(
-            'x_sbj_and_obj',
+            'x_sbj_and_obj_out',
             x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         model.FC(
