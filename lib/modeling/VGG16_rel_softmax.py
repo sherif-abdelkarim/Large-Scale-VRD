@@ -100,15 +100,15 @@ def create_model(model):
     else:
         model.add_FC_layer_with_weight_name(
             'x_sbj_and_obj',
-            x_blob_sbj, 'logits_sbj', dim_sbj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            x_blob_sbj, 'logits_sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         model.add_FC_layer_with_weight_name(
             'x_sbj_and_obj',
-            x_blob_obj, 'logits_obj', dim_obj, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         model.FC(
             x_blob_rel, 'logits_rel',
-            dim_rel_prd, cfg.MODEL.NUM_CLASSES_PRD,
+            cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
             weight_init=('GaussianFill', {'std': 0.01}),
             bias_init=('ConstantFill', {'value': 0.}))
 
