@@ -426,12 +426,20 @@ def add_softmax_losses(model, label):
     prefix = label + '_'
     suffix = '_' + label
 
-    _, loss_xp_yall = model.net.SoftmaxWithLoss(
+    if cfg.MODEL.WEAK_LABELS:
+        _, loss_xp_yall = model.net.SoftmaxWithLoss(
+            ['logits' + suffix, prefix + 'pos_labels_float32_w'],
+            ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
+            scale=1. / cfg.NUM_DEVICES,
+            label_prob=1)
+        model.loss_set.extend([loss_xp_yall])
+    else:
+        _, loss_xp_yall = model.net.SoftmaxWithLoss(
         ['logits' + suffix, prefix + 'pos_labels_int32'],
         ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
         scale=1. / cfg.NUM_DEVICES)
 
-    model.loss_set.extend([loss_xp_yall])
+        model.loss_set.extend([loss_xp_yall])
 
 
 # def add_centroids_loss(model, feat, label, batch_size):

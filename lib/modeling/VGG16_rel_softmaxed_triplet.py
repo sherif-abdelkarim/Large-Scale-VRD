@@ -645,39 +645,24 @@ def add_embd_triplet_losses_labeled(model, label):
                  cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
             _, loss_xp_yall = model.net.SoftmaxWithLoss(
                 ['sim_xp_yall' + suffix,
-                 prefix + 'pos_labels_int32',
+                 prefix + 'pos_labels_float32_w',
                  prefix + 'pos_weights'],
                 ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-                scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
+                scale=1. / cfg.NUM_DEVICES,
+                label_prob=1
+            )
 
             model.loss_set.extend([loss_xp_yall])
-
-            for w in range(cfg.MODEL.NUM_WEAK_LABELS):
-                _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                    ['sim_xp_yall' + suffix,
-                     prefix + 'pos_labels_int32_w_' + str(w),
-                     prefix + 'pos_weights'],
-                    ['xp_yall_prob' + suffix + '_w_' + str(w), 'loss_xp_yall' + suffix + '_w_' + str(w)],
-                    scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
-
-                model.loss_set.extend([loss_xp_yall])
 
         else:
             _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32'],
+                ['sim_xp_yall' + suffix, prefix + 'pos_labels_float32_w'],
                 ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
-                scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
+                scale=1. / cfg.NUM_DEVICES,
+                label_prob=1
+            )
 
             model.loss_set.extend([loss_xp_yall])
-
-            for w in range(cfg.MODEL.NUM_WEAK_LABELS):
-                _, loss_xp_yall = model.net.SoftmaxWithLoss(
-                    ['sim_xp_yall' + suffix, prefix + 'pos_labels_int32_w_' + str(w)],
-                    ['xp_yall_prob' + suffix + '_w_' + str(w), 'loss_xp_yall' + suffix + '_w_' + str(w)],
-                    scale=1. / (cfg.NUM_DEVICES * cfg.MODEL.NUM_WEAK_LABELS + 1))
-
-                model.loss_set.extend([loss_xp_yall])
-
     else:
         if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
             ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
