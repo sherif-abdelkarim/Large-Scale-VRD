@@ -117,10 +117,13 @@ def initialize_gpu_from_weights_file(model, weights_file, gpu_id=0):
                 not src_name.endswith('_momentum') and
                 src_blobs[src_name] is not None):
             with c2_utils.CpuScope():
-                workspace.FeedBlob(
-                    '__preserve__/{:s}'.format(src_name), src_blobs[src_name])
-                logger.debug(
-                    '{:s} preserved in workspace (unused)'.format(src_name))
+                try:
+                    workspace.FeedBlob(
+                        '__preserve__/{:s}'.format(src_name), src_blobs[src_name])
+                    logger.debug(
+                        '{:s} preserved in workspace (unused)'.format(src_name))
+                except Exception as e:
+                    print('Couldnt preserve {}'.format(src_name))
 
 
 def save_model_to_weights_file(weights_file, model):

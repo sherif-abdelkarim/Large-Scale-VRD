@@ -2,7 +2,7 @@ DATASET: gvqa
 NUM_DEVICES: 8
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
-  SUBTYPE: w_relu_yall
+  SUBTYPE: embd_fusion_w_relu_yall
   SPECS: 8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers
   LOSS_TYPE: SOFTMAX  # EUC, SOFTMAX
   MODEL_NAME: VGG16_rel_softmax
@@ -35,7 +35,7 @@ TRAIN:
   # SCALE_JITTER_TYPE: googleNet
   EVALUATION_FREQUENCY: 2500  # 50000
 TEST:
-  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/w_relu_yall/8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers/train/best.pkl
+  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers/train/best.pkl
   DATA_TYPE: test
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
   BBOX_REG: False
