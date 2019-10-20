@@ -690,19 +690,19 @@ def _sample_rois_triplet_yall(
         blob['obj_pos_labels_float32_w'][idx_batch, idx_obj] = denominator_obj
         blob['rel_pos_labels_float32_w'][idx_batch, idx_rel] = denominator_rel
 
-
-        # while True:
-        #	print('idx_sbj', idx_sbj.shape)
-        #	print('idx_sbj', idx_sbj)
-        # print('overlap_sbj', overlap_sbj.shape)
-        # print('overlap_sbj', overlap_sbj)
-        # print('denominator_sbj', denominator_sbj.shape)
-        # print('denominator_sbj', denominator_sbj)
-        # print('sbj_pos_labels_w', sbj_pos_labels_w.shape)
-        # print('sbj_pos_labels', sbj_pos_labels.shape)
-        # print("blob['sbj_pos_labels_float32_w']", blob['sbj_pos_labels_float32_w'].shape)
-        # print("blob['sbj_pos_labels_float32_w']", blob['sbj_pos_labels_float32_w'][0, np.where(blob['sbj_pos_labels_float32_w'][0,:]>0)])
-        # print("blob['sbj_pos_labels_int32']", blob['sbj_pos_labels_int32'].shape)
+        while True:
+            # print('idx_sbj', idx_sbj.shape)
+            # print('idx_sbj', idx_sbj)
+            # print('overlap_sbj', overlap_sbj.shape)
+            # print('overlap_sbj', overlap_sbj)
+            # print('denominator_sbj', denominator_sbj.shape)
+            # print('denominator_sbj', denominator_sbj)
+            # print('sbj_pos_labels_w', sbj_pos_labels_w.shape)
+            # print('sbj_pos_labels', sbj_pos_labels.shape)
+            # print("blob['sbj_pos_labels_float32_w']", blob['sbj_pos_labels_float32_w'].shape)
+            print("blob['sbj_pos_labels_float32_w']", blob['sbj_pos_labels_float32_w'][0, np.where(blob['sbj_pos_labels_float32_w'][0, :] > 0)])
+            print("blob['sbj_pos_labels_float32_w'].sum", np.sum(blob['sbj_pos_labels_float32_w'], axis=1))
+            # print("blob['sbj_pos_labels_int32']", blob['sbj_pos_labels_int32'].shape)
 
     if cfg.TRAIN.ADD_LOSS_WEIGHTS:
         blob['rel_pos_weights'] = rel_pos_weights
