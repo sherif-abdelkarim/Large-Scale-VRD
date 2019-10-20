@@ -633,9 +633,9 @@ def _sample_rois_triplet_yall(
         blob['bg_num_rel']=out_num_bg_rel.astype(np.float32)
 
     if cfg.MODEL.WEAK_LABELS:
-        frcn_blobs['sbj_pos_labels_float32_w'] = np.zeros(sbj_pos_labels_w[:, 0].shape, dtype=np.float32)
-        frcn_blobs['obj_pos_labels_float32_w'] = np.zeros(obj_pos_labels_w[:, 0].shape, dtype=np.float32)
-        frcn_blobs['rel_pos_labels_float32_w'] = np.zeros(rel_pos_labels_w [:, 0].shape, dtype=np.float32)
+        blob['sbj_pos_labels_float32_w'] = np.zeros(sbj_pos_labels_w[:, 0].shape, dtype=np.float32)
+        blob['obj_pos_labels_float32_w'] = np.zeros(obj_pos_labels_w[:, 0].shape, dtype=np.float32)
+        blob['rel_pos_labels_float32_w'] = np.zeros(rel_pos_labels_w [:, 0].shape, dtype=np.float32)
 
         if np.argmax(sbj_pos_labels) in [np.argmax(sbj_pos_labels_w[:, num_w]) for num_w in range(cfg.MODEL.NUM_WEAK_LABELS)]:
             denominator_sbj = 1.0 / cfg.MODEL.NUM_WEAK_LABELS
@@ -653,13 +653,13 @@ def _sample_rois_triplet_yall(
             denominator_rel = 1.0 / (cfg.MODEL.NUM_WEAK_LABELS + 1)
 
         for num_w in range(cfg.MODEL.NUM_WEAK_LABELS):
-            frcn_blobs['sbj_pos_labels_float32_w'][np.argmax(sbj_gt_labels_w[:, num_w])] = 1.0 / denominator_sbj
-            frcn_blobs['obj_pos_labels_float32_w'][np.argmax(obj_gt_labels_w[:, num_w])] = 1.0 / denominator_obj
-            frcn_blobs['rel_pos_labels_float32_w'][np.argmax(rel_gt_labels_w[:, num_w])] = 1.0 / denominator_rel
+            blob['sbj_pos_labels_float32_w'][np.argmax(sbj_gt_labels_w[:, num_w])] = 1.0 / denominator_sbj
+            blob['obj_pos_labels_float32_w'][np.argmax(obj_gt_labels_w[:, num_w])] = 1.0 / denominator_obj
+            blob['rel_pos_labels_float32_w'][np.argmax(rel_gt_labels_w[:, num_w])] = 1.0 / denominator_rel
 
-        frcn_blobs['sbj_pos_labels_float32_w'][np.argmax(sbj_pos_labels)] = 1.0 / denominator_sbj
-        frcn_blobs['obj_pos_labels_float32_w'][np.argmax(obj_pos_labels)] = 1.0 / denominator_obj
-        frcn_blobs['rel_pos_labels_float32_w'][np.argmax(rel_pos_labels)] = 1.0 / denominator_rel
+            blob['sbj_pos_labels_float32_w'][np.argmax(sbj_pos_labels)] = 1.0 / denominator_sbj
+            blob['obj_pos_labels_float32_w'][np.argmax(obj_pos_labels)] = 1.0 / denominator_obj
+            blob['rel_pos_labels_float32_w'][np.argmax(rel_pos_labels)] = 1.0 / denominator_rel
 
     if cfg.TRAIN.ADD_LOSS_WEIGHTS:
         blob['rel_pos_weights'] = rel_pos_weights
