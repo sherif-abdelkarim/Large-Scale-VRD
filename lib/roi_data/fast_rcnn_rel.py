@@ -633,34 +633,64 @@ def _sample_rois_triplet_yall(
         blob['bg_num_rel']=out_num_bg_rel.astype(np.float32)
 
     if cfg.MODEL.WEAK_LABELS:
-        blob['sbj_pos_labels_float32_w'] = np.zeros(sbj_pos_labels_w[:, 0].shape, dtype=np.float32)
-        blob['obj_pos_labels_float32_w'] = np.zeros(obj_pos_labels_w[:, 0].shape, dtype=np.float32)
-        blob['rel_pos_labels_float32_w'] = np.zeros(rel_pos_labels_w [:, 0].shape, dtype=np.float32)
+        blob['sbj_pos_labels_float32_w'] = np.zeros((sbj_pos_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.float32)
+        blob['obj_pos_labels_float32_w'] = np.zeros((obj_pos_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.float32)
+        blob['rel_pos_labels_float32_w'] = np.zeros((rel_pos_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_PRD), dtype=np.float32)
 
-        if np.argmax(sbj_pos_labels) in [np.argmax(sbj_pos_labels_w[:, num_w]) for num_w in range(cfg.MODEL.NUM_WEAK_LABELS)]:
-            denominator_sbj = 1.0 / cfg.MODEL.NUM_WEAK_LABELS
-        else:
-            denominator_sbj = 1.0 / (cfg.MODEL.NUM_WEAK_LABELS + 1)
+	overlap_sbj = np.isin(sbj_pos_labels, sbj_pos_labels_w)
+	overlap_obj = np.isin(obj_pos_labels, obj_pos_labels_w)
+	overlap_rel = np.isin(rel_pos_labels, rel_pos_labels_w)
+        denominator_sbj = np.zeros((sbj_pos_labels_w.shape[0],), dtype=np.float32)
+        denominator_obj = np.zeros((obj_pos_labels_w.shape[0],), dtype=np.float32)
+        denominator_rel = np.zeros((rel_pos_labels_w.shape[0],), dtype=np.float32)
+	
+	denominator_sbj[np.where(overlap_sbj==False)] = 1.0 / (cfg.MODEL.NUM_WEAK_LABELS + 1)
+	denominator_sbj[np.where(overlap_sbj==True)] = 1.0 / cfg.MODEL.NUM_WEAK_LABELS
+	
+	denominator_obj[np.where(overlap_obj==False)] = 1.0 / (cfg.MODEL.NUM_WEAK_LABELS + 1)
+	denominator_obj[np.where(overlap_obj==True)] = 1.0 / cfg.MODEL.NUM_WEAK_LABELS
 
-        if np.argmax(obj_pos_labels) in [np.argmax(obj_pos_labels_w[:, num_w]) for num_w in range(cfg.MODEL.NUM_WEAK_LABELS)]:
-            denominator_obj = 1.0 / cfg.MODEL.NUM_WEAK_LABELS
-        else:
-            denominator_obj = 1.0 / (cfg.MODEL.NUM_WEAK_LABELS + 1)
+	denominator_rel[np.where(overlap_rel==False)] = 1.0 / (cfg.MODEL.NUM_WEAK_LABELS + 1)
+	denominator_rel[np.where(overlap_rel==True)] = 1.0 / cfg.MODEL.NUM_WEAK_LABELS
+	
+	#while True:
+	#	print('sbj_pos_labels_w', sbj_pos_labels_w)
 
-        if np.argmax(rel_pos_labels) in [np.argmax(rel_pos_labels_w[:, num_w]) for num_w in range(cfg.MODEL.NUM_WEAK_LABELS)]:
-            denominator_rel = 1.0 / cfg.MODEL.NUM_WEAK_LABELS
-        else:
-            denominator_rel = 1.0 / (cfg.MODEL.NUM_WEAK_LABELS + 1)
-
+	idx_batch = np.arange(sbj_pos_labels_w.shape[0], dtype=np.int32)
+	idx = np.stack([idx_batch, sbj_pos_labels_w[:, 1].astype(np.int32)], axis=1)
+	
+	#while True:
+	    #print('idx', idx.shape)
+	    #print("blob['sbj_pos_labels_float32_w']", blob['sbj_pos_labels_float32_w'][idx_batch, sbj_pos_labels_w[:, 1].astype(np.int32)])
+	    #print("blob['sbj_pos_labels_float32_w'][idx]", blob['sbj_pos_labels_float32_w'][idx])
+	
         for num_w in range(cfg.MODEL.NUM_WEAK_LABELS):
-            blob['sbj_pos_labels_float32_w'][np.argmax(sbj_gt_labels_w[:, num_w])] = 1.0 / denominator_sbj
-            blob['obj_pos_labels_float32_w'][np.argmax(obj_gt_labels_w[:, num_w])] = 1.0 / denominator_obj
-            blob['rel_pos_labels_float32_w'][np.argmax(rel_gt_labels_w[:, num_w])] = 1.0 / denominator_rel
+	    idx_sbj = sbj_pos_labels_w[:, num_w].astype(np.int32)
+	    idx_obj = obj_pos_labels_w[:, num_w].astype(np.int32)
+	    idx_rel = rel_pos_labels_w[:, num_w].astype(np.int32)
+            blob['sbj_pos_labels_float32_w'][idx_batch, idx_sbj] = denominator_sbj
+            blob['obj_pos_labels_float32_w'][idx_batch, idx_obj] = denominator_obj
+            blob['rel_pos_labels_float32_w'][idx_batch, idx_rel] = denominator_rel
+        
+	idx_sbj = sbj_pos_labels.astype(np.int32)
+        idx_obj = obj_pos_labels.astype(np.int32)
+        idx_rel = rel_pos_labels.astype(np.int32)
 
-            blob['sbj_pos_labels_float32_w'][np.argmax(sbj_pos_labels)] = 1.0 / denominator_sbj
-            blob['obj_pos_labels_float32_w'][np.argmax(obj_pos_labels)] = 1.0 / denominator_obj
-            blob['rel_pos_labels_float32_w'][np.argmax(rel_pos_labels)] = 1.0 / denominator_rel
-
+        blob['sbj_pos_labels_float32_w'][idx_batch, idx_sbj] = denominator_sbj
+        blob['obj_pos_labels_float32_w'][idx_batch, idx_obj] = denominator_obj
+        blob['rel_pos_labels_float32_w'][idx_batch, idx_rel] = denominator_rel
+	#while True:
+	#	print('idx_sbj', idx_sbj.shape)
+	#	print('idx_sbj', idx_sbj)
+		#print('overlap_sbj', overlap_sbj.shape)
+		#print('overlap_sbj', overlap_sbj)
+		#print('denominator_sbj', denominator_sbj.shape)
+		#print('denominator_sbj', denominator_sbj)
+		#print('sbj_pos_labels_w', sbj_pos_labels_w.shape)
+		#print('sbj_pos_labels', sbj_pos_labels.shape)
+		#print("blob['sbj_pos_labels_float32_w']", blob['sbj_pos_labels_float32_w'].shape)
+		#print("blob['sbj_pos_labels_float32_w']", blob['sbj_pos_labels_float32_w'][0, np.where(blob['sbj_pos_labels_float32_w'][0,:]>0)])
+		#print("blob['sbj_pos_labels_int32']", blob['sbj_pos_labels_int32'].shape)
     if cfg.TRAIN.ADD_LOSS_WEIGHTS:
         blob['rel_pos_weights'] = rel_pos_weights
     if cfg.TRAIN.ADD_LOSS_WEIGHTS_SO:
