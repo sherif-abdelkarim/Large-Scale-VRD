@@ -703,11 +703,11 @@ def _sample_rois_triplet_yall(
 
     if cfg.MODEL.WEAK_LABELS:
         for num_w in range(cfg.MODEL.NUM_WEAK_LABELS):
-            frcn_blobs['sbj_pos_labels_int32_w_' + str(num_w)] = sbj_pos_labels_w[:, num_w].astype(np.int32,
+            blob['sbj_pos_labels_int32_w_' + str(num_w)] = sbj_pos_labels_w[:, num_w].astype(np.int32,
                                                                                                   copy=False)  # weak labels
-            frcn_blobs['obj_pos_labels_int32_w_' + str(num_w)] = obj_pos_labels_w[:, num_w].astype(np.int32,
+            blob['obj_pos_labels_int32_w_' + str(num_w)] = obj_pos_labels_w[:, num_w].astype(np.int32,
                                                                                                   copy=False)  # weak labels
-            frcn_blobs['rel_pos_labels_int32_w_' + str(num_w)] = rel_pos_labels_w[:, num_w].astype(np.int32,
+            blob['rel_pos_labels_int32_w_' + str(num_w)] = rel_pos_labels_w[:, num_w].astype(np.int32,
                                                                                                   copy=False)  # weak labels
 
         blob['sbj_pos_labels_float32_w'] = np.zeros((sbj_pos_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ),
