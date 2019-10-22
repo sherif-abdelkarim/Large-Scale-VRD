@@ -83,11 +83,11 @@ def add_fast_rcnn_blobs(
                     frcn_blobs['rel_pos_labels_int32_w_' + str(num_w)] = rel_gt_labels_w[:, num_w].astype(np.int32,
                                                                                                           copy=False)  # weak labels
 
-                frcn_blob['sbj_pos_labels_float32_w'] = np.zeros((sbj_gt_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ),
+                frcn_blobs['sbj_pos_labels_float32_w'] = np.zeros((sbj_gt_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ),
                                                             dtype=np.float32)
-                frcn_blob['obj_pos_labels_float32_w'] = np.zeros((obj_gt_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ),
+                frcn_blobs['obj_pos_labels_float32_w'] = np.zeros((obj_gt_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ),
                                                             dtype=np.float32)
-                frcn_blob['rel_pos_labels_float32_w'] = np.zeros((rel_gt_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_PRD),
+                frcn_blobs['rel_pos_labels_float32_w'] = np.zeros((rel_gt_labels_w.shape[0], cfg.MODEL.NUM_CLASSES_PRD),
                                                             dtype=np.float32)
 
                 overlap_sbj = np.array(
@@ -126,17 +126,17 @@ def add_fast_rcnn_blobs(
                     idx_obj = obj_gt_labels_w[:, num_w].astype(np.int32)
                     idx_rel = rel_gt_labels_w[:, num_w].astype(np.int32)
 
-                    frcn_blob['sbj_pos_labels_float32_w'][idx_batch_sbj, idx_sbj] = denominator_sbj
-                    frcn_blob['obj_pos_labels_float32_w'][idx_batch_obj, idx_obj] = denominator_obj
-                    frcn_blob['rel_pos_labels_float32_w'][idx_batch_rel, idx_rel] = denominator_rel
+                    frcn_blobs['sbj_pos_labels_float32_w'][idx_batch_sbj, idx_sbj] = denominator_sbj
+                    frcn_blobs['obj_pos_labels_float32_w'][idx_batch_obj, idx_obj] = denominator_obj
+                    frcn_blobs['rel_pos_labels_float32_w'][idx_batch_rel, idx_rel] = denominator_rel
 
                 idx_sbj = sbj_gt_labels.astype(np.int32)
                 idx_obj = obj_gt_labels.astype(np.int32)
                 idx_rel = rel_gt_labels.astype(np.int32)
 
-                frcn_blob['sbj_pos_labels_float32_w'][idx_batch_sbj, idx_sbj] = denominator_sbj
-                frcn_blob['obj_pos_labels_float32_w'][idx_batch_obj, idx_obj] = denominator_obj
-                frcn_blob['rel_pos_labels_float32_w'][idx_batch_rel, idx_rel] = denominator_rel
+                frcn_blobs['sbj_pos_labels_float32_w'][idx_batch_sbj, idx_sbj] = denominator_sbj
+                frcn_blobs['obj_pos_labels_float32_w'][idx_batch_obj, idx_obj] = denominator_obj
+                frcn_blobs['rel_pos_labels_float32_w'][idx_batch_rel, idx_rel] = denominator_rel
 
                 # frcn_blobs['sbj_pos_labels_float32_w'] = np.zeros(sbj_gt_labels_w[:, 0].shape, dtype=np.float32)
                 # frcn_blobs['obj_pos_labels_float32_w'] = np.zeros(obj_gt_labels_w[:, 0].shape, dtype=np.float32)
