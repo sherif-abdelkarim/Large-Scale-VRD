@@ -668,7 +668,9 @@ def _sample_rois_triplet_yall(
         # while True:
         #	print('sbj_pos_labels_w', sbj_pos_labels_w)
 
-        idx_batch = np.arange(sbj_pos_labels_w.shape[0], dtype=np.int32)
+        idx_batch_sbj = np.arange(sbj_pos_labels_w.shape[0], dtype=np.int32)
+        idx_batch_obj = np.arange(obj_pos_labels_w.shape[0], dtype=np.int32)
+        idx_batch_rel = np.arange(rel_pos_labels_w.shape[0], dtype=np.int32)
         # idx = np.stack([idx_batch, sbj_pos_labels_w[:, 1].astype(np.int32)], axis=1)
 
         # while True:
@@ -681,17 +683,17 @@ def _sample_rois_triplet_yall(
             idx_obj = obj_pos_labels_w[:, num_w].astype(np.int32)
             idx_rel = rel_pos_labels_w[:, num_w].astype(np.int32)
 
-            blob['sbj_pos_labels_float32_w'][idx_batch, idx_sbj] = denominator_sbj
-            blob['obj_pos_labels_float32_w'][idx_batch, idx_obj] = denominator_obj
-            blob['rel_pos_labels_float32_w'][idx_batch, idx_rel] = denominator_rel
+            blob['sbj_pos_labels_float32_w'][idx_batch_sbj, idx_sbj] = denominator_sbj
+            blob['obj_pos_labels_float32_w'][idx_batch_obj, idx_obj] = denominator_obj
+            blob['rel_pos_labels_float32_w'][idx_batch_rel, idx_rel] = denominator_rel
 
         idx_sbj = sbj_pos_labels.astype(np.int32)
         idx_obj = obj_pos_labels.astype(np.int32)
         idx_rel = rel_pos_labels.astype(np.int32)
 
-        blob['sbj_pos_labels_float32_w'][idx_batch, idx_sbj] = denominator_sbj
-        blob['obj_pos_labels_float32_w'][idx_batch, idx_obj] = denominator_obj
-        blob['rel_pos_labels_float32_w'][idx_batch, idx_rel] = denominator_rel
+        blob['sbj_pos_labels_float32_w'][idx_batch_sbj, idx_sbj] = denominator_sbj
+        blob['obj_pos_labels_float32_w'][idx_batch_obj, idx_obj] = denominator_obj
+        blob['rel_pos_labels_float32_w'][idx_batch_rel, idx_rel] = denominator_rel
 
         #while True:
             # print('idx_sbj', idx_sbj.shape)
