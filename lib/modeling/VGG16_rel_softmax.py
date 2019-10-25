@@ -44,8 +44,8 @@ def create_model(model):
         model, blob, dim, spatial_scale)
 
     if cfg.MODEL.MEMORY_MODULE:
-        model.add_centroids_blob_with_weight_name(model, 'centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
-        model.add_centroids_blob_with_weight_name(model, 'centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
+        model.add_centroids_blob_with_weight_name('centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
+        model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
         model.net.Alias('centroids_obj', 'centroids_sbj')
 
     add_visual_embedding(
@@ -740,7 +740,8 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     model.net.Mul([concept_selector, memory_feature],
                   'matmul_concep_memory' + suffix)
     model.net.Add([direct_feature, 'matmul_concep_memory' + suffix], 'add_matmul_conc_mem' + suffix)
-    # model.net.Print(model.net.Shape('add_matmul_conc_mem' + suffix, 'add_matmul_conc_mem' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('centroids' + suffix, 'centroids' + suffix + '_shape'), [])
+    #model.net.Print('centroids' + suffix, [])
     x_out = model.net.Mul([reachability, 'add_matmul_conc_mem' + suffix],
                           'x_out' + suffix)
     # model.net.Alias('add_matmul_conc_mem' + suffix, 'x_out' + suffix)

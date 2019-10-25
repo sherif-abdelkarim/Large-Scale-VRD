@@ -287,7 +287,7 @@ class DetectionModelHelper(cnn.CNNModelHelper):
                 **centroids_init[1])
 
             self.params.extend([centroids])
-            self.weights.append(weight)
+            self.weights.append(centroids)
 
         else:
             centroids = core.ScopedBlobReference(name, self.param_init_net)
