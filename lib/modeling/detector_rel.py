@@ -271,6 +271,29 @@ class DetectionModelHelper(cnn.CNNModelHelper):
             **kwargs
         )
 
+    def add_centroids_blob_with_weight_name(self, name, dim0, dim1):
+        scope_str = scope.CurrentNameScope()
+
+        if scope_str + name not in self.params:
+            # This is the first time these weights are being used, so we init them
+            # in the init net, and at the same time add the records to the
+            # model.params list
+
+            centroids_init = ('ConstantFill', {})
+            centroids = self.param_init_net.__getattr__(centroids_init[0])(
+                [],
+                name,
+                shape=[dim0, dim1],
+                **centroids_init[1])
+
+            self.params.extend([centroids])
+            self.weights.append(weight)
+
+        else:
+            centroids = core.ScopedBlobReference(name, self.param_init_net)
+
+        return centroids
+
     def add_FC_layer_with_weight_name(
             self, weights_prefix, blob_in, blob_out, dim_in, dim_out,
             weight_init=None, bias_init=None, **kwargs):

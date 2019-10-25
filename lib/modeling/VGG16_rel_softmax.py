@@ -43,6 +43,11 @@ def create_model(model):
     spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
         model, blob, dim, spatial_scale)
 
+    if cfg.MODEL.MEMORY_MODULE:
+        model.add_centroids_blob_with_weight_name(model, 'centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
+        model.add_centroids_blob_with_weight_name(model, 'centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
+        model.net.Alias('centroids_obj', 'centroids_sbj')
+
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
         blob_rel_prd, dim_rel_prd,
@@ -123,9 +128,11 @@ def create_model(model):
         add_softmax_losses(model, 'sbj')
         add_softmax_losses(model, 'obj')
         add_softmax_losses(model, 'rel')
-        #add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        #add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        #add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+        if cfg.MODEL.MEMORY_MODULE:
+            pass
+            #add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            #add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            #add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
 
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)
     model.AddLosses(model.loss_set)
