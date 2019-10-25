@@ -123,6 +123,9 @@ def create_model(model):
         add_softmax_losses(model, 'sbj')
         add_softmax_losses(model, 'obj')
         add_softmax_losses(model, 'rel')
+        #add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        #add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        #add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
 
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)
     model.AddLosses(model.loss_set)
@@ -442,7 +445,7 @@ def add_softmax_losses(model, label):
         model.loss_set.extend([loss_xp_yall])
 
 
-def add_centroids_loss(model, feat, label, batch_size):
+def add_centroids_loss(model, feat, label, num_classes):
     prefix = label + '_'
     suffix = '_' + label
 
@@ -452,10 +455,11 @@ def add_centroids_loss(model, feat, label, batch_size):
 
     # feat = feat.view(batch_size, -1)
     # (128, 1024)
-    model.net.Reshape([feat],
-                      ['feat_reshaped' + suffix, 'feat_old_shape' + suffix],
-                      shape=(batch_size, -1))
+    # model.net.Reshape([feat],
+    #                  ['feat_reshaped' + suffix, 'feat_old_shape' + suffix],
+    #                  shape=(batch_size, -1))
 
+    model.net.Alias(feat, 'feat_reshaped' + suffix)
     # To check the dim of centroids and features
     # if feat.size(1) != self.feat_dim:
     #     raise ValueError("Center's dim: {0} should be equal to input feature's \
@@ -465,7 +469,7 @@ def add_centroids_loss(model, feat, label, batch_size):
 
     # loss_attract = self.disccentroidslossfunc(feat, label, self.centroids, batch_size_tensor).squeeze()
 
-    loss_attract = disc_centroids_loss_func('feat_reshaped' + suffix, prefix + 'pos_labels_int32', centroids,
+    loss_attract = disc_centroids_loss_func(model, 'feat_reshaped' + suffix, prefix + 'pos_labels_int32', 'centroids' + suffix,
                                             'batch_size_tensor' + suffix, label) #TODO: Check the backward function in original implementation
     # calculate repelling loss
 
@@ -574,10 +578,10 @@ def add_centroids_loss(model, feat, label, batch_size):
 
     # loss_attract + 0.01 * loss_repel
     loss_large_margin = model.net.Sum([loss_attract, 'loss_repel_scaled' + suffix], 'loss_large_margin' + suffix)
+    model.loss_set.extend([loss_large_margin]) 
 
-    return loss_large_margin
 
-def disc_centroids_loss_func(feature, labels, centroids, batch_size_tensor, label):
+def disc_centroids_loss_func(model, feature, labels, centroids_blob_name, batch_size_tensor, label):
     prefix = label + '_'
     suffix = '_' + label
 
@@ -586,9 +590,8 @@ def disc_centroids_loss_func(feature, labels, centroids, batch_size_tensor, labe
                         ['centroids_expanddims' + suffix],
                         dims=[0])
 
-    model.net.Tile('centroids_expanddims' + suffix,
+    model.net.Tile(['centroids_expanddims' + suffix, batch_size_tensor],
                   'centroids_expand' + suffix,
-                  tiles=batch_size,
                   axis=0)
 
 
