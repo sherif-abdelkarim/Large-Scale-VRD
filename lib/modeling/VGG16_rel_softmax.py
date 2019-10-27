@@ -750,9 +750,9 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     # infused_feature = model.net.Mul([concept_selector, memory_feature],
     #                                'infused_feature' + suffix)
 
-    # logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
+    logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
 
-    logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
+    #logits = add_cosnorm_classifier(model, 'x_out' + suffix, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
 
     return logits  # , [direct_feature, infused_feature]
 
@@ -774,7 +774,19 @@ def add_selector(model, input_blob_name, output_blob_name, feat_size):
 def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     # model.net.LpNorm([input_],
     #                 'norm' + suffix, p=2)
-    model.net.Alias(input_, 'norm' + suffix)
+    # model.net.Alias(input_, 'norm' + suffix)
+    model.net.SquaredL2Distance([input_, 'zero_blob_x' + suffix], 'input_dist' + suffix)
+
+    #model.net.Scale('input_dist' + suffix, 'input_dist_scaled' + suffix, scale=2)
+    #model.Sqrt('input_dist_scaled' + suffix, 'input_norm' + suffix)
+    model.net.ExpandDims(['input_dist' + suffix],
+                         'input_norm_expand' + suffix,
+                         dims=[1])
+    model.net.Tile(['input_norm_expand' + suffix],
+                   'norm' + suffix,
+                   tiles=cfg.OUTPUT_EMBEDDING_DIM,
+                   axis=1)
+
     # ex = (norm_x / (1 + norm_x)) * (input / norm_x)
     model.net.Add(['norm' + suffix, 'one_blob'],
                   'one_plus_norm' + suffix, broadcast=1)  # (1 + norm_x)
@@ -791,8 +803,21 @@ def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
 
     # ew = self.weight / torch.norm(self.weight, 2, 1, keepdim=True)
     # model.net.LpNorm(['weight' + suffix], 'weight_norm' + suffix, p=2)
-    model.net.Alias('weight' + suffix, 'weight_norm' + suffix)
-    model.net.Div(['weight' + suffix, 'weight_norm' + suffix],
+    # model.net.Alias('weight' + suffix, 'weight_norm' + suffix)
+    model.net.SquaredL2Distance(['weight' + suffix, 'zero_blob_c' + suffix], 'weight_dist' + suffix)
+    #model.net.Scale('weight_dist' + suffix, 'weight_dist_scaled' + suffix, scale=2)
+    #model.Sqrt('weight_dist_scaled' + suffix, 'weight_norm' + suffix)
+    model.net.ExpandDims(['weight_dist' + suffix],
+                         'weight_norm_expand' + suffix,
+                         dims=[1])
+    model.net.Tile(['weight_norm_expand' + suffix],
+                   'weight_norm_tile' + suffix,
+                   tiles=cfg.OUTPUT_EMBEDDING_DIM,
+                   axis=1)
+
+    #model.net.Print(model.net.Shape('weight_norm_tile' + suffix, 'weight_norm_tile' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('norm' + suffix, 'norm' + suffix + '_shape'), [])
+    model.net.Div(['weight' + suffix, 'weight_norm_tile' + suffix],
                   'ew' + suffix)
     model.net.Mul(['ex' + suffix, 'scale_blob'],
                   'scaled_ex' + suffix, broadcast=1)
