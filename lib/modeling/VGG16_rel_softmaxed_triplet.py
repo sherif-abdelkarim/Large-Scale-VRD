@@ -14,6 +14,8 @@ import logging
 from caffe2.python import core as caffe2core
 from core.config_rel import cfg
 import utils.blob as blob_utils
+from modeling.VGG16_rel_softmax import add_memory_module, add_hallucinator, add_selector, add_cosnorm_classifier, \
+    disc_centroids_loss_func, add_centroids_loss
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +38,10 @@ def create_model(model):
         model, 'obj', blob, dim, spatial_scale)
 
     blob_rel_prd, dim_rel_prd, \
-        blob_rel_sbj, dim_rel_sbj, \
-        blob_rel_obj, dim_rel_obj, \
-        spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
-            model, blob, dim, spatial_scale)
+    blob_rel_sbj, dim_rel_sbj, \
+    blob_rel_obj, dim_rel_obj, \
+    spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
+        model, blob, dim, spatial_scale)
 
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
@@ -77,10 +79,6 @@ def create_model(model):
         model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
                                value=0.0)
 
-        add_memory_module(model, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        add_memory_module(model, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        add_memory_module(model, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
-
     add_language_embedding_for_vocab(model)
 
     # During testing, get topk labels and scores
@@ -97,6 +95,16 @@ def create_model(model):
         add_embd_pos_neg_splits(model, 'obj')
         add_embd_pos_neg_splits(model, 'rel')
 
+    if cfg.MODEL.MEMORY_MODULE:
+        x_blob_sbj = 'scaled_xp_sbj'
+        x_blob_obj = 'scaled_xp_obj'
+        x_blob_rel = 'scaled_xp_rel'
+
+        add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+
+    if model.train:
         # define several helper blobs
         sbj_margin = cfg.TRAIN.MARGIN_SO
         obj_margin = cfg.TRAIN.MARGIN_SO
@@ -118,8 +126,8 @@ def create_model(model):
     model.AddLosses(model.loss_set)
     return loss_gradients if model.train else None
 
-def centroids_cal(data, num_classes, feature_dim):
 
+def centroids_cal(data, num_classes, feature_dim):
     centroids = torch.zeros(num_classes, feature_dim).cuda()
 
     print('Calculating centroids.')
@@ -181,7 +189,6 @@ def add_VGG16_conv5_body(model):
 
 
 def add_VGG16_roi_fc_head_labeled_shared(model, label, blob_in, dim_in, spatial_scale):
-
     prefix = label + '_'
     model.RoIFeatureTransform(
         blob_in, prefix + 'pool5',
@@ -209,7 +216,6 @@ def add_VGG16_roi_fc_head_labeled_shared(model, label, blob_in, dim_in, spatial_
 
 def add_VGG16_roi_fc_head_rel_spo_late_fusion(
         model, blob_in, dim_in, spatial_scale):
-
     model.RoIFeatureTransform(
         blob_in, 'rel_roi_pool_sbj',
         blob_rois='rel_rois_sbj',
@@ -296,7 +302,6 @@ def add_visual_embedding(model,
                          blob_rel_prd, dim_rel_prd,
                          blob_rel_sbj, dim_rel_sbj,
                          blob_rel_obj, dim_rel_obj):
-
     model.add_FC_layer_with_weight_name(
         'x_sbj_and_obj',
         blob_sbj, 'x_sbj_raw', dim_sbj, cfg.OUTPUT_EMBEDDING_DIM,
@@ -419,7 +424,6 @@ def add_embd_fusion_for_p(model):
 
 
 def add_language_embedding_for_gt(model):
-
     sbj_vecs_name = 'sbj_pos_vecs'
     obj_vecs_name = 'obj_pos_vecs'
     rel_vecs_name = 'rel_pos_vecs'
@@ -521,7 +525,6 @@ def add_language_embedding_for_gt(model):
 
 
 def add_language_embedding_for_vocab(model):
-
     if cfg.TEXT_EMBEDDING.HIDDEN_LAYERS > 0:
         model.add_FC_layer_with_weight_name(
             'lang_sbj_and_obj',
@@ -602,21 +605,20 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
 
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         model.net.Slice(['x' + suffix, preprefix + 'pos_starts',
-                        preprefix + 'pos_ends'], 'xp' + suffix)
+                         preprefix + 'pos_ends'], 'xp' + suffix)
         model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
         if suffix == '_rel':
             model.net.Slice(['x_rel_raw_final', prefix + 'pos_starts',
-                            prefix + 'pos_ends'], 'xp_rel_raw_final')
+                             prefix + 'pos_ends'], 'xp_rel_raw_final')
         else:
             model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
-                            prefix + 'pos_ends'], 'xp_' + label + '_raw')
+                             prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
         model.net.Alias('x' + suffix, 'xp' + suffix)
     model.net.Alias(prefix + 'pos_lan_embds', 'yp' + suffix)
 
 
 def add_embd_triplet_losses_labeled(model, label):
-
     prefix = label + '_'
     suffix = '_' + label
 
@@ -636,8 +638,12 @@ def add_embd_triplet_losses_labeled(model, label):
     else:
         yall_name = 'all_obj_lan_embds'
 
-    model.net.MatMul(['scaled_xp' + suffix, 'scaled_' + yall_name],
-                     'sim_xp_yall' + suffix, trans_b=1)
+    if cfg.MODEL.MEMORY_MODULE:
+        model.net.MatMul(['logits' + suffix, 'scaled_' + yall_name],
+                         'sim_xp_yall' + suffix, trans_b=1)
+    else:
+        model.net.MatMul(['scaled_xp' + suffix, 'scaled_' + yall_name],
+                         'sim_xp_yall' + suffix, trans_b=1)
 
     if cfg.MODEL.WEAK_LABELS:
         if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
@@ -665,8 +671,8 @@ def add_embd_triplet_losses_labeled(model, label):
             model.loss_set.extend([loss_xp_yall])
     else:
         if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
-            ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
-             cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
+                ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
+                 cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
             _, loss_xp_yall = model.net.SoftmaxWithLoss(
                 ['sim_xp_yall' + suffix,
                  prefix + 'pos_labels_int32',
@@ -705,21 +711,22 @@ def add_embd_triplet_losses_labeled(model, label):
             # op = caffe2core.CreateOperator('Reshape_xpyall'+suffix, ['xp_yall_probT' + suffix], ['xp_yall_probT_reshaped'+suffix, 'old_shape'+suffix], shape=(0,1, -1) )
             # xp_yall_probT = K x Bp. This is Pij in https://www.aclweb.org/anthology/P19-1399
             model.net.Reshape(['xp_yall_probT' + suffix],
-                                   ['xp_yall_probT_reshaped' + suffix, 'xp_yall_probT_old_shape' + suffix],
-                                   shape=(0, 1, -1, 1))
+                              ['xp_yall_probT_reshaped' + suffix, 'xp_yall_probT_old_shape' + suffix],
+                              shape=(0, 1, -1, 1))
             # xp_yall_probT_reshaped is K x 1 x Bp x 1
             xp_yall_probT_average_reshape_suffix = model.net.AveragePool(['xp_yall_probT_reshaped' + suffix], [
-            'xp_yall_probT_average_reshape' + suffix], global_pooling=True)
+                'xp_yall_probT_average_reshape' + suffix], global_pooling=True)
             # op = core.CreateOperator('Reshape_xpyall_final'+suffix, ['xp_yall_probT_average_reshape' + suffix], ['xp_yall_probT_reshaped'+suffix, 'old_shape'+suffix], shape=(0,^) )
             # xp_yall_probT_average_reshape_suffix is K x 1 x 1 x 1
             # xp_yall_probT_average_reshape is pfj  in the paper https://www.aclweb.org/anthology/P19-1399
             hubness_dist_suffix = model.net.Sub(
-            ['xp_yall_probT_average_reshape' + suffix, 'hubness_blob' + suffix], 'hubness_dist' + suffix, broadcast=1)
+                ['xp_yall_probT_average_reshape' + suffix, 'hubness_blob' + suffix], 'hubness_dist' + suffix,
+                broadcast=1)
             hubness_dist_suffix_sqr = model.net.Sqr(['hubness_dist' + suffix], ['hubness_dist_sqr' + suffix])
 
             hubness_dist_suffix_sqr_scaled = model.Scale(['hubness_dist_sqr' + suffix],
-                                                              ['hubness_dist_sqr_scaled' + suffix],
-                                                              scale=cfg.TRAIN.HUBNESS_scale)
+                                                         ['hubness_dist_sqr_scaled' + suffix],
+                                                         scale=cfg.TRAIN.HUBNESS_scale)
 
             # scale=scale
             # loss_hubness=   cfg.TRAIN.HUBNESS_scale* hubness_dist_suffix_sqr.AveragedLoss([], ['loss_hubness' + suffix])
@@ -745,8 +752,8 @@ def add_embd_triplet_losses_labeled(model, label):
         mean_max_margin_xp_yp_xn = model.net.ReduceBackMean(
             'max_margin_xp_yp_xn' + suffix, 'mean_max_margin_xp_yp_xn' + suffix)
         if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
-            ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
-             cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
+                ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
+                 cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
             mean_max_margin_xp_yp_xn = model.net.Mul(
                 ['mean_max_margin_xp_yp_xn' + suffix, prefix + 'pos_weights'],
                 'mean_max_margin_xp_yp_xn_weighted' + suffix)
@@ -782,8 +789,8 @@ def add_embd_triplet_losses_labeled(model, label):
         mean_max_margin_xp_xp_xn = model.net.ReduceBackMean(
             'max_margin_xp_xp_xn' + suffix, 'mean_max_margin_xp_xp_xn' + suffix)
         if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
-            ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
-             cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
+                ((label.find('sbj') >= 0 or label.find('obj') >= 0) and
+                 cfg.TRAIN.ADD_LOSS_WEIGHTS_SO):
             mean_max_margin_xp_xp_xn = model.net.Mul(
                 ['mean_max_margin_xp_xp_xn' + suffix, prefix + 'pos_weights'],
                 'mean_max_margin_xp_xp_xn_weighted' + suffix)
@@ -800,7 +807,6 @@ def add_labels_and_scores_topk(model, label):
         all_lan_embd = 'all_prd_lan_embds'
     model.net.MatMul(['x' + suffix, all_lan_embd], 'all_Y' + suffix, trans_b=1)
     model.net.TopK('all_Y' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
-
 
 # def add_memory_module(model, centroids):
 #     # storing direct feature
@@ -836,4 +842,3 @@ def add_labels_and_scores_topk(model, label):
 #     logits = self.cosnorm_classifier(x)
 #
 #     return logits, [direct_feature, infused_feature]
-
