@@ -43,6 +43,11 @@ def create_model(model):
     spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
         model, blob, dim, spatial_scale)
 
+    if cfg.MODEL.MEMORY_MODULE:
+        model.add_centroids_blob_with_weight_name('centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
+        model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
+        model.net.Alias('centroids_obj', 'centroids_sbj')
+
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
         blob_rel_prd, dim_rel_prd,
