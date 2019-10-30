@@ -111,6 +111,9 @@ def create_model(model):
         model.net.ConstantFill([], 'one_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
                                value=1.0)
 
+        model.net.ConstantFill([], 'num_classes_sbj', shape=[1, 0], value=cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        model.net.ConstantFill([], 'num_classes_obj', shape=[1, 0], value=cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        model.net.ConstantFill([], 'num_classes_rel', shape=[1, 0], value=cfg.MODEL.NUM_CLASSES_PRD)
 
         add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
         add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
@@ -143,10 +146,10 @@ def create_model(model):
         add_softmax_losses(model, 'obj')
         add_softmax_losses(model, 'rel')
         if cfg.MODEL.MEMORY_MODULE:
-            pass
-            #add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-            #add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-            #add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+            #pass
+            add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, 'num_classes_sbj')
+            add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, 'num_classes_obj')
+            add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD, 'num_classes_rel')
 
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)
     model.AddLosses(model.loss_set)
@@ -466,7 +469,7 @@ def add_softmax_losses(model, label):
         model.loss_set.extend([loss_xp_yall])
 
 
-def add_centroids_loss(model, feat, label, num_classes):
+def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     prefix = label + '_'
     suffix = '_' + label
 
@@ -562,21 +565,26 @@ def add_centroids_loss(model, feat, label, num_classes):
     model.net.ConstantFill(['labels_expand_tile' + suffix], 'zero_blob_mask' + suffix, value=0.0)
 
     # classes.expand(batch_size, self.num_classes)
-    model.net.ExpandDims(['classes' + suffix],
-                        ['classes_expand' + suffix],
-                        dims=[0]) # (1, 1703)
-    model.net.Tile(['classes_expand' + suffix, 'batch_size' + suffix],
-                   'classes_expand_tile' + suffix,
-                   axis=0) # (128, 1703)
+    #model.net.ExpandDims(['classes' + suffix],
+    #                    ['classes_expand' + suffix],
+    #                    dims=[0]) # (1, 1703)
+    #model.net.Tile(['classes_expand' + suffix, 'batch_size' + suffix],
+    #               'classes_expand_tile' + suffix,
+    #               axis=0) # (128, 1703)
 
     # mask = labels_expand.eq(classes.expand(batch_size, self.num_classes))
-    model.net.EQ(['labels_expand_tile' + suffix, 'classes_expand_tile' + suffix], 'mask' + suffix) # TODO: Make sure EQ func produces boolean
+    # model.net.EQ(['labels_expand_tile' + suffix, 'classes_expand_tile' + suffix], 'mask' + suffix) # TODO: Make sure EQ func produces boolean
+    model.net.OneHot([prefix + 'pos_labels_int32', num_classes_blob], 'mask' + suffix) # TODO: Make sure EQ func produces boolean
+    model.net.ConstantFill(['mask' + suffix], 'ones_mask' + suffix, value=1.0) # TODO: Make sure EQ func produces boolean
+    model.net.Sub(['ones_mask' + suffix, 'mask' + suffix], 'neg_mask' + suffix) # TODO: Make sure EQ func produces boolean
 
 
     # distmat_neg = distmat
 
     # distmat_neg[mask] = 0.0 # TODO: verify that model.net.where() works as understood
-    model.net.Where(['mask' + suffix, 'distmat_plus_neg_2feat_dot_centroids' + suffix, 'zero_blob_mask' + suffix], 'distmat_neg' + suffix) # (128, 1703)
+    #model.net.Where(['mask' + suffix, 'distmat_plus_neg_2feat_dot_centroids' + suffix, 'zero_blob_mask' + suffix], 'distmat_neg' + suffix) # (128, 1703)
+    #model.net.Where(['mask' + suffix, 'zero_blob_mask' + suffix, 'distmat_plus_neg_2feat_dot_centroids' + suffix], 'distmat_neg' + suffix) # (128, 1703)
+    model.net.Mul(['distmat_plus_neg_2feat_dot_centroids' + suffix, 'neg_mask' + suffix], 'distmat_neg' + suffix) # TODO: Make sure EQ func produces boolean
     # margin = 50.0
     margin = 10.0
     model.net.ConstantFill(['labels_expand_tile' + suffix], 'margin_blob' + suffix, value=margin)
