@@ -574,9 +574,9 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
 
     # mask = labels_expand.eq(classes.expand(batch_size, self.num_classes))
     # model.net.EQ(['labels_expand_tile' + suffix, 'classes_expand_tile' + suffix], 'mask' + suffix) # TODO: Make sure EQ func produces boolean
-    model.net.OneHot([prefix + 'pos_labels_int32', num_classes_blob], 'mask' + suffix) # TODO: Make sure EQ func produces boolean
-    model.net.ConstantFill(['mask' + suffix], 'ones_mask' + suffix, value=1.0) # TODO: Make sure EQ func produces boolean
-    model.net.Sub(['ones_mask' + suffix, 'mask' + suffix], 'neg_mask' + suffix) # TODO: Make sure EQ func produces boolean
+    # model.net.OneHot([prefix + 'pos_labels_int32', num_classes_blob], 'mask' + suffix)
+    model.net.ConstantFill([prefix + 'pos_labels_one_hot'], 'ones_mask' + suffix, value=1.0)
+    model.net.Sub(['ones_mask' + suffix, 'mask' + suffix], 'neg_mask' + suffix)
 
 
     # distmat_neg = distmat

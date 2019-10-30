@@ -713,7 +713,6 @@ def _sample_rois_triplet_yall(
         blob['bg_num_obj'] = out_num_bg_obj.astype(np.float32)
         blob['fg_num_rel'] = out_num_fg_rel.astype(np.float32)
         blob['bg_num_rel'] = out_num_bg_rel.astype(np.float32)
-
     if cfg.MODEL.MEMORY_MODULE:
         blob['weight_sbj'] = weight_sbj
         blob['weight_obj'] = weight_obj
@@ -1020,6 +1019,14 @@ def _sample_rois_softmax_yall(
     # centroids_obj = centroids_obj.astype(np.float32)
     # centroids_rel = centroids_rel.astype(np.float32)
 
+    sbj_pos_labels_one_hot = np.zeros((sbj_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.int32)
+    obj_pos_labels_one_hot = np.zeros((obj_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.int32)
+    rel_pos_labels_one_hot = np.zeros((rel_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_PRD), dtype=np.int32)
+
+    sbj_pos_labels_one_hot[np.arange(sbj_pos_labels.size), sbj_pos_labels] = 1
+    obj_pos_labels_one_hot[np.arange(obj_pos_labels.size), obj_pos_labels] = 1
+    rel_pos_labels_one_hot[np.arange(rel_pos_labels.size), rel_pos_labels] = 1
+
     blob = dict(
         sbj_rois=rois_sbj,
         obj_rois=rois_obj,
@@ -1050,6 +1057,10 @@ def _sample_rois_softmax_yall(
         blob['weight_sbj'] = weight_sbj
         blob['weight_obj'] = weight_obj
         blob['weight_rel'] = weight_rel
+        blob['sbj_pos_labels_one_hot'] = sbj_pos_labels_one_hot
+        blob['obj_pos_labels_one_hot'] = obj_pos_labels_one_hot
+        blob['rel_pos_labels_one_hot'] = rel_pos_labels_one_hot
+
         # blob['centroids_sbj'] = centroids_obj
         # blob['centroids_obj'] = centroids_obj
         # blob['centroids_rel'] = centroids_rel
