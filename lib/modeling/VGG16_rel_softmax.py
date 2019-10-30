@@ -689,9 +689,12 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
 
     model.net.Normalize('x_minus_c' + suffix, 'x_minus_c_normalized' + suffix)
     model.net.Div(['one_blob_x_minus_c' + suffix, 'x_minus_c_normalized' + suffix], 'one_over_x_minus_c_normalized' + suffix)
-    model.net.Mul(['one_over_x_minus_c_normalized' + suffix, 'x_minus_c_normalized' + suffix], 'x_minus_c_norm' + suffix)
+    model.net.Mul(['one_over_x_minus_c_normalized' + suffix, 'x_minus_c' + suffix], 'x_minus_c_norm' + suffix)
 
-    model.net.Print(model.net.Shape('x_minus_c_norm' + suffix, 'x_minus_c_norm' + suffix + '_shape'), [])
+    model.net.Slice(['x_minus_c_norm' + suffix], 'x_minus_c_norm_slice' + suffix, starts=[0, 0, 0], ends=[-1, -1, 1])
+    model.net.Squeeze(['x_minus_c_norm_slice' + suffix], 'dist_cur' + suffix, dims=[2])
+    #model.net.Print('x_minus_c_norm_slice' + suffix, [])
+    #model.net.Print(model.net.Shape('x_minus_c_norm_slice' + suffix, 'x_minus_c_norm_slice' + suffix + '_shape'), [])
 
     # distance = X^2 - 2 * XC_t + C^2
     # X: x_blob: (128, 1024)
@@ -699,39 +702,39 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     # X^2: (128,)
     # X^2_tiled: (128, 1703)
 
-    model.net.SquaredL2Distance([x_blob, 'zero_blob_x' + suffix], 'x_norm' + suffix)
-    model.net.ExpandDims(['x_norm' + suffix],
-                         'x_norm_expand' + suffix,
-                         dims=[1])
-    model.net.Tile(['x_norm_expand' + suffix],
-                   'x_norm_tile' + suffix,
-                   tiles=num_classes,
-                   axis=1)
+    #model.net.SquaredL2Distance([x_blob, 'zero_blob_x' + suffix], 'x_norm' + suffix)
+    #model.net.ExpandDims(['x_norm' + suffix],
+    #                     'x_norm_expand' + suffix,
+    #                     dims=[1])
+    #model.net.Tile(['x_norm_expand' + suffix],
+    #               'x_norm_tile' + suffix,
+    #               tiles=num_classes,
+    #               axis=1)
 
     # model.net.Print(model.net.Shape('x_norm' + suffix, 'x_norm' + suffix + '_shape'), [])
     # C^2: (1703,)
 
-    model.net.SquaredL2Distance([centroids_blob_name, 'zero_blob_c' + suffix], 'c_norm' + suffix)
-    model.net.ExpandDims(['c_norm' + suffix],
-                         'c_norm_expand' + suffix,
-                         dims=[1])
-    model.Transpose(['c_norm_expand' + suffix], ['c_norm_expand_T' + suffix])
-    model.net.Tile(['c_norm_expand_T' + suffix, 'batch_size' + suffix],
-                   'c_norm_tile_T' + suffix,
-                   # tiles=batch_size,
-                   axis=0
-                   )
+    #model.net.SquaredL2Distance([centroids_blob_name, 'zero_blob_c' + suffix], 'c_norm' + suffix)
+    #model.net.ExpandDims(['c_norm' + suffix],
+    #                     'c_norm_expand' + suffix,
+    #                     dims=[1])
+    #model.Transpose(['c_norm_expand' + suffix], ['c_norm_expand_T' + suffix])
+    #model.net.Tile(['c_norm_expand_T' + suffix, 'batch_size' + suffix],
+    #               'c_norm_tile_T' + suffix,
+    #               # tiles=batch_size,
+    #               axis=0
+    #               )
     # model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), [])
     # model.net.Print(model.net.Shape('c_norm_expand' + suffix, 'c_norm_expand' + suffix + '_shape'), [])
 
     # XC_t: (128, 1703)
-    model.net.MatMul([x_blob, centroids_blob_name], 'xc_t' + suffix, trans_b=1)
+    #model.net.MatMul([x_blob, centroids_blob_name], 'xc_t' + suffix, trans_b=1)
 
     # -2 * XC_t
-    model.net.Mul(['xc_t' + suffix, 'neg_two_blob'], 'neg_2_xc_t' + suffix, broadcast=1)
+    #model.net.Mul(['xc_t' + suffix, 'neg_two_blob'], 'neg_2_xc_t' + suffix, broadcast=1)
 
     # X^2 - 2 * XC_t + C^2
-    model.net.Sum(['x_norm_tile' + suffix, 'neg_2_xc_t' + suffix, 'c_norm_tile_T' + suffix], 'dist_cur' + suffix)
+    #model.net.Sum(['x_norm_tile' + suffix, 'neg_2_xc_t' + suffix, 'c_norm_tile_T' + suffix], 'dist_cur' + suffix)
 
     # computing reachability
 
