@@ -87,16 +87,38 @@ def create_model(model):
         model.net.ConstantFill(['single_row_sbj'], 'scale_10_blob_sbj', value=10.0)
         model.net.ConstantFill(['single_row_obj'], 'scale_10_blob_obj', value=10.0)
         model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
+
+        model.net.Slice([x_blob_sbj], 'single_col_sbj', starts=[0, 0], ends=[1, -1])
+        model.net.Slice([x_blob_obj], 'single_col_obj', starts=[0, 0], ends=[1, -1])
+        model.net.Slice([x_blob_rel], 'single_col_rel', starts=[0, 0], ends=[1, -1])
+
+        model.net.ConstantFill(['single_col_sbj'], 'col_one_blob_sbj', value=1.0)
+        model.net.ConstantFill(['single_col_obj'], 'col_one_blob_obj', value=1.0)
+        model.net.ConstantFill(['single_col_rel'], 'col_one_blob_rel', value=1.0)
+
         model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
         model.net.ConstantFill([x_blob_sbj], 'zero_blob_x_sbj', value=0.0)
         model.net.ConstantFill([x_blob_obj], 'zero_blob_x_obj', value=0.0)
         model.net.ConstantFill([x_blob_rel], 'zero_blob_x_rel', value=0.0)
+
+        model.net.ConstantFill([x_blob_sbj], 'one_blob_x_sbj', value=1.0)
+        model.net.ConstantFill([x_blob_obj], 'one_blob_x_obj', value=1.0)
+        model.net.ConstantFill([x_blob_rel], 'one_blob_x_rel', value=1.0)
+
         model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
                                value=0.0)
         model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
                                value=0.0)
         model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
                                value=0.0)
+
+        model.net.ConstantFill([], 'one_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
+                               value=1.0)
+        model.net.ConstantFill([], 'one_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
+                               value=1.0)
+        model.net.ConstantFill([], 'one_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
+                               value=1.0)
+
 
         add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
         add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
@@ -750,9 +772,9 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     # infused_feature = model.net.Mul([concept_selector, memory_feature],
     #                                'infused_feature' + suffix)
 
-    logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
+    #logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
 
-    #logits = add_cosnorm_classifier(model, 'x_out' + suffix, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
+    logits = add_cosnorm_classifier(model, 'x_out' + suffix, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
 
     return logits  # , [direct_feature, infused_feature]
 
@@ -772,20 +794,25 @@ def add_selector(model, input_blob_name, output_blob_name, feat_size):
 
 
 def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
-    # model.net.LpNorm([input_],
-    #                 'norm' + suffix, p=2)
-    # model.net.Alias(input_, 'norm' + suffix)
-    model.net.SquaredL2Distance([input_, 'zero_blob_x' + suffix], 'input_dist' + suffix)
+    #  norm_x = torch.norm(input, 2, 1, keepdim=True)
+    #model.net.LpNorm([input_], 'input_norm_expand' + suffix, p=2)
+    model.net.Normalize(input_, 'input_normalized' + suffix)
+    model.net.Div(['one_blob_x' + suffix, 'input_normalized' + suffix], 'one_over_normalized' + suffix)
+    model.net.Mul(['one_over_normalized' + suffix, 'input_normalized' + suffix], 'norm' + suffix)
+    #model.net.Print('norm' + suffix), [])
+    #model.net.Alias(input_, 'norm' + suffix)
+    #model.net.SquaredL2Distance([input_, 'zero_blob_x' + suffix], 'input_dist' + suffix)
 
     #model.net.Scale('input_dist' + suffix, 'input_dist_scaled' + suffix, scale=2)
     #model.Sqrt('input_dist_scaled' + suffix, 'input_norm' + suffix)
-    model.net.ExpandDims(['input_dist' + suffix],
-                         'input_norm_expand' + suffix,
-                         dims=[1])
-    model.net.Tile(['input_norm_expand' + suffix],
-                   'norm' + suffix,
-                   tiles=cfg.OUTPUT_EMBEDDING_DIM,
-                   axis=1)
+
+    #model.net.ExpandDims(['input_dist' + suffix],
+    #                     'input_norm_expand' + suffix,
+    #                     dims=[1])
+    #model.net.Tile(['input_norm_expand' + suffix],
+    #               'norm' + suffix,
+    #               tiles=cfg.OUTPUT_EMBEDDING_DIM,
+    #               axis=1)
 
     # ex = (norm_x / (1 + norm_x)) * (input / norm_x)
     model.net.Add(['norm' + suffix, 'one_blob'],
@@ -794,31 +821,34 @@ def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     model.net.Div(['norm' + suffix, 'one_plus_norm' + suffix],
                   'norm_over_one_plus_norm' + suffix)  # (norm_x / (1 + norm_x))
 
-    model.net.Div([input_, 'norm' + suffix],
-                  'input_over_norm' + suffix)  # (input / norm_x)
+    #model.net.Div([input_, 'norm' + suffix],
+    #              'input_over_norm' + suffix)  # (input / norm_x)
 
     model.net.Mul(['norm_over_one_plus_norm' + suffix,
-                   'input_over_norm' + suffix],
+                   'input_normalized' + suffix],
                   'ex' + suffix)  # (norm_x / (1 + norm_x)) * (input / norm_x)
 
     # ew = self.weight / torch.norm(self.weight, 2, 1, keepdim=True)
     # model.net.LpNorm(['weight' + suffix], 'weight_norm' + suffix, p=2)
     # model.net.Alias('weight' + suffix, 'weight_norm' + suffix)
-    model.net.SquaredL2Distance(['weight' + suffix, 'zero_blob_c' + suffix], 'weight_dist' + suffix)
+    # model.net.SquaredL2Distance(['weight' + suffix, 'zero_blob_c' + suffix], 'weight_dist' + suffix)
+    model.net.Normalize('weight' + suffix, 'ew' + suffix)
+    #model.net.Div(['one_blob_c' + suffix, 'weight_normalized' + suffix], 'one_over_w_normalized' + suffix)
+    #model.net.Mul(['one_over_w_normalized' + suffix, 'weight_normalized' + suffix], 'weight_norm' + suffix)
     #model.net.Scale('weight_dist' + suffix, 'weight_dist_scaled' + suffix, scale=2)
     #model.Sqrt('weight_dist_scaled' + suffix, 'weight_norm' + suffix)
-    model.net.ExpandDims(['weight_dist' + suffix],
-                         'weight_norm_expand' + suffix,
-                         dims=[1])
-    model.net.Tile(['weight_norm_expand' + suffix],
-                   'weight_norm_tile' + suffix,
-                   tiles=cfg.OUTPUT_EMBEDDING_DIM,
-                   axis=1)
+    #model.net.ExpandDims(['weight_dist' + suffix],
+    #                     'weight_norm_expand' + suffix,
+    #                     dims=[1])
+    #model.net.Tile(['weight_norm_expand' + suffix],
+    #               'weight_norm_tile' + suffix,
+    #               tiles=cfg.OUTPUT_EMBEDDING_DIM,
+    #               axis=1)
 
     #model.net.Print(model.net.Shape('weight_norm_tile' + suffix, 'weight_norm_tile' + suffix + '_shape'), [])
     #model.net.Print(model.net.Shape('norm' + suffix, 'norm' + suffix + '_shape'), [])
-    model.net.Div(['weight' + suffix, 'weight_norm_tile' + suffix],
-                  'ew' + suffix)
+    #model.net.Div(['weight' + suffix, 'weight_norm_tile' + suffix],
+    #              'ew' + suffix)
     model.net.Mul(['ex' + suffix, 'scale_blob'],
                   'scaled_ex' + suffix, broadcast=1)
     out = model.net.MatMul(['scaled_ex' + suffix, 'ew' + suffix],
