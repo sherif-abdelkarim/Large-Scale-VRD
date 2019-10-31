@@ -51,9 +51,9 @@ def create_model(model):
 
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
 
-        model.add_weight_blob_with_weight_name('weight_sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
         model.add_weight_blob_with_weight_name('weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
         model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+        model.net.Alias('weight_obj', 'weight_sbj')
 
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
@@ -96,6 +96,7 @@ def create_model(model):
         model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
 
         model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
+        model.net.ConstantFill([], 'neg_one_blob', shape=[1], value=-1.0)
         model.net.ConstantFill([x_blob_sbj], 'zero_blob_x_sbj', value=0.0)
         model.net.ConstantFill([x_blob_obj], 'zero_blob_x_obj', value=0.0)
         model.net.ConstantFill([x_blob_rel], 'zero_blob_x_rel', value=0.0)
@@ -612,11 +613,17 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # loss = loss_attract + 0.01 * loss_repel
     # 0.01 * loss_repel
     model.net.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
-    model.net.Print('centroids' + suffix, [])
-    model.net.Print('weight' + suffix, [])
-    model.net.Print('distmat_neg' + suffix, [])
-    model.net.Print('distmat' + suffix, [])
-    model.net.Print(feat, [])
+    #model.net.Print('centroids' + suffix, [])
+    #model.net.Print('weight' + suffix, [])
+    #model.net.Print('distmat_neg' + suffix, [])
+    #model.net.Print('reduce_min' + suffix, [])
+    #model.net.Print('min_dis' + suffix, [])
+    #model.net.Print('dist_cur' + suffix, [])
+    #model.net.Slice(['dist_cur' + suffix], 'dist_cur' + '_slice' + suffix, starts=[0, 0], ends=[1, -1])
+    #model.net.Print('dist_cur' + '_slice' + suffix, [])
+    #model.net.Slice(['dist_cur' + suffix], 'dist_cur' + '_slice' + suffix, starts=[0, 0], ends=[5, 5])
+    #model.net.Print('distmat' + suffix, [])
+    #model.net.Print(feat, [])
     #model.net.Print(model.net.Shape('distmat_neg_sum' + suffix, 'distmat_neg_sum' + suffix + '_shape'), [])
     #model.net.Print(model.net.Shape('loss_repel_scaled' + suffix, 'loss_repel_scaled' + suffix + '_shape'), [])
     #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
@@ -733,6 +740,7 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     model.net.Slice(['x_minus_c_norm' + suffix], 'x_minus_c_norm_slice' + suffix, starts=[0, 0, 0], ends=[-1, -1, 1])
     model.net.Squeeze(['x_minus_c_norm_slice' + suffix], 'dist_cur' + suffix, dims=[2])
     #model.net.Print('x_minus_c_norm_slice' + suffix, [])
+
     #model.net.Print(model.net.Shape('x_minus_c_norm_slice' + suffix, 'x_minus_c_norm_slice' + suffix + '_shape'), [])
 
     # distance = X^2 - 2 * XC_t + C^2
@@ -784,6 +792,11 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     model.net.Min(tensors_list,
                   'min_dis' + suffix)
 
+    #model.net.Mul(['dist_cur' + suffix, 'neg_one_blob'], 'dist_cur_neg' + suffix, broadcast=1)
+    #model.net.Scale('dist_cur' + suffix, 'dist_cur_neg' + suffix, scale=-1.)
+    #model.net.ReduceBackMax(['dist_cur_neg' + suffix], 'reduce_min_neg' + suffix)
+    #model.net.Mul(['reduce_min_neg' + suffix, 'neg_one_blob'], 'reduce_min' + suffix, broadcast=1)
+    #model.net.Scale('reduce_min_neg' + suffix, 'reduce_min' + suffix, scale=-1.)
     model.net.Div(['scale_10_blob' + suffix, 'min_dis' + suffix], 'scale_over_values' + suffix)
 
     reachability = model.net.Tile('scale_over_values' + suffix,
