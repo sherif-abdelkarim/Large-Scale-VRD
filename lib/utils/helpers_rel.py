@@ -382,14 +382,20 @@ def print_net_nan(model):
             if output_b.find('grad') >= 0:
                 break
             output_array = np.array(workspace.FetchBlob(str(output_b)))
-            output_nan = np.isnan(output_array).any()
+            try:
+                output_nan = np.isnan(output_array.astype(np.float32)).any()
+            except Exception as e:
+                continue
             first_blob = True
             suffix = ' ------- (op: {:s})'.format(type_b)
             for j in range(len(input_b)):
                 if input_b[j] in model_params:
                         continue
                 input_array = np.array(workspace.FetchBlob(str(input_b[j])))
-                input_nan = np.isnan(input_array).any()
+                try:
+                    input_nan = np.isnan(input_array.astype(np.float32)).any()
+                except Exception as e:
+                    continue
                 if input_shape != ():
                     logger.info(
                         '{:28s}: {:20s} => {:36s}: {:20s}{}'.format(
