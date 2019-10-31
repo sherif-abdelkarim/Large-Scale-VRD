@@ -576,7 +576,7 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # model.net.EQ(['labels_expand_tile' + suffix, 'classes_expand_tile' + suffix], 'mask' + suffix) # TODO: Make sure EQ func produces boolean
     # model.net.OneHot([prefix + 'pos_labels_int32', num_classes_blob], 'mask' + suffix)
     model.net.ConstantFill([prefix + 'pos_labels_one_hot'], 'ones_mask' + suffix, value=1.0)
-    model.net.Sub(['ones_mask' + suffix, 'mask' + suffix], 'neg_mask' + suffix)
+    model.net.Sub(['ones_mask' + suffix, prefix + 'pos_labels_one_hot'], 'neg_mask' + suffix)
 
 
     # distmat_neg = distmat
@@ -587,15 +587,16 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     model.net.Mul(['distmat_plus_neg_2feat_dot_centroids' + suffix, 'neg_mask' + suffix], 'distmat_neg' + suffix) # TODO: Make sure EQ func produces boolean
     # margin = 50.0
     margin = 10.0
-    model.net.ConstantFill(['labels_expand_tile' + suffix], 'margin_blob' + suffix, value=margin)
 
     #              <------------------------------Input---------------------------------->,  min, max
     # loss_repel = torch.clamp(margin - distmat_neg.sum() / (batch_size * self.num_classes), 0.0, 1e6)
     # distmat_neg.sum() / (batch_size * self.num_classes
-    model.net.ReduceBackMean('distmat_neg' + suffix, 'distmat_neg_mean' + suffix)
+    model.net.ReduceBackSum('distmat_neg' + suffix, 'distmat_neg_sum1' + suffix, num_reduce_dims=1)
+    model.net.ReduceBackSum('distmat_neg_sum1' + suffix, 'distmat_neg_sum' + suffix, num_reduce_dims=1)
+    model.net.ConstantFill(['distmat_neg_sum' + suffix], 'margin_blob' + suffix, value=margin)
 
     # margin - distmat_neg.sum() / (batch_size * self.num_classes
-    model.net.Sub(['margin_blob' + suffix, 'distmat_neg_mean' + suffix], 'margin_minus_distmat_neg' + suffix)
+    model.net.Sub(['margin_blob' + suffix, 'distmat_neg_sum' + suffix], 'margin_minus_distmat_neg' + suffix)
 
     # torch.clamp()
     model.net.Clip('margin_minus_distmat_neg' + suffix, 'loss_repel' + suffix, min=0.0, max=1e6)
@@ -604,10 +605,15 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # loss = loss_attract + 0.01 * loss_repel
     # 0.01 * loss_repel
     model.net.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
+    #model.net.Print(model.net.Shape('distmat_neg' + suffix, 'distmat_neg' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('distmat_neg_sum' + suffix, 'distmat_neg_sum' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('loss_repel_scaled' + suffix, 'loss_repel_scaled' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
 
     # loss_attract + 0.01 * loss_repel
     loss_large_margin = model.net.Sum([loss_attract, 'loss_repel_scaled' + suffix], 'loss_large_margin' + suffix)
     model.loss_set.extend([loss_large_margin]) 
+    #model.net.Print(loss_large_margin, [])
 
 
 def disc_centroids_loss_func(model, feature, labels, centroids_blob_name, batch_size_tensor, label):
@@ -615,13 +621,13 @@ def disc_centroids_loss_func(model, feature, labels, centroids_blob_name, batch_
     suffix = '_' + label
 
     # centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
-    model.net.ExpandDims([centroids_blob_name],
-                        ['centroids_expanddims' + suffix],
-                        dims=[0])
+    #model.net.ExpandDims([centroids_blob_name],
+    #                    ['centroids_expanddims' + suffix],
+    #                    dims=[0])
 
-    model.net.Tile(['centroids_expanddims' + suffix, batch_size_tensor],
-                  'centroids_expand' + suffix,
-                  axis=0)
+    #model.net.Tile(['centroids_expanddims' + suffix, batch_size_tensor],
+    #              'centroids_expand' + suffix,
+    #              axis=0)
 
 
     # ctx.save_for_backward(feature, label, centroids, batch_size)
@@ -629,28 +635,42 @@ def disc_centroids_loss_func(model, feature, labels, centroids_blob_name, batch_
     # centroids: (1703, 1024)
     # centroids.index_select: (128, 1024)
     # feature: (128, 1024)
-    model.net.BatchGather(['centroids' + suffix, prefix + 'pos_labels_int32'], 'centroids_batch' + suffix)
+    model.net.BatchGather([model.net.Transpose(['centroids' + suffix], ['centroids_T' + suffix]), prefix + 'pos_labels_int32'], 'centroids_batch_T' + suffix)
+    model.net.Transpose(['centroids_batch_T' + suffix], ['centroids_batch' + suffix])
+    #model.net.Print(model.net.Shape('centroids_batch' + suffix, 'centroids_batch' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape('centroids' + suffix, 'centroids' + suffix + '_shape'), [])
+    #model.net.Print(model.net.Shape(feature, 'feature' + suffix + '_shape'), [])
+    #model.net.Print(prefix + 'pos_labels_int32', [])
 
     # return (feature - centroids_batch).pow(2).sum() / 2.0 / batch_size
     # (feature - centroids_batch)
     # out shape: (128, 1024)
-    model.net.Sub([feature, 'centroids_batch' + suffix], 'feature_minus_centroids' + suffix)
+    #model.net.Sub([feature, 'centroids_batch' + suffix], 'feature_minus_centroids' + suffix)
 
     # (feature - centroids_batch).pow(2)
     # out shape: (128, 1024)
-    model.net.Sqr('feature_minus_centroids' + suffix, 'feature_minus_centroids_squared' + suffix)
+    #model.net.Sqr('feature_minus_centroids' + suffix, 'feature_minus_centroids_squared' + suffix)
 
     # (feature - centroids_batch).pow(2).sum()
     # out shape: (1,)
-    model.net.ReduceBackSum(['feature_minus_centroids_squared' + suffix],
-                            'feature_minus_centroids_squared_sum' + suffix,
-                            num_reduce_dims=2)
+    #model.net.ReduceBackSum(['feature_minus_centroids_squared' + suffix],
+    #                        'feature_minus_centroids_squared_sum' + suffix,
+    #                        num_reduce_dims=2)
 
     # (feature - centroids_batch).pow(2).sum() / 2.0
-    model.net.Scale('feature_minus_centroids_squared_sum' + suffix,
-                    'feature_minus_centroids_squared_sum_scaled' + suffix,
-                    scale=0.5)
-    loss_attract = model.net.Div(['feature_minus_centroids_squared_sum_scaled' + suffix, batch_size_tensor], 'loss_attract' + suffix)
+    #model.net.Scale('feature_minus_centroids_squared_sum' + suffix,
+    #                'feature_minus_centroids_squared_sum_scaled' + suffix,
+    #                scale=0.5)
+    model.net.SquaredL2Distance([feature, 'centroids_batch' + suffix], 'feat_centroid_l2_dist' + suffix)
+    model.net.ReduceBackSum(['feat_centroid_l2_dist' + suffix],
+                            'feat_centroid_l2_dist_sum' + suffix,
+                            num_reduce_dims=1)
+
+    #model.net.Print('feat_centroid_l2_dist' + suffix, [])
+    #model.net.Print('feat_centroid_l2_dist_sum' + suffix, [])
+    #model.net.Print(model.net.Shape('feat_centroid_l2_dist' + suffix, 'feat_centroid_l2_dist' + suffix + '_shape'), [])
+    #loss_attract = model.net.Div(['feat_centroid_l2_dist' + suffix, batch_size_tensor], 'loss_attract' + suffix)
+    loss_attract = model.net.Alias('feat_centroid_l2_dist_sum' + suffix, 'loss_attract' + suffix)
     return loss_attract
 
 
