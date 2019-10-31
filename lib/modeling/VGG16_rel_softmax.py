@@ -48,6 +48,12 @@ def create_model(model):
         model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
         model.net.Alias('centroids_obj', 'centroids_sbj')
 
+        std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
+
+        add_weight_blob_with_weight_name(self, 'weight_sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+        add_weight_blob_with_weight_name(self, 'weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+        add_weight_blob_with_weight_name(self, 'weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
         blob_rel_prd, dim_rel_prd,

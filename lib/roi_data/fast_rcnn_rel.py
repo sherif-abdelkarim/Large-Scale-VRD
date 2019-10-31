@@ -665,18 +665,18 @@ def _sample_rois_triplet_yall(
     neg_starts_rel = np.array([rel_fg_inds.size, 0], dtype=np.int32)
     neg_ends_rel = np.array([-1, -1], dtype=np.int32)
 
-    if cfg.MODEL.MEMORY_MODULE:
-        weight_sbj = np.zeros((cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
-        std = 1. / math.sqrt(weight_sbj.shape[1])
-        weight_sbj = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)).astype(
-            np.float32)
-
-        weight_obj = weight_sbj
-
-        weight_rel = np.zeros((cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
-        std = 1. / math.sqrt(weight_rel.shape[1])
-        weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)).astype(
-            np.float32)
+    # if cfg.MODEL.MEMORY_MODULE:
+    #     weight_sbj = np.zeros((cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
+    #     std = 1. / math.sqrt(weight_sbj.shape[1])
+    #     weight_sbj = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)).astype(
+    #         np.float32)
+    #
+    #     weight_obj = weight_sbj
+    #
+    #     weight_rel = np.zeros((cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
+    #     std = 1. / math.sqrt(weight_rel.shape[1])
+    #     weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)).astype(
+    #         np.float32)
 
     blob = dict(
         sbj_rois=rois_sbj,
@@ -713,10 +713,10 @@ def _sample_rois_triplet_yall(
         blob['bg_num_obj'] = out_num_bg_obj.astype(np.float32)
         blob['fg_num_rel'] = out_num_fg_rel.astype(np.float32)
         blob['bg_num_rel'] = out_num_bg_rel.astype(np.float32)
-    if cfg.MODEL.MEMORY_MODULE:
-        blob['weight_sbj'] = weight_sbj
-        blob['weight_obj'] = weight_obj
-        blob['weight_rel'] = weight_rel
+    # if cfg.MODEL.MEMORY_MODULE:
+    #     blob['weight_sbj'] = weight_sbj
+    #     blob['weight_obj'] = weight_obj
+    #     blob['weight_rel'] = weight_rel
 
     if cfg.MODEL.WEAK_LABELS:
         for num_w in range(cfg.MODEL.NUM_WEAK_LABELS):
@@ -1002,16 +1002,16 @@ def _sample_rois_softmax_yall(
     neg_starts_rel = np.array([rel_fg_inds.size, 0], dtype=np.int32)
     neg_ends_rel = np.array([-1, -1], dtype=np.int32)
 
-    weight_sbj = np.zeros((cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
-    std = 1. / math.sqrt(weight_sbj.shape[1])
-    weight_sbj = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)).astype(
-        np.float32)
-
-    weight_obj = weight_sbj
-
-    weight_rel = np.zeros((cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
-    std = 1. / math.sqrt(weight_rel.shape[1])
-    weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)).astype(np.float32)
+    # weight_sbj = np.zeros((cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
+    # std = 1. / math.sqrt(weight_sbj.shape[1])
+    # weight_sbj = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)).astype(
+    #     np.float32)
+    #
+    # weight_obj = weight_sbj
+    #
+    # weight_rel = np.zeros((cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM), dtype=np.float32)
+    # std = 1. / math.sqrt(weight_rel.shape[1])
+    # weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)).astype(np.float32)
 
     # centroids_obj = load_pickle('centroids/centroids_obj.pkl')
     # centroids_rel = load_pickle('centroids/centroids_rel.pkl')
@@ -1054,9 +1054,9 @@ def _sample_rois_softmax_yall(
         blob['sbj_pos_weights'] = sbj_pos_weights
         blob['obj_pos_weights'] = obj_pos_weights
     if cfg.MODEL.MEMORY_MODULE:
-        blob['weight_sbj'] = weight_sbj
-        blob['weight_obj'] = weight_obj
-        blob['weight_rel'] = weight_rel
+        # blob['weight_sbj'] = weight_sbj
+        # blob['weight_obj'] = weight_obj
+        # blob['weight_rel'] = weight_rel
         blob['sbj_pos_labels_one_hot'] = sbj_pos_labels_one_hot
         blob['obj_pos_labels_one_hot'] = obj_pos_labels_one_hot
         blob['rel_pos_labels_one_hot'] = rel_pos_labels_one_hot
