@@ -12,12 +12,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import cPickle as pickle
+#import pickle
 import hashlib
 import logging
 import os
 import re
 import sys
 import urllib2
+#import urllib.request as urllib2
 
 logger = logging.getLogger(__name__)
 
