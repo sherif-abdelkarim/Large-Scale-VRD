@@ -1019,13 +1019,13 @@ def _sample_rois_softmax_yall(
     # centroids_obj = centroids_obj.astype(np.float32)
     # centroids_rel = centroids_rel.astype(np.float32)
 
-    sbj_pos_labels_one_hot = np.zeros((sbj_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.int32)
-    obj_pos_labels_one_hot = np.zeros((obj_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.int32)
-    rel_pos_labels_one_hot = np.zeros((rel_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_PRD), dtype=np.int32)
+    sbj_pos_labels_one_hot = np.zeros((sbj_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.float32)
+    obj_pos_labels_one_hot = np.zeros((obj_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.float32)
+    rel_pos_labels_one_hot = np.zeros((rel_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_PRD), dtype=np.float32)
 
-    sbj_pos_labels_one_hot[np.arange(sbj_pos_labels.size), sbj_pos_labels] = 1
-    obj_pos_labels_one_hot[np.arange(obj_pos_labels.size), obj_pos_labels] = 1
-    rel_pos_labels_one_hot[np.arange(rel_pos_labels.size), rel_pos_labels] = 1
+    sbj_pos_labels_one_hot[np.arange(sbj_pos_labels.size, dtype=np.int32), sbj_pos_labels.astype(np.int32)] = 1.
+    obj_pos_labels_one_hot[np.arange(obj_pos_labels.size, dtype=np.int32), obj_pos_labels.astype(np.int32)] = 1.
+    rel_pos_labels_one_hot[np.arange(rel_pos_labels.size, dtype=np.int32), rel_pos_labels.astype(np.int32)] = 1.
 
     blob = dict(
         sbj_rois=rois_sbj,
