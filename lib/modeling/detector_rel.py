@@ -307,7 +307,7 @@ class DetectionModelHelper(cnn.CNNModelHelper):
                 [],
                 name,
                 shape=[dim0, dim1],
-                **centroids_init[1])
+                **weight_init[1])
 
             self.params.extend([weight])
             self.weights.append(weight)

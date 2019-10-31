@@ -16,6 +16,7 @@ from caffe2.python import workspace
 from core.config_rel import cfg
 import utils.blob as blob_utils
 import pickle
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +51,9 @@ def create_model(model):
 
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
 
-        add_weight_blob_with_weight_name(self, 'weight_sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
-        add_weight_blob_with_weight_name(self, 'weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
-        add_weight_blob_with_weight_name(self, 'weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+        model.add_weight_blob_with_weight_name('weight_sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+        model.add_weight_blob_with_weight_name('weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+        model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
 
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
@@ -612,6 +613,7 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # 0.01 * loss_repel
     model.net.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
     model.net.Print('centroids' + suffix, [])
+    model.net.Print('weight' + suffix, [])
     model.net.Print('distmat_neg' + suffix, [])
     model.net.Print('distmat' + suffix, [])
     model.net.Print(feat, [])
