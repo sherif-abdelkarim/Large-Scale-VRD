@@ -553,16 +553,16 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
 
     # labels_expand = label.unsqueeze(1).expand(batch_size, self.num_classes)
     #label.unsqueeze(1)
-    model.net.ExpandDims([prefix + 'pos_labels_int32'],
-                        ['labels_expand' + suffix],
-                        dims=[1])
+    #model.net.ExpandDims([prefix + 'pos_labels_int32'],
+    #                    ['labels_expand' + suffix],
+    #                    dims=[1])
     #.expand(batch_size, self.num_classes)
-    model.net.Tile('labels_expand' + suffix,
-                  'labels_expand_tile' + suffix,
-                  tiles=num_classes,
-                  axis=1) #(128, 1703)
+    #model.net.Tile('labels_expand' + suffix,
+    #              'labels_expand_tile' + suffix,
+    #              tiles=num_classes,
+    #              axis=1) #(128, 1703)
 
-    model.net.ConstantFill(['labels_expand_tile' + suffix], 'zero_blob_mask' + suffix, value=0.0)
+    #model.net.ConstantFill(['labels_expand_tile' + suffix], 'zero_blob_mask' + suffix, value=0.0)
 
     # classes.expand(batch_size, self.num_classes)
     #model.net.ExpandDims(['classes' + suffix],
@@ -605,7 +605,10 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # loss = loss_attract + 0.01 * loss_repel
     # 0.01 * loss_repel
     model.net.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
-    #model.net.Print(model.net.Shape('distmat_neg' + suffix, 'distmat_neg' + suffix + '_shape'), [])
+    model.net.Print('centroids' + suffix, [])
+    model.net.Print('distmat_neg' + suffix, [])
+    model.net.Print('distmat' + suffix, [])
+    model.net.Print(feat, [])
     #model.net.Print(model.net.Shape('distmat_neg_sum' + suffix, 'distmat_neg_sum' + suffix + '_shape'), [])
     #model.net.Print(model.net.Shape('loss_repel_scaled' + suffix, 'loss_repel_scaled' + suffix + '_shape'), [])
     #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
