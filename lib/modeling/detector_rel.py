@@ -279,7 +279,7 @@ class DetectionModelHelper(cnn.CNNModelHelper):
             # in the init net, and at the same time add the records to the
             # model.params list
 
-            centroids_init = ('ConstantFill', {})
+            centroids_init = ('ConstantFill', {'value': 1.})
             centroids = self.param_init_net.__getattr__(centroids_init[0])(
                 [],
                 name,
