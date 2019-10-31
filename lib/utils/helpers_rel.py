@@ -53,6 +53,7 @@ def check_nan_losses(model, num_devices):
         iter_values[key] = sum_multi_gpu_blob(key)
     loss = np.sum(np.array(iter_values.values()))
     if math.isnan(loss):
+        print_net_nan(model)
         logger.error("ERROR: NaN losses detected")
         logger.info(iter_values)
         os._exit(0)
@@ -364,6 +365,44 @@ def print_net(model):
                         suffix = ' ------|'
     logger.info("End of model: {}".format(model.net.Name()))
 
+def print_net_nan(model):
+    logger.info("Printing Model Containing Nan: {}".format(model.net.Name()))
+    prefix = 'gpu_' if cfg.DEVICE == 'GPU' else 'cpu_'
+    master_device = prefix + str(cfg.ROOT_DEVICE_ID)
+    op_output = model.net.Proto().op
+    model_params = model.GetAllParams(master_device)
+    for idx in range(len(op_output)):
+        input_b = model.net.Proto().op[idx].input
+        # for simplicity: only print the first output;
+        # not recommended if there are split layers.
+        output_b = str(model.net.Proto().op[idx].output[0])
+        type_b = model.net.Proto().op[idx].type
+        if output_b.find(master_device) >= 0:
+            # Only print the forward pass network
+            if output_b.find('grad') >= 0:
+                break
+            output_array = np.array(workspace.FetchBlob(str(output_b)))
+            output_nan = np.isnan(output_array).any()
+            first_blob = True
+            suffix = ' ------- (op: {:s})'.format(type_b)
+            for j in range(len(input_b)):
+                if input_b[j] in model_params:
+                        continue
+                input_array = np.array(workspace.FetchBlob(str(input_b[j])))
+                input_nan = np.isnan(input_array).any()
+                if input_shape != ():
+                    logger.info(
+                        '{:28s}: {:20s} => {:36s}: {:20s}{}'.format(
+                            unscope_name(str(input_b[j])),
+                            '{}'.format(input_nan),  # suppress warning
+                            unscope_name(str(output_b)),
+                            '{}'.format(output_nan),
+                            suffix
+                        ))
+                    if first_blob:
+                        first_blob = False
+                        suffix = ' ------|'
+    logger.info("End of model: {}".format(model.net.Name()))
 
 def get_gpu_stats():
     sp = subprocess.Popen(
