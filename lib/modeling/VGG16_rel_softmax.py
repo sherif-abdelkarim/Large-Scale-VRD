@@ -513,10 +513,13 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     model.net.Sqr(['feat_reshaped' + suffix], ['feat_squared' + suffix])
 
     #.sum(dim=1, keepdim=True)
-    split = tuple([1 for i in range(cfg.OUTPUT_EMBEDDING_DIM)])
-    tensors_list_names = ['sum_' + str(i) + suffix for i in range(cfg.OUTPUT_EMBEDDING_DIM)]
-    tensors_list = model.net.Split('feat_squared' + suffix, tensors_list_names, axis=1, split=split)
-    model.net.Sum(tensors_list, 'feat_squared_sum' + suffix) #(128, 1)
+    # split = tuple([1 for i in range(cfg.OUTPUT_EMBEDDING_DIM)])
+    # tensors_list_names = ['sum_' + str(i) + suffix for i in range(cfg.OUTPUT_EMBEDDING_DIM)]
+    # tensors_list = model.net.Split('feat_squared' + suffix, tensors_list_names, axis=1, split=split)
+    # model.net.Sum(tensors_list, 'feat_squared_sum' + suffix) #(128, 1)
+
+    model.net.ReduceBackSum('feat_squared' + suffix, 'feat_squared_sum_temp' + suffix, num_reduce_dims=1)
+    model.net.ExpandDims('feat_squared_sum_temp' + suffix, 'feat_squared_sum' + suffix, [1])
 
     #.expand(batch_size, self.num_classes)
     model.net.Tile('feat_squared_sum' + suffix,
@@ -529,11 +532,13 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # (1703, 1024)
     model.net.Sqr(['centroids' + suffix], ['centroids_squared' + suffix])
 
-    #.sum(dim=1, keepdim=True)
-    tensors_list_names = ['centroids_sum_' + str(i) + suffix for i in range(cfg.OUTPUT_EMBEDDING_DIM)]
-    tensors_list = model.net.Split('centroids_squared' + suffix, tensors_list_names, axis=1, split=split)
-    model.net.Sum(tensors_list, 'centroids_squared_sum' + suffix) #(1703, 1)
+    # #.sum(dim=1, keepdim=True)
+    # tensors_list_names = ['centroids_sum_' + str(i) + suffix for i in range(cfg.OUTPUT_EMBEDDING_DIM)]
+    # tensors_list = model.net.Split('centroids_squared' + suffix, tensors_list_names, axis=1, split=split)
+    # model.net.Sum(tensors_list, 'centroids_squared_sum' + suffix) #(1703, 1)
 
+    model.net.ReduceBackSum('centroids_squared' + suffix, 'centroids_squared_sum_temp' + suffix, num_reduce_dims=1)
+    model.net.ExpandDims('centroids_squared_sum_temp' + suffix, 'centroids_squared_sum' + suffix, [1])
 
     model.Transpose(['centroids_squared_sum' + suffix], ['centroids_squared_sum_T' + suffix]) #(1, 1703)
     model.net.Tile(['centroids_squared_sum_T' + suffix, 'batch_size' + suffix],
