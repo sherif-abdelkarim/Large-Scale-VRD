@@ -610,18 +610,18 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     #               axis=0) # (128, 1703)
 
     # mask = labels_expand.eq(classes.expand(batch_size, self.num_classes))
-    # model.net.EQ(['labels_expand_tile' + suffix, 'classes_expand_tile' + suffix], 'mask' + suffix) # TODO: Make sure EQ func produces boolean
+    # model.net.EQ(['labels_expand_tile' + suffix, 'classes_expand_tile' + suffix], 'mask' + suffix)
     # model.net.OneHot([prefix + 'pos_labels_int32', num_classes_blob], 'mask' + suffix)
-    model.net.ConstantFill([prefix + 'pos_labels_one_hot'], 'ones_mask' + suffix, value=1.0)
-    model.net.Sub(['ones_mask' + suffix, prefix + 'pos_labels_one_hot'], 'neg_mask' + suffix)
+    # model.net.ConstantFill([prefix + 'pos_labels_one_hot'], 'ones_mask' + suffix, value=1.0)
+    # model.net.Sub(['ones_mask' + suffix, prefix + 'pos_labels_one_hot'], 'neg_mask' + suffix)
 
 
     # distmat_neg = distmat
 
-    # distmat_neg[mask] = 0.0 # TODO: verify that model.net.where() works as understood
+    # distmat_neg[mask] = 0.0
     #model.net.Where(['mask' + suffix, 'distmat_plus_neg_2feat_dot_centroids' + suffix, 'zero_blob_mask' + suffix], 'distmat_neg' + suffix) # (128, 1703)
     #model.net.Where(['mask' + suffix, 'zero_blob_mask' + suffix, 'distmat_plus_neg_2feat_dot_centroids' + suffix], 'distmat_neg' + suffix) # (128, 1703)
-    model.net.Mul(['distmat_plus_neg_2feat_dot_centroids' + suffix, 'neg_mask' + suffix], 'distmat_neg' + suffix) # TODO: Make sure EQ func produces boolean
+    model.net.Mul(['distmat_plus_neg_2feat_dot_centroids' + suffix, prefix + 'pos_labels_neg_one_hot'], 'distmat_neg' + suffix)
     # margin = 50.0
     margin = 10.0
 

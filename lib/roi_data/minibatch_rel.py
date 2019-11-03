@@ -82,11 +82,11 @@ def get_minibatch_blob_names(split):
             # blob_names += ['weight_sbj']
             # blob_names += ['weight_obj']
             # blob_names += ['weight_rel']
-            blob_names += ['sbj_pos_labels_one_hot']
-            blob_names += ['obj_pos_labels_one_hot']
+            blob_names += ['sbj_pos_labels_neg_one_hot']
+            blob_names += ['obj_pos_labels_neg_one_hot']
 
         if cfg.MODEL.MEMORY_MODULE_PRD:
-            blob_names += ['rel_pos_labels_one_hot']
+            blob_names += ['rel_pos_labels_neg_one_hot']
 
         blob_names += ['sbj_pos_starts']
         blob_names += ['obj_pos_starts']
