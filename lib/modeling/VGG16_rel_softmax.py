@@ -748,6 +748,9 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     #model.net.Div(['one_blob_x_minus_c' + suffix, 'x_minus_c_normalized' + suffix], 'one_over_x_minus_c_normalized' + suffix)
     #model.net.Mul(['one_over_x_minus_c_normalized' + suffix, 'x_minus_c' + suffix], 'x_minus_c_norm' + suffix)
     #model.net.Print('one_over_x_minus_c_normalized' + suffix, [])
+    lp_vec_raised = model.net.Pow('x_minus_c' + suffix, 'x_minus_c_temp1' + suffix, exponent=2.)
+    lp_vec_summed = model.net.ReduceBackSum(['x_minus_c_temp1' + suffix], 'x_minus_c_temp2' + suffix)
+    lp_norm = model.net.Pow('x_minus_c_temp2' + suffix, 'dist_cur_test' + suffix, exponent=(1/2))
 
     #model.net.LpNorm(['x_minus_c' + suffix], 'dist_cur_l2' + suffix, p=2)
     model.net.ReduceBackSum([model.net.Abs('x_minus_c' + suffix)], 'dist_cur' + suffix, num_reduce_dims=1)
