@@ -80,6 +80,11 @@ def create_model(model):
     x_blob_rel = 'scaled_xp_rel'
 
     if cfg.MODEL.MEMORY_MODULE:
+        model.StopGradient(x_blob_sbj, x_blob_sbj)
+        model.StopGradient(x_blob_obj, x_blob_obj)
+        model.StopGradient(x_blob_rel, x_blob_rel)
+
+    if cfg.MODEL.MEMORY_MODULE:
 
         model.net.Shape(x_blob_sbj, 'x_sbj_shape')
         model.net.Shape(x_blob_obj, 'x_obj_shape')
@@ -519,7 +524,7 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # model.net.Sum(tensors_list, 'feat_squared_sum' + suffix) #(128, 1)
 
     model.net.ReduceBackSum('feat_squared' + suffix, 'feat_squared_sum_temp' + suffix, num_reduce_dims=1)
-    model.net.ExpandDims('feat_squared_sum_temp' + suffix, 'feat_squared_sum' + suffix, [1])
+    model.net.ExpandDims('feat_squared_sum_temp' + suffix, 'feat_squared_sum' + suffix, dims=[1])
 
     #.expand(batch_size, self.num_classes)
     model.net.Tile('feat_squared_sum' + suffix,
@@ -538,7 +543,7 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # model.net.Sum(tensors_list, 'centroids_squared_sum' + suffix) #(1703, 1)
 
     model.net.ReduceBackSum('centroids_squared' + suffix, 'centroids_squared_sum_temp' + suffix, num_reduce_dims=1)
-    model.net.ExpandDims('centroids_squared_sum_temp' + suffix, 'centroids_squared_sum' + suffix, [1])
+    model.net.ExpandDims('centroids_squared_sum_temp' + suffix, 'centroids_squared_sum' + suffix, dims=[1])
 
     model.Transpose(['centroids_squared_sum' + suffix], ['centroids_squared_sum_T' + suffix]) #(1, 1703)
     model.net.Tile(['centroids_squared_sum_T' + suffix, 'batch_size' + suffix],
@@ -738,12 +743,16 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
 
     model.net.ConstantFill(['x_minus_c' + suffix],  'one_blob_x_minus_c' + suffix, value=1.0)
 
-    model.net.Normalize('x_minus_c' + suffix, 'x_minus_c_normalized' + suffix)
-    model.net.Div(['one_blob_x_minus_c' + suffix, 'x_minus_c_normalized' + suffix], 'one_over_x_minus_c_normalized' + suffix)
-    model.net.Mul(['one_over_x_minus_c_normalized' + suffix, 'x_minus_c' + suffix], 'x_minus_c_norm' + suffix)
+    #model.net.Normalize('x_minus_c' + suffix, 'x_minus_c_normalized' + suffix)
+    #model.net.Print('x_minus_c_normalized' + suffix, [])
+    #model.net.Div(['one_blob_x_minus_c' + suffix, 'x_minus_c_normalized' + suffix], 'one_over_x_minus_c_normalized' + suffix)
+    #model.net.Mul(['one_over_x_minus_c_normalized' + suffix, 'x_minus_c' + suffix], 'x_minus_c_norm' + suffix)
+    #model.net.Print('one_over_x_minus_c_normalized' + suffix, [])
 
-    model.net.Slice(['x_minus_c_norm' + suffix], 'x_minus_c_norm_slice' + suffix, starts=[0, 0, 0], ends=[-1, -1, 1])
-    model.net.Squeeze(['x_minus_c_norm_slice' + suffix], 'dist_cur' + suffix, dims=[2])
+    #model.net.LpNorm(['x_minus_c' + suffix], 'dist_cur_l2' + suffix, p=2)
+    model.net.ReduceBackSum([model.net.Abs('x_minus_c' + suffix)], 'dist_cur' + suffix, num_reduce_dims=1)
+    #model.net.Slice(['x_minus_c_norm' + suffix], 'x_minus_c_norm_slice' + suffix, starts=[0, 0, 0], ends=[-1, -1, 1])
+    #model.net.Squeeze(['x_minus_c_norm_slice' + suffix], 'dist_cur' + suffix, dims=[2])
     #model.net.Print('x_minus_c_norm_slice' + suffix, [])
 
     #model.net.Print(model.net.Shape('x_minus_c_norm_slice' + suffix, 'x_minus_c_norm_slice' + suffix + '_shape'), [])
@@ -861,9 +870,17 @@ def add_selector(model, input_blob_name, output_blob_name, feat_size):
 def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     #  norm_x = torch.norm(input, 2, 1, keepdim=True)
     #model.net.LpNorm([input_], 'input_norm_expand' + suffix, p=2)
-    model.net.Normalize(input_, 'input_normalized' + suffix)
-    model.net.Div(['one_blob_x' + suffix, 'input_normalized' + suffix], 'one_over_normalized' + suffix)
-    model.net.Mul(['one_over_normalized' + suffix, 'input_normalized' + suffix], 'norm' + suffix)
+
+    #model.net.NormalizeL1(input_, 'input_normalized' + suffix)
+    #model.net.Div(['one_blob_x' + suffix, 'input_normalized' + suffix], 'one_over_normalized' + suffix)
+    #model.net.Mul(['one_over_normalized' + suffix, 'input_normalized' + suffix], 'norm' + suffix)
+
+
+    #model.net.Alias(input_, 'norm' + suffix)
+    model.net.ReduceBackSum(model.net.Abs(input_), 'norm_temp' + suffix, num_reduce_dims=1)
+    model.net.ExpandDims('norm_temp' + suffix, 'norm_temp2' + suffix, dims=[1])
+    model.net.Tile(['norm_temp2' + suffix], 'norm' + suffix, tiles=cfg.OUTPUT_EMBEDDING_DIM, axis=1)
+    model.net.Div([input_, 'norm' + suffix], 'input_normalized' + suffix)
     #model.net.Print('norm' + suffix), [])
     #model.net.Alias(input_, 'norm' + suffix)
     #model.net.SquaredL2Distance([input_, 'zero_blob_x' + suffix], 'input_dist' + suffix)
@@ -889,9 +906,8 @@ def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     #model.net.Div([input_, 'norm' + suffix],
     #              'input_over_norm' + suffix)  # (input / norm_x)
 
-    model.net.Mul(['norm_over_one_plus_norm' + suffix,
-                   'input_normalized' + suffix],
-                  'ex' + suffix)  # (norm_x / (1 + norm_x)) * (input / norm_x)
+    model.net.Mul(['input_normalized' + suffix, 'norm_over_one_plus_norm' + suffix],
+                  'ex' + suffix, broadcast=1)  # (norm_x / (1 + norm_x)) * (input / norm_x)
 
     # ew = self.weight / torch.norm(self.weight, 2, 1, keepdim=True)
     # model.net.LpNorm(['weight' + suffix], 'weight_norm' + suffix, p=2)
