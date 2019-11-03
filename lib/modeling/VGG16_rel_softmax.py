@@ -566,7 +566,6 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     model.net.Sum(['distmat' + suffix, 'neg_2_feat_dot_centroids' + suffix], 'distmat_plus_neg_2feat_dot_centroids' + suffix) # (128, 1703)
 
     # classes = torch.arange(self.num_classes).long().cuda()
-    #TODO
     # should produce  'classes' + suffix
 
     # labels_expand = label.unsqueeze(1).expand(batch_size, self.num_classes)
@@ -743,77 +742,17 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
 
     model.net.ConstantFill(['x_minus_c' + suffix],  'one_blob_x_minus_c' + suffix, value=1.0)
 
-    #model.net.Normalize('x_minus_c' + suffix, 'x_minus_c_normalized' + suffix)
-    #model.net.Print('x_minus_c_normalized' + suffix, [])
-    #model.net.Div(['one_blob_x_minus_c' + suffix, 'x_minus_c_normalized' + suffix], 'one_over_x_minus_c_normalized' + suffix)
-    #model.net.Mul(['one_over_x_minus_c_normalized' + suffix, 'x_minus_c' + suffix], 'x_minus_c_norm' + suffix)
-    #model.net.Print('one_over_x_minus_c_normalized' + suffix, [])
-    lp_vec_raised = model.net.Pow('x_minus_c' + suffix, 'x_minus_c_temp1' + suffix, exponent=2.)
-    lp_vec_summed = model.net.ReduceBackSum(['x_minus_c_temp1' + suffix], 'x_minus_c_temp2' + suffix)
-    lp_norm = model.net.Pow('x_minus_c_temp2' + suffix, 'dist_cur_test' + suffix, exponent=(1/2))
-
-    #model.net.LpNorm(['x_minus_c' + suffix], 'dist_cur_l2' + suffix, p=2)
-    model.net.ReduceBackSum([model.net.Abs('x_minus_c' + suffix)], 'dist_cur' + suffix, num_reduce_dims=1)
-    #model.net.Slice(['x_minus_c_norm' + suffix], 'x_minus_c_norm_slice' + suffix, starts=[0, 0, 0], ends=[-1, -1, 1])
-    #model.net.Squeeze(['x_minus_c_norm_slice' + suffix], 'dist_cur' + suffix, dims=[2])
-    #model.net.Print('x_minus_c_norm_slice' + suffix, [])
-
-    #model.net.Print(model.net.Shape('x_minus_c_norm_slice' + suffix, 'x_minus_c_norm_slice' + suffix + '_shape'), [])
-
-    # distance = X^2 - 2 * XC_t + C^2
-    # X: x_blob: (128, 1024)
-    # C: 'centroids' + suffix + suffix: (1703, 1024)
-    # X^2: (128,)
-    # X^2_tiled: (128, 1703)
-
-    #model.net.SquaredL2Distance([x_blob, 'zero_blob_x' + suffix], 'x_norm' + suffix)
-    #model.net.ExpandDims(['x_norm' + suffix],
-    #                     'x_norm_expand' + suffix,
-    #                     dims=[1])
-    #model.net.Tile(['x_norm_expand' + suffix],
-    #               'x_norm_tile' + suffix,
-    #               tiles=num_classes,
-    #               axis=1)
-
-    # model.net.Print(model.net.Shape('x_norm' + suffix, 'x_norm' + suffix + '_shape'), [])
-    # C^2: (1703,)
-
-    #model.net.SquaredL2Distance([centroids_blob_name, 'zero_blob_c' + suffix], 'c_norm' + suffix)
-    #model.net.ExpandDims(['c_norm' + suffix],
-    #                     'c_norm_expand' + suffix,
-    #                     dims=[1])
-    #model.Transpose(['c_norm_expand' + suffix], ['c_norm_expand_T' + suffix])
-    #model.net.Tile(['c_norm_expand_T' + suffix, 'batch_size' + suffix],
-    #               'c_norm_tile_T' + suffix,
-    #               # tiles=batch_size,
-    #               axis=0
-    #               )
-    # model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), [])
-    # model.net.Print(model.net.Shape('c_norm_expand' + suffix, 'c_norm_expand' + suffix + '_shape'), [])
-
-    # XC_t: (128, 1703)
-    #model.net.MatMul([x_blob, centroids_blob_name], 'xc_t' + suffix, trans_b=1)
-
-    # -2 * XC_t
-    #model.net.Mul(['xc_t' + suffix, 'neg_two_blob'], 'neg_2_xc_t' + suffix, broadcast=1)
-
-    # X^2 - 2 * XC_t + C^2
-    #model.net.Sum(['x_norm_tile' + suffix, 'neg_2_xc_t' + suffix, 'c_norm_tile_T' + suffix], 'dist_cur' + suffix)
+    dist_cur = l2_norm(model, 'x_minus_c' + suffix, keepdims=False)
 
     # computing reachability
 
     split = tuple([1 for i in range(num_classes)])
     tensors_list_names = ['tensor' + str(i) + suffix for i in range(num_classes)]
-    tensors_list = model.net.Split('dist_cur' + suffix, tensors_list_names, axis=1, split=split)
+    tensors_list = model.net.Split(dist_cur, tensors_list_names, axis=1, split=split)
 
     model.net.Min(tensors_list,
                   'min_dis' + suffix)
 
-    #model.net.Mul(['dist_cur' + suffix, 'neg_one_blob'], 'dist_cur_neg' + suffix, broadcast=1)
-    #model.net.Scale('dist_cur' + suffix, 'dist_cur_neg' + suffix, scale=-1.)
-    #model.net.ReduceBackMax(['dist_cur_neg' + suffix], 'reduce_min_neg' + suffix)
-    #model.net.Mul(['reduce_min_neg' + suffix, 'neg_one_blob'], 'reduce_min' + suffix, broadcast=1)
-    #model.net.Scale('reduce_min_neg' + suffix, 'reduce_min' + suffix, scale=-1.)
     model.net.Div(['scale_10_blob' + suffix, 'min_dis' + suffix], 'scale_over_values' + suffix)
 
     reachability = model.net.Tile('scale_over_values' + suffix,
@@ -843,7 +782,6 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     #model.net.Print('centroids' + suffix, [])
     x_out = model.net.Mul([reachability, 'add_matmul_conc_mem' + suffix],
                           'x_out' + suffix)
-    # model.net.Alias('add_matmul_conc_mem' + suffix, 'x_out' + suffix)
     # storing infused feature
     # infused_feature = concept_selector * memory_feature
     # infused_feature = model.net.Mul([concept_selector, memory_feature],
@@ -872,73 +810,37 @@ def add_selector(model, input_blob_name, output_blob_name, feat_size):
 
 def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     #  norm_x = torch.norm(input, 2, 1, keepdim=True)
-    #model.net.LpNorm([input_], 'input_norm_expand' + suffix, p=2)
+    norm_x = l2_norm(model, input, keepdims=True)
+    model.net.Normalize(input_, 'input_normalized' + suffix)
 
-    #model.net.NormalizeL1(input_, 'input_normalized' + suffix)
-    #model.net.Div(['one_blob_x' + suffix, 'input_normalized' + suffix], 'one_over_normalized' + suffix)
-    #model.net.Mul(['one_over_normalized' + suffix, 'input_normalized' + suffix], 'norm' + suffix)
-
-
-    #model.net.Alias(input_, 'norm' + suffix)
-    model.net.ReduceBackSum(model.net.Abs(input_), 'norm_temp' + suffix, num_reduce_dims=1)
-    model.net.ExpandDims('norm_temp' + suffix, 'norm_temp2' + suffix, dims=[1])
-    model.net.Tile(['norm_temp2' + suffix], 'norm' + suffix, tiles=cfg.OUTPUT_EMBEDDING_DIM, axis=1)
-    model.net.Div([input_, 'norm' + suffix], 'input_normalized' + suffix)
-    #model.net.Print('norm' + suffix), [])
-    #model.net.Alias(input_, 'norm' + suffix)
-    #model.net.SquaredL2Distance([input_, 'zero_blob_x' + suffix], 'input_dist' + suffix)
-
-    #model.net.Scale('input_dist' + suffix, 'input_dist_scaled' + suffix, scale=2)
-    #model.Sqrt('input_dist_scaled' + suffix, 'input_norm' + suffix)
-
-    #model.net.ExpandDims(['input_dist' + suffix],
-    #                     'input_norm_expand' + suffix,
-    #                     dims=[1])
-    #model.net.Tile(['input_norm_expand' + suffix],
-    #               'norm' + suffix,
-    #               tiles=cfg.OUTPUT_EMBEDDING_DIM,
-    #               axis=1)
 
     # ex = (norm_x / (1 + norm_x)) * (input / norm_x)
-    model.net.Add(['norm' + suffix, 'one_blob'],
+    model.net.Add([norm_x, 'one_blob'],
                   'one_plus_norm' + suffix, broadcast=1)  # (1 + norm_x)
 
-    model.net.Div(['norm' + suffix, 'one_plus_norm' + suffix],
+    model.net.Div([norm_x, 'one_plus_norm' + suffix],
                   'norm_over_one_plus_norm' + suffix)  # (norm_x / (1 + norm_x))
 
-    #model.net.Div([input_, 'norm' + suffix],
-    #              'input_over_norm' + suffix)  # (input / norm_x)
 
     model.net.Mul(['input_normalized' + suffix, 'norm_over_one_plus_norm' + suffix],
                   'ex' + suffix, broadcast=1)  # (norm_x / (1 + norm_x)) * (input / norm_x)
 
     # ew = self.weight / torch.norm(self.weight, 2, 1, keepdim=True)
-    # model.net.LpNorm(['weight' + suffix], 'weight_norm' + suffix, p=2)
-    # model.net.Alias('weight' + suffix, 'weight_norm' + suffix)
-    # model.net.SquaredL2Distance(['weight' + suffix, 'zero_blob_c' + suffix], 'weight_dist' + suffix)
     model.net.Normalize('weight' + suffix, 'ew' + suffix)
-    #model.net.Div(['one_blob_c' + suffix, 'weight_normalized' + suffix], 'one_over_w_normalized' + suffix)
-    #model.net.Mul(['one_over_w_normalized' + suffix, 'weight_normalized' + suffix], 'weight_norm' + suffix)
-    #model.net.Scale('weight_dist' + suffix, 'weight_dist_scaled' + suffix, scale=2)
-    #model.Sqrt('weight_dist_scaled' + suffix, 'weight_norm' + suffix)
-    #model.net.ExpandDims(['weight_dist' + suffix],
-    #                     'weight_norm_expand' + suffix,
-    #                     dims=[1])
-    #model.net.Tile(['weight_norm_expand' + suffix],
-    #               'weight_norm_tile' + suffix,
-    #               tiles=cfg.OUTPUT_EMBEDDING_DIM,
-    #               axis=1)
-
-    #model.net.Print(model.net.Shape('weight_norm_tile' + suffix, 'weight_norm_tile' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape('norm' + suffix, 'norm' + suffix + '_shape'), [])
-    #model.net.Div(['weight' + suffix, 'weight_norm_tile' + suffix],
-    #              'ew' + suffix)
     model.net.Mul(['ex' + suffix, 'scale_blob'],
                   'scaled_ex' + suffix, broadcast=1)
     out = model.net.MatMul(['scaled_ex' + suffix, 'ew' + suffix],
                            'logits' + suffix, trans_b=1)
     return out
 
+
+def l2_norm(model, input, keepdims=False):
+    lp_vec_raised = model.net.Pow(input, exponent=2.)
+    lp_vec_summed = model.net.ReduceBackSum([lp_vec_raised], num_reduce_dims=1)
+    lp_norm = model.net.Pow(lp_vec_summed, exponent=(1/2))
+    if keepdims:
+        lp_norm = model.net.ExpandDims(lp_norm, dims=[-1])
+    return lp_norm
 
 def load_pickle(pickle_file):
     try:
