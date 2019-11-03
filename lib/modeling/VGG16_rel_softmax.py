@@ -44,16 +44,17 @@ def create_model(model):
     spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
         model, blob, dim, spatial_scale)
 
-    if cfg.MODEL.MEMORY_MODULE:
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         model.add_centroids_blob_with_weight_name('centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
-        model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
         model.net.Alias('centroids_obj', 'centroids_sbj')
-
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
-
         model.add_weight_blob_with_weight_name('weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
-        model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
         model.net.Alias('weight_obj', 'weight_sbj')
+
+    if cfg.MODEL.MEMORY_MODULE_PRD:
+        model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
+        std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
+        model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
 
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
@@ -79,12 +80,12 @@ def create_model(model):
     x_blob_obj = 'scaled_xp_obj'
     x_blob_rel = 'scaled_xp_rel'
 
-    if cfg.MODEL.MEMORY_MODULE:
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ or cfg.MODEL.MEMORY_MODULE_PRD:
         model.StopGradient(x_blob_sbj, x_blob_sbj)
         model.StopGradient(x_blob_obj, x_blob_obj)
         model.StopGradient(x_blob_rel, x_blob_rel)
 
-    if cfg.MODEL.MEMORY_MODULE:
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ or cfg.MODEL.MEMORY_MODULE_PRD:
 
         model.net.Shape(x_blob_sbj, 'x_sbj_shape')
         model.net.Shape(x_blob_obj, 'x_obj_shape')
@@ -128,9 +129,27 @@ def create_model(model):
         model.net.ConstantFill([], 'num_classes_obj', shape=[1, 0], value=cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
         model.net.ConstantFill([], 'num_classes_rel', shape=[1, 0], value=cfg.MODEL.NUM_CLASSES_PRD)
 
-        add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+        if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+            add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        else:
+            model.add_FC_layer_with_weight_name(
+                'x_sbj_and_obj_out',
+                x_blob_sbj, 'logits_sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+
+            model.add_FC_layer_with_weight_name(
+                'x_sbj_and_obj_out',
+                x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+
+        if cfg.MODEL.MEMORY_MODULE_PRD:
+            add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+        else:
+            model.FC(
+                x_blob_rel, 'logits_rel',
+                cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
+                weight_init=('GaussianFill', {'std': 0.01}),
+                bias_init=('ConstantFill', {'value': 0.}))
+
 
     else:
         model.add_FC_layer_with_weight_name(
@@ -158,10 +177,11 @@ def create_model(model):
         add_softmax_losses(model, 'sbj')
         add_softmax_losses(model, 'obj')
         add_softmax_losses(model, 'rel')
-        if cfg.MODEL.MEMORY_MODULE:
-            #pass
+        if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
             add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, 'num_classes_sbj')
             add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, 'num_classes_obj')
+
+        if cfg.MODEL.MEMORY_MODULE_PRD:
             add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD, 'num_classes_rel')
 
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)

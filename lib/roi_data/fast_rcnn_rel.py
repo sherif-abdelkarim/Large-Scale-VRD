@@ -1053,12 +1053,15 @@ def _sample_rois_softmax_yall(
     if cfg.TRAIN.ADD_LOSS_WEIGHTS_SO:
         blob['sbj_pos_weights'] = sbj_pos_weights
         blob['obj_pos_weights'] = obj_pos_weights
-    if cfg.MODEL.MEMORY_MODULE:
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         # blob['weight_sbj'] = weight_sbj
         # blob['weight_obj'] = weight_obj
         # blob['weight_rel'] = weight_rel
         blob['sbj_pos_labels_one_hot'] = sbj_pos_labels_one_hot
         blob['obj_pos_labels_one_hot'] = obj_pos_labels_one_hot
+
+    if cfg.MODEL.MEMORY_MODULE_PRD:
         blob['rel_pos_labels_one_hot'] = rel_pos_labels_one_hot
 
         # blob['centroids_sbj'] = centroids_obj

@@ -75,7 +75,7 @@ def get_minibatch_blob_names(split):
             blob_names += ['bg_num_obj']
             blob_names += ['fg_num_rel']
             blob_names += ['bg_num_rel']
-        if cfg.MODEL.MEMORY_MODULE:
+        if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
             # blob_names += ['centroids_sbj']
             # blob_names += ['centroids_obj']
             # blob_names += ['centroids_rel']
@@ -84,6 +84,8 @@ def get_minibatch_blob_names(split):
             # blob_names += ['weight_rel']
             blob_names += ['sbj_pos_labels_one_hot']
             blob_names += ['obj_pos_labels_one_hot']
+
+        if cfg.MODEL.MEMORY_MODULE_PRD:
             blob_names += ['rel_pos_labels_one_hot']
 
         blob_names += ['sbj_pos_starts']
