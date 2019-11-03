@@ -740,7 +740,7 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
 
     model.net.Sub(['x_expand' + suffix, 'centroids_expand' + suffix], 'x_minus_c' + suffix)
 
-    model.net.ConstantFill(['x_minus_c' + suffix],  'one_blob_x_minus_c' + suffix, value=1.0)
+    #model.net.ConstantFill(['x_minus_c' + suffix],  'one_blob_x_minus_c' + suffix, value=1.0)
 
     dist_cur = l2_norm(model, 'x_minus_c' + suffix, keepdims=False)
 
@@ -810,7 +810,7 @@ def add_selector(model, input_blob_name, output_blob_name, feat_size):
 
 def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     #  norm_x = torch.norm(input, 2, 1, keepdim=True)
-    norm_x = l2_norm(model, input, keepdims=True)
+    norm_x = l2_norm(model, input_, keepdims=True)
     model.net.Normalize(input_, 'input_normalized' + suffix)
 
 
@@ -834,12 +834,12 @@ def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     return out
 
 
-def l2_norm(model, input, keepdims=False):
-    lp_vec_raised = model.net.Pow(input, exponent=2.)
+def l2_norm(model, input_, keepdims=False):
+    lp_vec_raised = model.net.Pow(input_, exponent=2.)
     lp_vec_summed = model.net.ReduceBackSum([lp_vec_raised], num_reduce_dims=1)
     lp_norm = model.net.Pow(lp_vec_summed, exponent=(1/2))
     if keepdims:
-        lp_norm = model.net.ExpandDims(lp_norm, dims=[-1])
+        lp_norm = model.net.ExpandDims(lp_norm, dims=[1])
     return lp_norm
 
 def load_pickle(pickle_file):
