@@ -642,20 +642,32 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # loss = loss_attract + 0.01 * loss_repel
     # 0.01 * loss_repel
     model.net.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
-    #model.net.Print('centroids' + suffix, [])
-    #model.net.Print('weight' + suffix, [])
-    #model.net.Print('distmat_neg' + suffix, [])
-    #model.net.Print('reduce_min' + suffix, [])
-    #model.net.Print('min_dis' + suffix, [])
-    #model.net.Print('dist_cur' + suffix, [])
-    #model.net.Slice(['dist_cur' + suffix], 'dist_cur' + '_slice' + suffix, starts=[0, 0], ends=[1, -1])
-    #model.net.Print('dist_cur' + '_slice' + suffix, [])
-    #model.net.Slice(['dist_cur' + suffix], 'dist_cur' + '_slice' + suffix, starts=[0, 0], ends=[5, 5])
-    #model.net.Print('distmat' + suffix, [])
-    #model.net.Print(feat, [])
-    #model.net.Print(model.net.Shape('distmat_neg_sum' + suffix, 'distmat_neg_sum' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape('loss_repel_scaled' + suffix, 'loss_repel_scaled' + suffix + '_shape'), [])
-    #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
+    if cfg.DEBUG:
+        #model.net.Print('centroids' + suffix, [])
+        #model.net.Print('weight' + suffix, [])
+        #model.net.Print('distmat_neg' + suffix, [])
+        #model.net.Print('reduce_min' + suffix, [])
+
+        model.net.Print('min_dis_rel', [])
+        #model.net.Print('min_dis_test_rel', [])
+        model.net.Print('min_dis_test2_rel', [])
+        #model.net.Print('neg_dist_cur_max_rel', [])
+
+        #model.net.Print('neg_dist_cur_rel', [])
+        #model.net.Print('dist_cur_rel', [])
+        #model.net.Print('dist_cur' + suffix, [])
+
+        #model.net.Slice(['dist_cur_rel'], 'dist_cur_slice_rel', starts=[0, 0], ends=[1, -1])
+        #model.net.Print('dist_cur_slice_rel', [])
+        #model.net.Slice(['neg_dist_cur_rel'], 'neg_dist_cur_slice_rel', starts=[0, 0], ends=[1, -1])
+        #model.net.Print('neg_dist_cur_slice_rel', [])
+
+        #model.net.Slice(['dist_cur' + suffix], 'dist_cur' + '_slice' + suffix, starts=[0, 0], ends=[5, 5])
+        #model.net.Print('distmat' + suffix, [])
+        #model.net.Print(feat, [])
+        #model.net.Print(model.net.Shape('distmat_neg_sum' + suffix, 'distmat_neg_sum' + suffix + '_shape'), [])
+        #model.net.Print(model.net.Shape('loss_repel_scaled' + suffix, 'loss_repel_scaled' + suffix + '_shape'), [])
+        #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
 
     # loss_attract + 0.01 * loss_repel
     loss_large_margin = model.net.Sum([loss_attract, 'loss_repel_scaled' + suffix], 'loss_large_margin' + suffix)
@@ -763,8 +775,20 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     #model.net.ConstantFill(['x_minus_c' + suffix],  'one_blob_x_minus_c' + suffix, value=1.0)
 
     dist_cur = l2_norm(model, 'x_minus_c' + suffix, keepdims=False)
+    model.net.Alias(dist_cur, 'dist_cur' + suffix)
 
     # computing reachability
+
+    if cfg.DEBUG:
+        model.net.ConstantFill([dist_cur], 'debug_blob' + suffix, value=1.0)
+        model.net.Div(['debug_blob' + suffix, dist_cur], 'flipped_dist' + suffix)
+        #model.net.Scale([dist_cur], 'neg_dist_cur' + suffix, scale=-1.)
+        #model.net.ReduceBackMax('neg_dist_cur' + suffix, 'neg_dist_cur_max' + suffix)
+        model.net.ReduceBackMax('flipped_dist' + suffix, 'flipped_dist_max' + suffix)
+        model.net.ConstantFill(['flipped_dist_max' + suffix], 'debug_blob2' + suffix, value=1.0)
+        model.net.Div(['debug_blob2' + suffix, 'flipped_dist_max' + suffix], 'min_dis_temp' + suffix)
+        model.net.ExpandDims('min_dis_temp' + suffix, 'min_dis_test2' + suffix, dims=[1])
+        #model.net.Scale(['neg_dist_cur_max' + suffix], 'min_dis_test' + suffix, scale=-1.)
 
     split = tuple([1 for i in range(num_classes)])
     tensors_list_names = ['tensor' + str(i) + suffix for i in range(num_classes)]

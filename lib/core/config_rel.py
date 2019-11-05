@@ -46,6 +46,7 @@ cfg = __C
 
 __C.DATA_DIR = b'datasets/large_scale_VRD'
 __C.OUTPUT_DIR = b'checkpoints'
+__C.DEBUG = False
 
 # ---------------------------------------------------------------------------- #
 # Misc options
