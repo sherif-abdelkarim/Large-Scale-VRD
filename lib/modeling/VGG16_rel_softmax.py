@@ -643,6 +643,7 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
     # 0.01 * loss_repel
     model.net.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
     if cfg.DEBUG:
+        pass
         #model.net.Print('centroids' + suffix, [])
         #model.net.Print('weight' + suffix, [])
         #model.net.Print('distmat_neg' + suffix, [])
@@ -780,22 +781,24 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     # computing reachability
 
     if cfg.DEBUG:
-        model.net.ConstantFill([dist_cur], 'debug_blob' + suffix, value=1.0)
-        model.net.Div(['debug_blob' + suffix, dist_cur], 'flipped_dist' + suffix)
-        #model.net.Scale([dist_cur], 'neg_dist_cur' + suffix, scale=-1.)
-        #model.net.ReduceBackMax('neg_dist_cur' + suffix, 'neg_dist_cur_max' + suffix)
-        model.net.ReduceBackMax('flipped_dist' + suffix, 'flipped_dist_max' + suffix)
-        model.net.ConstantFill(['flipped_dist_max' + suffix], 'debug_blob2' + suffix, value=1.0)
-        model.net.Div(['debug_blob2' + suffix, 'flipped_dist_max' + suffix], 'min_dis_temp' + suffix)
-        model.net.ExpandDims('min_dis_temp' + suffix, 'min_dis_test2' + suffix, dims=[1])
-        #model.net.Scale(['neg_dist_cur_max' + suffix], 'min_dis_test' + suffix, scale=-1.)
+        pass
 
-    split = tuple([1 for i in range(num_classes)])
-    tensors_list_names = ['tensor' + str(i) + suffix for i in range(num_classes)]
-    tensors_list = model.net.Split(dist_cur, tensors_list_names, axis=1, split=split)
+    model.net.ConstantFill([dist_cur], 'debug_blob' + suffix, value=1.0)
+    model.net.Div(['debug_blob' + suffix, dist_cur], 'flipped_dist' + suffix)
+    #model.net.Scale([dist_cur], 'neg_dist_cur' + suffix, scale=-1.)
+    #model.net.ReduceBackMax('neg_dist_cur' + suffix, 'neg_dist_cur_max' + suffix)
+    model.net.ReduceBackMax('flipped_dist' + suffix, 'flipped_dist_max' + suffix)
+    model.net.ConstantFill(['flipped_dist_max' + suffix], 'debug_blob2' + suffix, value=1.0)
+    model.net.Div(['debug_blob2' + suffix, 'flipped_dist_max' + suffix], 'min_dis_temp' + suffix)
+    model.net.ExpandDims('min_dis_temp' + suffix, 'min_dis' + suffix, dims=[1])
+    #model.net.Scale(['neg_dist_cur_max' + suffix], 'min_dis_test' + suffix, scale=-1.)
 
-    model.net.Min(tensors_list,
-                  'min_dis' + suffix)
+    # split = tuple([1 for i in range(num_classes)])
+    # tensors_list_names = ['tensor' + str(i) + suffix for i in range(num_classes)]
+    # tensors_list = model.net.Split(dist_cur, tensors_list_names, axis=1, split=split)
+    #
+    # model.net.Min(tensors_list,
+    #               'min_dis' + suffix)
 
     model.net.Div(['scale_10_blob' + suffix, 'min_dis' + suffix], 'scale_over_values' + suffix)
 
