@@ -807,9 +807,12 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
                                   tiles=feat_size,
                                   axis=1)
     # computing memory feature by querying and associating visual memory
-
-    # values_memory = self.fc_hallucinator(x)
-    values_memory = add_hallucinator(model, x_blob, 'values_memory' + suffix, feat_size, num_classes)
+    if suffix == 'rel' and cfg.MODEL.MEMORY_MSG_PASSING:
+        fused_memory_features = model.net.Concat([x_blob, 'concept_selector_sbj', 'concept_selector_obj'], axis=1)
+        values_memory = add_hallucinator(model, fused_memory_features, 'values_memory' + suffix, feat_size, num_classes)
+    else:
+        # values_memory = self.fc_hallucinator(x)
+        values_memory = add_hallucinator(model, x_blob, 'values_memory' + suffix, feat_size, num_classes)
     # values_memory = values_memory.softmax(dim=1)
     values_memory = model.net.Softmax(values_memory, axis=1)
     # memory_feature = torch.matmul(values_memory, keys_memory)
@@ -818,7 +821,11 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
 
     # computing concept selector
     # concept_selector = self.fc_selector(x)
-    concept_selector = add_selector(model, x_blob, 'concept_selector' + suffix, feat_size)
+    if suffix == 'rel' and cfg.MODEL.MEMORY_MSG_PASSING:
+        concept_selector = add_selector(model, fused_memory_features, 'concept_selector' + suffix, feat_size)
+    else:
+        concept_selector = add_selector(model, x_blob, 'concept_selector' + suffix, feat_size)
+
     # concept_selector = concept_selector.tanh()
     concept_selector = model.net.Tanh(concept_selector)
     # x = reachability * (direct_feature + concept_selector * memory_feature)
