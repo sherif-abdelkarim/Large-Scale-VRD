@@ -46,6 +46,8 @@ def create_model(model):
 
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         model.add_centroids_blob_with_weight_name('centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
+        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+            model.net.Scale('centroids_obj', 'centroids_obj', scale=cfg.TRAIN.NORM_SCALAR)
         model.net.Alias('centroids_obj', 'centroids_sbj')
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
         model.add_weight_blob_with_weight_name('weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
@@ -53,6 +55,9 @@ def create_model(model):
 
     if cfg.MODEL.MEMORY_MODULE_PRD:
         model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
+        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+            model.net.Scale('centroids_rel', 'centroids_rel', scale=cfg.TRAIN.NORM_SCALAR)
+
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
         model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
 
@@ -649,9 +654,9 @@ def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
         #model.net.Print('distmat_neg' + suffix, [])
         #model.net.Print('reduce_min' + suffix, [])
 
-        model.net.Print('min_dis_rel', [])
+        #model.net.Print('min_dis_rel', [])
         #model.net.Print('min_dis_test_rel', [])
-        model.net.Print('min_dis_test2_rel', [])
+        #model.net.Print('min_dis_test2_rel', [])
         #model.net.Print('neg_dist_cur_max_rel', [])
 
         #model.net.Print('neg_dist_cur_rel', [])
