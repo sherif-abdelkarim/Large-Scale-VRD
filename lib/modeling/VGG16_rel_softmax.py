@@ -46,8 +46,9 @@ def create_model(model):
 
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         model.add_centroids_blob_with_weight_name('centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
-        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-            model.net.Scale('centroids_obj', 'centroids_obj', scale=cfg.TRAIN.NORM_SCALAR)
+        #if cfg.DEBUG:
+        #    if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+        #        model.Scale('centroids_obj', 'centroids_obj', scale=cfg.TRAIN.NORM_SCALAR)
         model.net.Alias('centroids_obj', 'centroids_sbj')
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
         model.add_weight_blob_with_weight_name('weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
@@ -55,8 +56,9 @@ def create_model(model):
 
     if cfg.MODEL.MEMORY_MODULE_PRD:
         model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
-        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-            model.net.Scale('centroids_rel', 'centroids_rel', scale=cfg.TRAIN.NORM_SCALAR)
+        #if cfg.DEBUG:
+        #    if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+        #        model.Scale('centroids_rel', 'centroids_rel', scale=cfg.TRAIN.NORM_SCALAR)
 
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
         model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
