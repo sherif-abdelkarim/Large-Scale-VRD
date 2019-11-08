@@ -1,11 +1,11 @@
 DATASET: gvqa
-NUM_DEVICES: 1
+NUM_DEVICES: 1 
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
-  SPECS: 8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers
-  LOSS_TYPE: SOFTMAX  # EUC, SOFTMAX
-  MODEL_NAME: VGG16_rel_softmax
+  SPECS: 8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_memory
+  LOSS_TYPE: SOFTMAXED_TRIPLET  # EUC, SOFTMAX
+  MODEL_NAME: VGG16_rel_softmaxed_triplet
   BN_MOMENTUM: 0.9
   BN_EPSILON: 1.0000001e-5
   FC_INIT_STD: 0.01
@@ -15,6 +15,7 @@ MODEL:
   NUM_WEAK_LABELS: 0
   NUM_CLASSES_SBJ_OBJ: 1703
   NUM_CLASSES_PRD: 310
+  MEMORY_MODULE: True
 VISUAL_EMBEDDING:
   WEIGHT_SHARING:  SBJ_OBJ_SHARED #, all_unshared,  sbj_obj_shared, all_unshared
   L2_NORMALIZE: True
@@ -24,7 +25,7 @@ TEXT_EMBEDDING:
 INPUT_LANG_EMBEDDING_DIM: 600
 OUTPUT_EMBEDDING_DIM: 1024
 TRAIN:
-  PARAMS_FILE: datasets/large_scale_VRD/coco_models/vgg16_model_final.pkl
+  PARAMS_FILE: datasets/large_scale_VRD/coco_models/triplet_softmaxed_baseline_plus_centroids.pkl
   DATA_TYPE: train
   BBOX_REG: False
   BBOX_NORMALIZE_TARGETS: False  # No bbox regression at the end
@@ -35,8 +36,8 @@ TRAIN:
   # SCALE_JITTER_TYPE: googleNet
   EVALUATION_FREQUENCY: 2500  # 50000
 TEST:
-  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers/train/best.pkl
-  DATA_TYPE: train
+  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_memory/train/best.pkl
+  DATA_TYPE: val
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
   BBOX_REG: False
   ISA: False

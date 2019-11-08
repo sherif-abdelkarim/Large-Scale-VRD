@@ -1,5 +1,5 @@
 DATASET: vg_wiki_and_relco
-NUM_DEVICES: 8
+NUM_DEVICES: 1
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
@@ -36,7 +36,7 @@ TRAIN:
   EVALUATION_FREQUENCY: 2500  # 50000
 TEST:
   WEIGHTS: checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers/train/best.pkl
-  DATA_TYPE: test
+  DATA_TYPE: val
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/vg/gt_proposals_test.pkl
   BBOX_REG: False
   ISA: False

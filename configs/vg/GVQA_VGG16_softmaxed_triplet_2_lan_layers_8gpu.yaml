@@ -1,5 +1,5 @@
 DATASET: gvqa
-NUM_DEVICES: 8
+NUM_DEVICES: 1 
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
@@ -15,6 +15,8 @@ MODEL:
   NUM_WEAK_LABELS: 0
   NUM_CLASSES_SBJ_OBJ: 1703
   NUM_CLASSES_PRD: 310
+  MEMORY_MODULE_SBJ_OBJ: FALSE
+  MEMORY_MODULE_PRD: FALSE
 VISUAL_EMBEDDING:
   WEIGHT_SHARING:  SBJ_OBJ_SHARED #, all_unshared,  sbj_obj_shared, all_unshared
   L2_NORMALIZE: True
@@ -36,7 +38,7 @@ TRAIN:
   EVALUATION_FREQUENCY: 2500  # 50000
 TEST:
   WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers/train/best.pkl
-  DATA_TYPE: test
+  DATA_TYPE: val
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
   BBOX_REG: False
   ISA: False
