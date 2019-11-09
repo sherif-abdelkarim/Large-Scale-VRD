@@ -75,6 +75,7 @@ def create_model(model):
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
 
     if model.train:
+    #if model.train or cfg.DEBUG:
         add_embd_pos_neg_splits(model, 'sbj')
         add_embd_pos_neg_splits(model, 'obj')
         add_embd_pos_neg_splits(model, 'rel')
@@ -174,7 +175,7 @@ def create_model(model):
             bias_init=('ConstantFill', {'value': 0.}))
 
     # During testing, get topk labels and scores
-    if not model.train:
+    if not model.train:# or cfg.DEBUG:
         add_labels_and_scores_topk(model, 'sbj')
         add_labels_and_scores_topk(model, 'obj')
         add_labels_and_scores_topk(model, 'rel')
@@ -816,6 +817,7 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     # computing memory feature by querying and associating visual memory
     if suffix == 'rel' and cfg.MODEL.MEMORY_MSG_PASSING:
         fused_memory_features = model.net.Concat([x_blob, 'concept_selector_sbj', 'concept_selector_obj'], axis=1)
+        model.StopGradient(fused_memory_features, fused_memory_features)
         values_memory = add_hallucinator(model, fused_memory_features, 'values_memory' + suffix, feat_size, num_classes)
     else:
         # values_memory = self.fc_hallucinator(x)
