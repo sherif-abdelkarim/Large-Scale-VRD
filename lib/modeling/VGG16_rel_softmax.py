@@ -646,7 +646,7 @@ def add_centroids_loss(model, feat, label, num_classes):
 
     # loss = loss_attract + 0.01 * loss_repel
     # 0.01 * loss_repel
-    model.net.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
+    model.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
     if cfg.DEBUG:
         pass
         #model.net.Print('centroids' + suffix, [])
@@ -676,7 +676,9 @@ def add_centroids_loss(model, feat, label, num_classes):
         #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
 
     # loss_attract + 0.01 * loss_repel
-    loss_large_margin = model.net.Sum([loss_attract, 'loss_repel_scaled' + suffix], 'loss_large_margin' + suffix)
+    model.net.Sum([loss_attract, 'loss_repel_scaled' + suffix], 'loss_large_margin' + suffix)
+    loss_large_margin = model.Scale('loss_large_margin' + suffix, 'loss_large_margin' + suffix, scale=1. / cfg.NUM_DEVICES)
+
     model.loss_set.extend([loss_large_margin]) 
     #model.net.Print(loss_large_margin, [])
 

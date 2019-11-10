@@ -207,7 +207,7 @@ if __name__ == '__main__':
             )
 
         # do val
-        if True and (curr_iter + 1) % cfg.TRAIN.EVALUATION_FREQUENCY == 0:
+        if (curr_iter + 1) % cfg.TRAIN.EVALUATION_FREQUENCY == 0:
             train_metrics_calculator.finalize_metrics()
             if cfg.CHECKPOINT.CHECKPOINT_MODEL:
                 params_file = os.path.join(checkpoint_dir, 'latest.pkl')
