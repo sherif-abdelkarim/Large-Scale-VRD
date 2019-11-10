@@ -75,18 +75,22 @@ def create_model(model):
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
 
     if model.train:
-    #if model.train or cfg.DEBUG:
         add_embd_pos_neg_splits(model, 'sbj')
         add_embd_pos_neg_splits(model, 'obj')
         add_embd_pos_neg_splits(model, 'rel')
+    # else:
+    #     model.net.Alias('x_sbj', 'scaled_xp_sbj')
+    #     model.net.Alias('x_obj', 'scaled_xp_obj')
+    #     model.net.Alias('x_rel', 'scaled_xp_rel')
+    if model.train:
+        x_blob_sbj = 'scaled_xp_sbj'
+        x_blob_obj = 'scaled_xp_obj'
+        x_blob_rel = 'scaled_xp_rel'
     else:
-        model.net.Alias('x_sbj', 'scaled_xp_sbj')
-        model.net.Alias('x_obj', 'scaled_xp_obj')
-        model.net.Alias('x_rel', 'scaled_xp_rel')
+        x_blob_sbj = 'x_sbj'
+        x_blob_obj = 'x_obj'
+        x_blob_rel = 'x_rel'
 
-    x_blob_sbj = 'scaled_xp_sbj'
-    x_blob_obj = 'scaled_xp_obj'
-    x_blob_rel = 'scaled_xp_rel'
 
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ or cfg.MODEL.MEMORY_MODULE_PRD:
         model.StopGradient(x_blob_sbj, x_blob_sbj)
@@ -484,7 +488,7 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
             model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
                              prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
-        model.net.Alias('x' + suffix, 'scaled_xp' + suffix)
+        model.net.Alias('x' + suffix, 'xp' + suffix)
 
 
 def add_softmax_losses(model, label):
