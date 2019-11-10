@@ -46,6 +46,7 @@ class DetectionModelHelper(cnn.CNNModelHelper):
         self.roi_data_loader = None
         self.losses = []
         self.metrics = []
+        self.centroids = []
         self.do_not_update_params = []  # Param on this list are not updated
         self.net.Proto().type = cfg.MODEL.EXECUTION_TYPE
         self.net.Proto().num_workers = cfg.NUM_DEVICES * 4
@@ -288,6 +289,7 @@ class DetectionModelHelper(cnn.CNNModelHelper):
                 **centroids_init[1])
 
             self.params.extend([centroids])
+            self.centroids.append(centroids)
             # self.weights.append(centroids)
 
         else:
@@ -311,7 +313,7 @@ class DetectionModelHelper(cnn.CNNModelHelper):
                 **weight_init[1])
 
             self.params.extend([weight])
-            # self.weights.append(weight)
+            self.weights.append(weight)
 
         else:
             weight = core.ScopedBlobReference(name, self.param_init_net)

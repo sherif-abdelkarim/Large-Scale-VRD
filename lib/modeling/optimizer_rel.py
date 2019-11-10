@@ -100,7 +100,7 @@ def add_single_gpu_param_update_ops(model, gpu_id):
             # (1) Do not apply weight decay
             # (2) Use a 2x higher learning rate
             model.Scale(param_grad, param_grad, scale=2.0)
-        elif cfg.SOLVER.WEIGHT_DECAY > 0:
+        elif cfg.SOLVER.WEIGHT_DECAY > 0 and not (param in model.centroids):
             # Apply weight decay to non-bias weights
             model.WeightedSum([param_grad, one, param, wd], param_grad)
         # Update param_grad and param_momentum in place

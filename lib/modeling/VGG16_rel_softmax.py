@@ -133,10 +133,6 @@ def create_model(model):
         model.net.ConstantFill([], 'one_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
                                value=1.0)
 
-        model.net.ConstantFill([], 'num_classes_sbj', shape=[1, 0], value=cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        model.net.ConstantFill([], 'num_classes_obj', shape=[1, 0], value=cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        model.net.ConstantFill([], 'num_classes_rel', shape=[1, 0], value=cfg.MODEL.NUM_CLASSES_PRD)
-
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
             add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
             add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
@@ -175,7 +171,8 @@ def create_model(model):
             bias_init=('ConstantFill', {'value': 0.}))
 
     # During testing, get topk labels and scores
-    if not model.train:# or cfg.DEBUG:
+    if not model.train:
+    # if not model.train or cfg.DEBUG:
         add_labels_and_scores_topk(model, 'sbj')
         add_labels_and_scores_topk(model, 'obj')
         add_labels_and_scores_topk(model, 'rel')
@@ -186,11 +183,11 @@ def create_model(model):
         add_softmax_losses(model, 'obj')
         add_softmax_losses(model, 'rel')
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-            add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, 'num_classes_sbj')
-            add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, 'num_classes_obj')
+            add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         if cfg.MODEL.MEMORY_MODULE_PRD:
-            add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD, 'num_classes_rel')
+            add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
 
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)
     model.AddLosses(model.loss_set)
@@ -510,7 +507,7 @@ def add_softmax_losses(model, label):
         model.loss_set.extend([loss_xp_yall])
 
 
-def add_centroids_loss(model, feat, label, num_classes, num_classes_blob):
+def add_centroids_loss(model, feat, label, num_classes):
     prefix = label + '_'
     suffix = '_' + label
 
