@@ -816,10 +816,10 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
     if suffix == 'rel' and cfg.MODEL.MEMORY_MSG_PASSING:
         fused_memory_features = model.net.Concat([x_blob, c_selec_sbj, c_selec_obj], axis=1)
         model.StopGradient(fused_memory_features, fused_memory_features)
-        values_memory = add_hallucinator(model, fused_memory_features, feat_size, num_classes)
+        values_memory = add_hallucinator(model, fused_memory_features, 'values_memory' + suffix, feat_size, num_classes)
     else:
         # values_memory = self.fc_hallucinator(x)
-        values_memory = add_hallucinator(model, x_blob, feat_size, num_classes)
+        values_memory = add_hallucinator(model, x_blob, 'values_memory' + suffix, feat_size, num_classes)
     # values_memory = values_memory.softmax(dim=1)
     values_memory = model.net.Softmax(values_memory, axis=1)
     # memory_feature = torch.matmul(values_memory, keys_memory)
@@ -828,9 +828,9 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
     # computing concept selector
     # concept_selector = self.fc_selector(x)
     if suffix == 'rel' and cfg.MODEL.MEMORY_MSG_PASSING:
-        concept_selector = add_selector(model, fused_memory_features, feat_size)
+        concept_selector = add_selector(model, fused_memory_features, 'concept_selector' + suffix, feat_size)
     else:
-        concept_selector = add_selector(model, x_blob, feat_size)
+        concept_selector = add_selector(model, x_blob, 'concept_selector' + suffix, feat_size)
 
     # concept_selector = concept_selector.tanh()
     concept_selector = model.net.Tanh(concept_selector)
@@ -852,15 +852,15 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
     return logits  # , [direct_feature, infused_feature]
 
 
-def add_hallucinator(model, input_blob_name, feat_size, num_classes):
-    out = model.FC(input_blob_name,
+def add_hallucinator(model, input_blob_name, output_blob_name, feat_size, num_classes):
+    out = model.FC(input_blob_name, output_blob_name,
                    feat_size, num_classes, weight_init=('GaussianFill', {'std': 0.01}),
                    bias_init=('ConstantFill', {'value': 0.}))
     return out
 
 
-def add_selector(model, input_blob_name, feat_size):
-    out = model.FC(input_blob_name,
+def add_selector(model, input_blob_name, output_blob_name, feat_size):
+    out = model.FC(input_blob_name, output_blob_name,
                    feat_size, feat_size, weight_init=('GaussianFill', {'std': 0.01}),
                    bias_init=('ConstantFill', {'value': 0.}))
     return out
