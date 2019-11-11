@@ -89,17 +89,17 @@ def create_model(model):
 
         x_sbj_shape = model.net.Shape(x_blob_sbj)
         x_obj_shape = model.net.Shape(x_blob_obj)
-        x_rel_shape = model.net.Shape(x_blob_rel)
+        #x_rel_shape = model.net.Shape(x_blob_rel)
         batch_size_sbj = model.net.Slice([x_sbj_shape], starts=[0], ends=[1])
         batch_size_obj = model.net.Slice([x_obj_shape], starts=[0], ends=[1])
-        batch_size_rel = model.net.Slice([x_rel_shape], starts=[0], ends=[1])
+        #batch_size_rel = model.net.Slice([x_rel_shape], starts=[0], ends=[1])
         single_row_sbj = model.net.Slice([x_blob_sbj], starts=[0, 0], ends=[-1, 1])
         single_row_obj = model.net.Slice([x_blob_obj], starts=[0, 0], ends=[-1, 1])
-        single_row_rel = model.net.Slice([x_blob_rel], starts=[0, 0], ends=[-1, 1])
+        #single_row_rel = model.net.Slice([x_blob_rel], starts=[0, 0], ends=[-1, 1])
 
         scale_10_blob_sbj = model.net.ConstantFill([single_row_sbj], value=10.0)
         scale_10_blob_obj = model.net.ConstantFill([single_row_obj], value=10.0)
-        scale_10_blob_rel = model.net.ConstantFill([single_row_rel], value=10.0)
+        #scale_10_blob_rel = model.net.ConstantFill([single_row_rel], value=10.0)
 
         model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
         # model.net.ConstantFill([], 'neg_one_blob', shape=[1], value=-1.0)
@@ -126,25 +126,27 @@ def create_model(model):
         #                        value=1.0)
 
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-            v_meta_sbj = add_memory_module(model, x_blob_sbj, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj, scale_10_blob_sbj)
-            v_meta_obj = add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj, scale_10_blob_obj)
-            model.net.Alias(v_meta_sbj, x_blob_sbj)
-            model.net.Alias(v_meta_obj, x_blob_obj)
+            x_blob_sbj = add_memory_module(model, x_blob_sbj, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj, scale_10_blob_sbj)
+            x_blob_obj = add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj, scale_10_blob_obj)
+            #model.net.Alias(v_meta_sbj, x_blob_sbj)
+            #model.net.Alias(v_meta_obj, x_blob_obj)
+            #model.net.Print(v_meta_sbj, [])
 
         # if cfg.MODEL.MEMORY_MODULE_PRD:
         #     v_meta_rel = add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel, scale_10_blob_rel)
 
 
-    add_embd_fusion_for_p(model)
+    add_embd_fusion_for_p(model, x_blob_sbj, x_blob_obj)
+    x_blob_rel = 'x_rel'
 
 
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
 
     if model.train:
-        add_embd_pos_neg_splits(model, 'sbj')
-        add_embd_pos_neg_splits(model, 'obj')
-        add_embd_pos_neg_splits(model, 'rel')
+        add_embd_pos_neg_splits(model, 'sbj', x_blob_sbj)
+        add_embd_pos_neg_splits(model, 'obj', x_blob_obj)
+        add_embd_pos_neg_splits(model, 'rel', x_blob_rel)
         if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
             x_blob_sbj = 'scaled_xp_sbj'
             x_blob_obj = 'scaled_xp_obj'
@@ -157,6 +159,11 @@ def create_model(model):
         x_blob_sbj = 'x_sbj'
         x_blob_obj = 'x_obj'
         x_blob_rel = 'x_rel'
+    x_sbj_shape = model.net.Shape(x_blob_sbj)
+    x_obj_shape = model.net.Shape(x_blob_obj)
+    #x_rel_shape = model.net.Shape(x_blob_rel)
+    batch_size_sbj = model.net.Slice([x_sbj_shape], starts=[0], ends=[1])
+    batch_size_obj = model.net.Slice([x_obj_shape], starts=[0], ends=[1])
 
     # else:
     #     model.net.Alias('x_sbj', 'scaled_xp_sbj')
@@ -424,7 +431,7 @@ def add_visual_embedding(model,
             model.StopGradient(x_rel_obj, x_rel_obj)
 
 
-def add_embd_fusion_for_p(model):
+def add_embd_fusion_for_p(model, x_blob_sbj, x_blob_obj):
     if cfg.MODEL.SUBTYPE.find('embd_fusion') < 0:
         model.net.Alias('x_rel_prd', 'x_rel_raw_final')
     else:
@@ -434,7 +441,7 @@ def add_embd_fusion_for_p(model):
             dim_x_spo = cfg.OUTPUT_EMBEDDING_DIM * 3
         else:
             x_spo = model.Concat(
-                ['x_sbj', 'x_obj', 'x_rel_prd'], 'x_spo')
+                [x_blob_sbj, x_blob_sbj, 'x_rel_prd'], 'x_spo')
             dim_x_spo = cfg.OUTPUT_EMBEDDING_DIM * 3
         if cfg.MODEL.SUBTYPE.find('w_ishans') >= 0:
             model.FC(
@@ -474,7 +481,7 @@ def add_embd_fusion_for_p(model):
     return model.net.Normalize('x_rel_raw_final', 'x_rel')
 
 
-def add_embd_pos_neg_splits(model, label, sublabel=''):
+def add_embd_pos_neg_splits(model, label, x_blob, sublabel=''):
     preprefix = label + '_'
     if sublabel == '':
         prefix = preprefix
@@ -484,7 +491,7 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
         suffix = '_' + label + '_' + sublabel
 
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-        model.net.Slice(['x' + suffix, preprefix + 'pos_starts',
+        model.net.Slice([x_blob, preprefix + 'pos_starts',
                          preprefix + 'pos_ends'], 'xp' + suffix)
         model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
         if suffix == '_rel':
@@ -494,7 +501,7 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
             model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
                              prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
-        model.net.Alias('x' + suffix, 'xp' + suffix)
+        model.net.Alias(x_blob, 'xp' + suffix)
 
 
 def add_softmax_losses(model, label, logits):
@@ -910,7 +917,8 @@ def add_selector(model, input_blob_name, output_blob_name, feat_size):
     return out
 
 
-def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
+def add_cosnorm_classifier(model, input_, label, in_dims, out_dims):
+    suffix = '_' + label
     #  norm_x = torch.norm(input, 2, 1, keepdim=True)
     norm_x = l2_norm(model, input_, keepdims=True)
     input_normalized = model.net.Normalize(input_)
