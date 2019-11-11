@@ -14,8 +14,8 @@ import logging
 from caffe2.python import core as caffe2core
 from core.config_rel import cfg
 import utils.blob as blob_utils
-from modeling.VGG16_rel_softmax import add_memory_module, add_hallucinator, add_selector, add_cosnorm_classifier, \
-    disc_centroids_loss_func, add_centroids_loss
+#from modeling.VGG16_rel_softmax import add_memory_module, add_hallucinator, add_selector, add_cosnorm_classifier, \
+#    disc_centroids_loss_func, add_centroids_loss
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +43,6 @@ def create_model(model):
     spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
         model, blob, dim, spatial_scale)
 
-    if cfg.MODEL.MEMORY_MODULE:
-        model.add_centroids_blob_with_weight_name('centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
-        model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
-        model.net.Alias('centroids_obj', 'centroids_sbj')
-
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
         blob_rel_prd, dim_rel_prd,
@@ -55,34 +50,6 @@ def create_model(model):
         blob_rel_obj, dim_rel_obj)
 
     add_embd_fusion_for_p(model)
-
-    model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
-    model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
-
-    if cfg.MODEL.MEMORY_MODULE:
-        model.net.Shape('x_sbj', 'x_sbj_shape')
-        model.net.Shape('x_obj', 'x_obj_shape')
-        model.net.Shape('x_rel', 'x_rel_shape')
-        model.net.Slice(['x_sbj_shape'], 'batch_size_sbj', starts=[0], ends=[1])
-        model.net.Slice(['x_obj_shape'], 'batch_size_obj', starts=[0], ends=[1])
-        model.net.Slice(['x_rel_shape'], 'batch_size_rel', starts=[0], ends=[1])
-        model.net.Slice(['x_sbj'], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
-        model.net.Slice(['x_obj'], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
-        model.net.Slice(['x_rel'], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
-
-        model.net.ConstantFill(['single_row_sbj'], 'scale_10_blob_sbj', value=10.0)
-        model.net.ConstantFill(['single_row_obj'], 'scale_10_blob_obj', value=10.0)
-        model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
-        model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
-        model.net.ConstantFill(['x_sbj'], 'zero_blob_x_sbj', value=0.0)
-        model.net.ConstantFill(['x_obj'], 'zero_blob_x_obj', value=0.0)
-        model.net.ConstantFill(['x_rel'], 'zero_blob_x_rel', value=0.0)
-        model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=0.0)
-        model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=0.0)
-        model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=0.0)
 
     add_language_embedding_for_vocab(model)
 
@@ -100,16 +67,6 @@ def create_model(model):
         add_embd_pos_neg_splits(model, 'obj')
         add_embd_pos_neg_splits(model, 'rel')
 
-    if cfg.MODEL.MEMORY_MODULE:
-        x_blob_sbj = 'scaled_xp_sbj'
-        x_blob_obj = 'scaled_xp_obj'
-        x_blob_rel = 'scaled_xp_rel'
-
-        add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
-
-    if model.train:
         # define several helper blobs
         sbj_margin = cfg.TRAIN.MARGIN_SO
         obj_margin = cfg.TRAIN.MARGIN_SO
@@ -130,32 +87,6 @@ def create_model(model):
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)
     model.AddLosses(model.loss_set)
     return loss_gradients if model.train else None
-
-
-def centroids_cal(data, num_classes, feature_dim):
-    centroids = torch.zeros(num_classes, feature_dim).cuda()
-
-    print('Calculating centroids.')
-
-    for model in self.networks.values():
-        model.eval()
-
-    # Calculate initial centroids only on training data.
-    with torch.set_grad_enabled(False):
-
-        for inputs, labels, _ in tqdm(data):
-            inputs, labels = inputs.to(self.device), labels.to(self.device)
-            # Calculate Features of each training data
-            self.batch_forward(inputs, feature_ext=True)
-            # Add all calculated features to center tensor
-            for i in range(len(labels)):
-                label = labels[i]
-                centroids[label] += self.features[i]
-
-    # Average summed features with class count
-    centroids /= torch.tensor(class_count(data)).float().unsqueeze(1).cuda()
-
-    return centroids
 
 
 def add_VGG16_conv5_body(model):
@@ -643,12 +574,8 @@ def add_embd_triplet_losses_labeled(model, label):
     else:
         yall_name = 'all_obj_lan_embds'
 
-    if cfg.MODEL.MEMORY_MODULE:
-        model.net.MatMul(['logits' + suffix, 'scaled_' + yall_name],
-                         'sim_xp_yall' + suffix, trans_b=1)
-    else:
-        model.net.MatMul(['scaled_xp' + suffix, 'scaled_' + yall_name],
-                         'sim_xp_yall' + suffix, trans_b=1)
+    model.net.MatMul(['scaled_xp' + suffix, 'scaled_' + yall_name],
+                     'sim_xp_yall' + suffix, trans_b=1)
 
     if cfg.MODEL.WEAK_LABELS:
         if (label.find('rel') >= 0 and cfg.TRAIN.ADD_LOSS_WEIGHTS) or \
@@ -812,38 +739,3 @@ def add_labels_and_scores_topk(model, label):
         all_lan_embd = 'all_prd_lan_embds'
     model.net.MatMul(['x' + suffix, all_lan_embd], 'all_Y' + suffix, trans_b=1)
     model.net.TopK('all_Y' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
-
-# def add_memory_module(model, centroids):
-#     # storing direct feature
-#     direct_feature = x
-#
-#     batch_size = x.size(0)
-#     feat_size = x.size(1)
-#
-#     # set up visual memory
-#     x_expand = x.unsqueeze(1).expand(-1, self.num_classes, -1)
-#     centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
-#     keys_memory = centroids
-#
-#     # computing reachability
-#     dist_cur = torch.norm(x_expand - centroids_expand, 2, 2)
-#     values_nn, labels_nn = torch.sort(dist_cur, 1)
-#     scale = 10.0
-#     reachability = (scale / values_nn[:, 0]).unsqueeze(1).expand(-1, feat_size)
-#
-#     # computing memory feature by querying and associating visual memory
-#     values_memory = self.fc_hallucinator(x)
-#     values_memory = values_memory.softmax(dim=1)
-#     memory_feature = torch.matmul(values_memory, keys_memory)
-#
-#     # computing concept selector
-#     concept_selector = self.fc_selector(x)
-#     concept_selector = concept_selector.tanh()
-#     x = reachability * (direct_feature + concept_selector * memory_feature)
-#
-#     # storing infused feature
-#     infused_feature = concept_selector * memory_feature
-#
-#     logits = self.cosnorm_classifier(x)
-#
-#     return logits, [direct_feature, infused_feature]
