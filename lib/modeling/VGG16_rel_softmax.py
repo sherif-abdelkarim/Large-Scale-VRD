@@ -138,21 +138,21 @@ def create_model(model):
         #                        value=1.0)
 
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-            add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj, scale_10_blob_sbj)
-            add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj, scale_10_blob_obj)
+            logits_sbj = add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj, scale_10_blob_sbj)
+            logits_obj = add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj, scale_10_blob_obj)
         else:
-            model.add_FC_layer_with_weight_name(
+            logits_sbj = model.add_FC_layer_with_weight_name(
                 'x_sbj_and_obj_out',
                 x_blob_sbj, 'logits_sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
-            model.add_FC_layer_with_weight_name(
+            logits_obj = model.add_FC_layer_with_weight_name(
                 'x_sbj_and_obj_out',
                 x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         if cfg.MODEL.MEMORY_MODULE_PRD:
-            add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel, scale_10_blob_rel)
+            logits_rel = add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel, scale_10_blob_rel)
         else:
-            model.FC(
+            logits_rel = model.FC(
                 x_blob_rel, 'logits_rel',
                 cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
                 weight_init=('GaussianFill', {'std': 0.01}),
@@ -160,15 +160,15 @@ def create_model(model):
 
 
     else:
-        model.add_FC_layer_with_weight_name(
+        logits_sbj = model.add_FC_layer_with_weight_name(
             'x_sbj_and_obj_out',
             x_blob_sbj, 'logits_sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
-        model.add_FC_layer_with_weight_name(
+        logits_obj = model.add_FC_layer_with_weight_name(
             'x_sbj_and_obj_out',
             x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
-        model.FC(
+        logits_rel = model.FC(
             x_blob_rel, 'logits_rel',
             cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
             weight_init=('GaussianFill', {'std': 0.01}),
@@ -177,15 +177,15 @@ def create_model(model):
     # During testing, get topk labels and scores
     if not model.train:
     # if not model.train or cfg.DEBUG:
-        add_labels_and_scores_topk(model, 'sbj')
-        add_labels_and_scores_topk(model, 'obj')
-        add_labels_and_scores_topk(model, 'rel')
+        add_labels_and_scores_topk(model, 'sbj', logits_sbj)
+        add_labels_and_scores_topk(model, 'obj', logits_obj)
+        add_labels_and_scores_topk(model, 'rel', logits_rel)
 
     # # 2. language modules and losses
     if model.train:
-        add_softmax_losses(model, 'sbj')
-        add_softmax_losses(model, 'obj')
-        add_softmax_losses(model, 'rel')
+        add_softmax_losses(model, 'sbj', logits_sbj)
+        add_softmax_losses(model, 'obj', logits_obj)
+        add_softmax_losses(model, 'rel', logits_rel)
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
             add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj)
             add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj)
@@ -491,20 +491,20 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
         model.net.Alias('x' + suffix, 'xp' + suffix)
 
 
-def add_softmax_losses(model, label):
+def add_softmax_losses(model, label, logits):
     prefix = label + '_'
     suffix = '_' + label
 
     if cfg.MODEL.WEAK_LABELS:
         _, loss_xp_yall = model.net.SoftmaxWithLoss(
-            ['logits' + suffix, prefix + 'pos_labels_float32_w'],
+            [logits, prefix + 'pos_labels_float32_w'],
             ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
             scale=1. / cfg.NUM_DEVICES,
             label_prob=1)
         model.loss_set.extend([loss_xp_yall])
     else:
         _, loss_xp_yall = model.net.SoftmaxWithLoss(
-        ['logits' + suffix, prefix + 'pos_labels_int32'],
+        [logits, prefix + 'pos_labels_int32'],
         ['xp_yall_prob' + suffix, 'loss_xp_yall' + suffix],
         scale=1. / cfg.NUM_DEVICES)
 
@@ -745,12 +745,12 @@ def disc_centroids_loss_func(model, feature, labels, centroids_blob_name, batch_
     return loss_attract
 
 
-def add_labels_and_scores_topk(model, label):
+def add_labels_and_scores_topk(model, label, logits):
     suffix = '_' + label
-    model.net.TopK('logits' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
+    model.net.TopK(logits, ['scores' + suffix, 'labels' + suffix], k=250)
 
 
-def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, batch_size_blob, scale_10_blob):
+def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, batch_size_blob, scale_10_blob, c_selec_sbj=None, c_selec_obj=None):
     prefix = label + '_'
     suffix = '_' + label
 
@@ -762,31 +762,27 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
 
     # set up visual memory
     # x_expand = x.unsqueeze(1).expand(-1, self.num_classes, -1)
-    model.net.ExpandDims([x_blob],
-                        ['x_expanddims' + suffix],
+    x_expanddims = model.net.ExpandDims([x_blob],
                         dims=[1])
 
-    model.net.Tile('x_expanddims' + suffix,
-                  'x_expand' + suffix,
+    x_expand = model.net.Tile(x_expanddims,
                   tiles=num_classes,
                   axis=1)
 
     # centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
-    model.net.ExpandDims([centroids_blob_name],
-                        ['centroids_expanddims' + suffix],
+    centroids_expanddims = model.net.ExpandDims([centroids_blob_name],
                         dims=[0])
 
-    model.net.Tile(['centroids_expanddims' + suffix, batch_size_blob],
-                  'centroids_expand' + suffix,
+    centroids_expand = model.net.Tile([centroids_expanddims, batch_size_blob],
                   # tiles=batch_size,
                   axis=0)
     keys_memory = centroids_blob_name
 
-    model.net.Sub(['x_expand' + suffix, 'centroids_expand' + suffix], 'x_minus_c' + suffix)
+    x_minus_c = model.net.Sub([x_expand, centroids_expand])
 
     #model.net.ConstantFill(['x_minus_c' + suffix],  'one_blob_x_minus_c' + suffix, value=1.0)
 
-    dist_cur = l2_norm(model, 'x_minus_c' + suffix, keepdims=False)
+    dist_cur = l2_norm(model, x_minus_c, keepdims=False)
     model.net.Alias(dist_cur, 'dist_cur' + suffix)
 
     # computing reachability
@@ -794,14 +790,14 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
     if cfg.DEBUG:
         pass
 
-    model.net.ConstantFill([dist_cur], 'debug_blob' + suffix, value=1.0)
-    model.net.Div(['debug_blob' + suffix, dist_cur], 'flipped_dist' + suffix)
+    debug_blob = model.net.ConstantFill([dist_cur], value=1.0)
+    flipped_dist = model.net.Div([debug_blob, dist_cur])
     #model.net.Scale([dist_cur], 'neg_dist_cur' + suffix, scale=-1.)
     #model.net.ReduceBackMax('neg_dist_cur' + suffix, 'neg_dist_cur_max' + suffix)
-    model.net.ReduceBackMax('flipped_dist' + suffix, 'flipped_dist_max' + suffix)
-    model.net.ConstantFill(['flipped_dist_max' + suffix], 'debug_blob2' + suffix, value=1.0)
-    model.net.Div(['debug_blob2' + suffix, 'flipped_dist_max' + suffix], 'min_dis_temp' + suffix)
-    model.net.ExpandDims('min_dis_temp' + suffix, 'min_dis' + suffix, dims=[1])
+    flipped_dist_max = model.net.ReduceBackMax(flipped_dist)
+    debug_blob2 = model.net.ConstantFill([flipped_dist_max], value=1.0)
+    min_dis_temp = model.net.Div([debug_blob2, flipped_dist_max])
+    min_dis = model.net.ExpandDims(min_dis_temp, dims=[1])
     #model.net.Scale(['neg_dist_cur_max' + suffix], 'min_dis_test' + suffix, scale=-1.)
 
     # split = tuple([1 for i in range(num_classes)])
@@ -811,43 +807,39 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
     # model.net.Min(tensors_list,
     #               'min_dis' + suffix)
 
-    model.net.Div([scale_10_blob, 'min_dis' + suffix], 'scale_over_values' + suffix)
+    scale_over_values = model.net.Div([scale_10_blob, min_dis])
 
-    reachability = model.net.Tile('scale_over_values' + suffix,
-                                  'reachability' + suffix,
+    reachability = model.net.Tile(scale_over_values,
                                   tiles=feat_size,
                                   axis=1)
     # computing memory feature by querying and associating visual memory
     if suffix == 'rel' and cfg.MODEL.MEMORY_MSG_PASSING:
-        fused_memory_features = model.net.Concat([x_blob, 'concept_selector_sbj', 'concept_selector_obj'], axis=1)
+        fused_memory_features = model.net.Concat([x_blob, c_selec_sbj, c_selec_obj], axis=1)
         model.StopGradient(fused_memory_features, fused_memory_features)
-        values_memory = add_hallucinator(model, fused_memory_features, 'values_memory' + suffix, feat_size, num_classes)
+        values_memory = add_hallucinator(model, fused_memory_features, feat_size, num_classes)
     else:
         # values_memory = self.fc_hallucinator(x)
-        values_memory = add_hallucinator(model, x_blob, 'values_memory' + suffix, feat_size, num_classes)
+        values_memory = add_hallucinator(model, x_blob, feat_size, num_classes)
     # values_memory = values_memory.softmax(dim=1)
     values_memory = model.net.Softmax(values_memory, axis=1)
     # memory_feature = torch.matmul(values_memory, keys_memory)
-    memory_feature = model.net.MatMul([values_memory, keys_memory],
-                                      'memory_feature' + suffix)
+    memory_feature = model.net.MatMul([values_memory, keys_memory])
 
     # computing concept selector
     # concept_selector = self.fc_selector(x)
     if suffix == 'rel' and cfg.MODEL.MEMORY_MSG_PASSING:
-        concept_selector = add_selector(model, fused_memory_features, 'concept_selector' + suffix, feat_size)
+        concept_selector = add_selector(model, fused_memory_features, feat_size)
     else:
-        concept_selector = add_selector(model, x_blob, 'concept_selector' + suffix, feat_size)
+        concept_selector = add_selector(model, x_blob, feat_size)
 
     # concept_selector = concept_selector.tanh()
     concept_selector = model.net.Tanh(concept_selector)
     # x = reachability * (direct_feature + concept_selector * memory_feature)
-    model.net.Mul([concept_selector, memory_feature],
-                  'matmul_concep_memory' + suffix)
-    model.net.Add([direct_feature, 'matmul_concep_memory' + suffix], 'add_matmul_conc_mem' + suffix)
+    matmul_concep_memory = model.net.Mul([concept_selector, memory_feature])
+    add_matmul_conc_mem = model.net.Add([direct_feature, matmul_concep_memory])
     #model.net.Print(model.net.Shape('centroids' + suffix, 'centroids' + suffix + '_shape'), [])
     #model.net.Print('centroids' + suffix, [])
-    x_out = model.net.Mul([reachability, 'add_matmul_conc_mem' + suffix],
-                          'x_out' + suffix)
+    x_out = model.net.Mul([reachability, add_matmul_conc_mem])
     # storing infused feature
     # infused_feature = concept_selector * memory_feature
     # infused_feature = model.net.Mul([concept_selector, memory_feature],
@@ -855,20 +847,20 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
 
     #logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
 
-    logits = add_cosnorm_classifier(model, 'x_out' + suffix, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
+    logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
 
     return logits  # , [direct_feature, infused_feature]
 
 
-def add_hallucinator(model, input_blob_name, output_blob_name, feat_size, num_classes):
-    out = model.FC(input_blob_name, output_blob_name,
+def add_hallucinator(model, input_blob_name, feat_size, num_classes):
+    out = model.FC(input_blob_name,
                    feat_size, num_classes, weight_init=('GaussianFill', {'std': 0.01}),
                    bias_init=('ConstantFill', {'value': 0.}))
     return out
 
 
-def add_selector(model, input_blob_name, output_blob_name, feat_size):
-    out = model.FC(input_blob_name, output_blob_name,
+def add_selector(model, input_blob_name, feat_size):
+    out = model.FC(input_blob_name,
                    feat_size, feat_size, weight_init=('GaussianFill', {'std': 0.01}),
                    bias_init=('ConstantFill', {'value': 0.}))
     return out
@@ -877,27 +869,21 @@ def add_selector(model, input_blob_name, output_blob_name, feat_size):
 def add_cosnorm_classifier(model, input_, suffix, in_dims, out_dims):
     #  norm_x = torch.norm(input, 2, 1, keepdim=True)
     norm_x = l2_norm(model, input_, keepdims=True)
-    model.net.Normalize(input_, 'input_normalized' + suffix)
+    input_normalized = model.net.Normalize(input_)
 
 
     # ex = (norm_x / (1 + norm_x)) * (input / norm_x)
-    model.net.Add([norm_x, 'one_blob'],
-                  'one_plus_norm' + suffix, broadcast=1)  # (1 + norm_x)
+    one_plus_norm = model.net.Add([norm_x, 'one_blob'], broadcast=1)  # (1 + norm_x)
 
-    model.net.Div([norm_x, 'one_plus_norm' + suffix],
-                  'norm_over_one_plus_norm' + suffix)  # (norm_x / (1 + norm_x))
+    norm_over_one_plus_norm = model.net.Div([norm_x, one_plus_norm])  # (norm_x / (1 + norm_x))
 
-
-    model.net.Mul(['input_normalized' + suffix, 'norm_over_one_plus_norm' + suffix],
-                  'ex' + suffix, broadcast=1)  # (norm_x / (1 + norm_x)) * (input / norm_x)
+    ex = model.net.Mul([input_normalized, norm_over_one_plus_norm], broadcast=1)  # (norm_x / (1 + norm_x)) * (input / norm_x)
 
     # ew = self.weight / torch.norm(self.weight, 2, 1, keepdim=True)
-    model.net.Normalize('weight' + suffix, 'ew' + suffix)
-    model.net.Mul(['ex' + suffix, 'scale_blob'],
-                  'scaled_ex' + suffix, broadcast=1)
-    out = model.net.MatMul(['scaled_ex' + suffix, 'ew' + suffix],
-                           'logits' + suffix, trans_b=1)
-    return out
+    ew = model.net.Normalize('weight' + suffix)
+    scaled_ex = model.net.Mul([ex, 'scale_blob'], broadcast=1)
+    logits = model.net.MatMul([scaled_ex, ew], trans_b=1)
+    return logits
 
 
 def l2_norm(model, input_, keepdims=False):
