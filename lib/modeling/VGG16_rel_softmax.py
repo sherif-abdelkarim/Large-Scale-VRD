@@ -99,47 +99,47 @@ def create_model(model):
 
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ or cfg.MODEL.MEMORY_MODULE_PRD:
 
-        model.net.Shape(x_blob_sbj, 'x_sbj_shape')
-        model.net.Shape(x_blob_obj, 'x_obj_shape')
-        model.net.Shape(x_blob_rel, 'x_rel_shape')
-        model.net.Slice(['x_sbj_shape'], 'batch_size_sbj', starts=[0], ends=[1])
-        model.net.Slice(['x_obj_shape'], 'batch_size_obj', starts=[0], ends=[1])
-        model.net.Slice(['x_rel_shape'], 'batch_size_rel', starts=[0], ends=[1])
-        model.net.Slice([x_blob_sbj], 'single_row_sbj', starts=[0, 0], ends=[-1, 1])
-        model.net.Slice([x_blob_obj], 'single_row_obj', starts=[0, 0], ends=[-1, 1])
-        model.net.Slice([x_blob_rel], 'single_row_rel', starts=[0, 0], ends=[-1, 1])
+        x_sbj_shape = model.net.Shape(x_blob_sbj)
+        x_obj_shape = model.net.Shape(x_blob_obj)
+        x_rel_shape = model.net.Shape(x_blob_rel)
+        batch_size_sbj = model.net.Slice([x_sbj_shape], starts=[0], ends=[1])
+        batch_size_obj = model.net.Slice([x_obj_shape], starts=[0], ends=[1])
+        batch_size_rel = model.net.Slice([x_rel_shape], starts=[0], ends=[1])
+        single_row_sbj = model.net.Slice([x_blob_sbj], starts=[0, 0], ends=[-1, 1])
+        single_row_obj = model.net.Slice([x_blob_obj], starts=[0, 0], ends=[-1, 1])
+        single_row_rel = model.net.Slice([x_blob_rel], starts=[0, 0], ends=[-1, 1])
 
-        model.net.ConstantFill(['single_row_sbj'], 'scale_10_blob_sbj', value=10.0)
-        model.net.ConstantFill(['single_row_obj'], 'scale_10_blob_obj', value=10.0)
-        model.net.ConstantFill(['single_row_rel'], 'scale_10_blob_rel', value=10.0)
+        scale_10_blob_sbj = model.net.ConstantFill([single_row_sbj], value=10.0)
+        scale_10_blob_obj = model.net.ConstantFill([single_row_obj], value=10.0)
+        scale_10_blob_rel = model.net.ConstantFill([single_row_rel], value=10.0)
 
         model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
-        model.net.ConstantFill([], 'neg_one_blob', shape=[1], value=-1.0)
-        model.net.ConstantFill([x_blob_sbj], 'zero_blob_x_sbj', value=0.0)
-        model.net.ConstantFill([x_blob_obj], 'zero_blob_x_obj', value=0.0)
-        model.net.ConstantFill([x_blob_rel], 'zero_blob_x_rel', value=0.0)
+        # model.net.ConstantFill([], 'neg_one_blob', shape=[1], value=-1.0)
+        # model.net.ConstantFill([x_blob_sbj], 'zero_blob_x_sbj', value=0.0)
+        # model.net.ConstantFill([x_blob_obj], 'zero_blob_x_obj', value=0.0)
+        # model.net.ConstantFill([x_blob_rel], 'zero_blob_x_rel', value=0.0)
 
-        model.net.ConstantFill([x_blob_sbj], 'one_blob_x_sbj', value=1.0)
-        model.net.ConstantFill([x_blob_obj], 'one_blob_x_obj', value=1.0)
-        model.net.ConstantFill([x_blob_rel], 'one_blob_x_rel', value=1.0)
+        # model.net.ConstantFill([x_blob_sbj], 'one_blob_x_sbj', value=1.0)
+        # model.net.ConstantFill([x_blob_obj], 'one_blob_x_obj', value=1.0)
+        # model.net.ConstantFill([x_blob_rel], 'one_blob_x_rel', value=1.0)
 
-        model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=0.0)
-        model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=0.0)
-        model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=0.0)
+        # model.net.ConstantFill([], 'zero_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
+        #                        value=0.0)
+        # model.net.ConstantFill([], 'zero_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
+        #                        value=0.0)
+        # model.net.ConstantFill([], 'zero_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
+        #                        value=0.0)
 
-        model.net.ConstantFill([], 'one_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=1.0)
-        model.net.ConstantFill([], 'one_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=1.0)
-        model.net.ConstantFill([], 'one_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
-                               value=1.0)
+        # model.net.ConstantFill([], 'one_blob_c_sbj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
+        #                        value=1.0)
+        # model.net.ConstantFill([], 'one_blob_c_obj', shape=[cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM],
+        #                        value=1.0)
+        # model.net.ConstantFill([], 'one_blob_c_rel', shape=[cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM],
+        #                        value=1.0)
 
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-            add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-            add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            add_memory_module(model, x_blob_sbj, 'centroids_obj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj, scale_10_blob_sbj)
+            add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj, scale_10_blob_obj)
         else:
             model.add_FC_layer_with_weight_name(
                 'x_sbj_and_obj_out',
@@ -150,7 +150,7 @@ def create_model(model):
                 x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         if cfg.MODEL.MEMORY_MODULE_PRD:
-            add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+            add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel, scale_10_blob_rel)
         else:
             model.FC(
                 x_blob_rel, 'logits_rel',
@@ -187,11 +187,11 @@ def create_model(model):
         add_softmax_losses(model, 'obj')
         add_softmax_losses(model, 'rel')
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-            add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-            add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj)
+            add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj)
 
         if cfg.MODEL.MEMORY_MODULE_PRD:
-            add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+            add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel)
 
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)
     model.AddLosses(model.loss_set)
@@ -511,7 +511,7 @@ def add_softmax_losses(model, label):
         model.loss_set.extend([loss_xp_yall])
 
 
-def add_centroids_loss(model, feat, label, num_classes):
+def add_centroids_loss(model, feat, label, num_classes, batch_size_blob):
     prefix = label + '_'
     suffix = '_' + label
 
@@ -575,7 +575,7 @@ def add_centroids_loss(model, feat, label, num_classes):
     model.net.ExpandDims('centroids_squared_sum_temp' + suffix, 'centroids_squared_sum' + suffix, dims=[1])
 
     model.Transpose(['centroids_squared_sum' + suffix], ['centroids_squared_sum_T' + suffix]) #(1, 1703)
-    model.net.Tile(['centroids_squared_sum_T' + suffix, 'batch_size' + suffix],
+    model.net.Tile(['centroids_squared_sum_T' + suffix, batch_size_blob],
                    'centroids_squared_sum_expand_T' + suffix,
                    axis=0) # (128, 1703)
 
@@ -750,7 +750,7 @@ def add_labels_and_scores_topk(model, label):
     model.net.TopK('logits' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
 
 
-def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
+def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, batch_size_blob, scale_10_blob):
     prefix = label + '_'
     suffix = '_' + label
 
@@ -776,7 +776,7 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
                         ['centroids_expanddims' + suffix],
                         dims=[0])
 
-    model.net.Tile(['centroids_expanddims' + suffix, 'batch_size' + suffix],
+    model.net.Tile(['centroids_expanddims' + suffix, batch_size_blob],
                   'centroids_expand' + suffix,
                   # tiles=batch_size,
                   axis=0)
@@ -811,7 +811,7 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     # model.net.Min(tensors_list,
     #               'min_dis' + suffix)
 
-    model.net.Div(['scale_10_blob' + suffix, 'min_dis' + suffix], 'scale_over_values' + suffix)
+    model.net.Div([scale_10_blob, 'min_dis' + suffix], 'scale_over_values' + suffix)
 
     reachability = model.net.Tile('scale_over_values' + suffix,
                                   'reachability' + suffix,
