@@ -63,7 +63,7 @@ def create_model(model):
     if model.train:
         add_language_embedding_for_gt(model)
 
-        add_embd_pos_neg_splits(model, 'sbj')
+        add_embd_pos_neg_splits(model, 'sbj')#(32, 1024)
         add_embd_pos_neg_splits(model, 'obj')
         add_embd_pos_neg_splits(model, 'rel')
 
