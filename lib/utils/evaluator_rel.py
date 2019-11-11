@@ -357,21 +357,6 @@ class Evaluator():
                     gpu_id, 'obj_rois'))[:, 1:] / scale
                 det_boxes_rel = workspace.FetchBlob(prefix + '{}/{}'.format(
                     gpu_id, 'rel_rois_prd'))[:, 1:] / scale
-                if cfg.DEBUG:
-                    det_labels_sbj = \
-                        workspace.FetchBlob(prefix + '{}/{}'.format(gpu_id, 'min_dis_sbj'))
-
-                    det_labels_obj = \
-                        workspace.FetchBlob(prefix + '{}/{}'.format(gpu_id, 'min_dis_obj'))
-                    det_labels_rel = \
-                        workspace.FetchBlob(prefix + '{}/{}'.format(gpu_id, 'min_dis_rel'))
-                    det_scores_sbj = \
-                        workspace.FetchBlob(prefix + '{}/{}'.format(gpu_id, 'scores_sbj'))
-                    det_scores_obj = \
-                        workspace.FetchBlob(prefix + '{}/{}'.format(gpu_id, 'scores_obj'))
-                    det_scores_rel = \
-                        workspace.FetchBlob(prefix + '{}/{}'.format(gpu_id, 'scores_rel'))
-
                 det_labels_sbj = \
                     workspace.FetchBlob(prefix + '{}/{}'.format(gpu_id, 'labels_sbj'))
                 det_labels_obj = \
