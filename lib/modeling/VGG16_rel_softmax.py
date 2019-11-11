@@ -803,11 +803,11 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
     # c_norm = model.net.SquaredL2Distance([centroids_blob_name, 'zero_blob_c' + suffix])
     # c_norm_expand = model.net.ExpandDims([c_norm], dims=[1])
 
-    c_norm = model.net.Sqr(c_blob)
+    c_norm = model.net.Sqr(centroids_blob_name)
     c_norm_expand = model.net.ReduceBackSum([c_norm], num_reduce_dims=1)
     c_norm_expand = model.net.ExpandDims([c_norm_expand], dims=[1])
 
-    c_norm_expand_T = model.Transpose([c_norm_expand])
+    c_norm_expand_T = model.Transpose([c_norm_expand], ['c_norm_expand_T' + suffix])
     c_norm_tile_T = model.net.Tile([c_norm_expand_T, batch_size_blob], axis=0)
     # model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), [])
     # model.net.Print(model.net.Shape('c_norm_expand' + suffix, 'c_norm_expand' + suffix + '_shape'), [])
