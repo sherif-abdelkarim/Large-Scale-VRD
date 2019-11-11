@@ -50,6 +50,9 @@ def create_model(model):
         #    if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         #        model.Scale('centroids_obj', 'centroids_obj', scale=cfg.TRAIN.NORM_SCALAR)
         model.net.Alias('centroids_obj', 'centroids_sbj')
+        model.StopGradient('centroids_obj', 'centroids_obj')
+        model.StopGradient('centroids_sbj', 'centroids_sbj')
+
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
         model.add_weight_blob_with_weight_name('weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
         model.net.Alias('weight_obj', 'weight_sbj')
@@ -59,6 +62,7 @@ def create_model(model):
         #if cfg.DEBUG:
         #    if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         #        model.Scale('centroids_rel', 'centroids_rel', scale=cfg.TRAIN.NORM_SCALAR)
+        model.StopGradient('centroids_rel', 'centroids_rel')
 
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
         model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
@@ -69,33 +73,17 @@ def create_model(model):
         blob_rel_sbj, dim_rel_sbj,
         blob_rel_obj, dim_rel_obj)
 
-    add_embd_fusion_for_p(model)
-
-    model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
-    model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
-
-    if model.train:
-        add_embd_pos_neg_splits(model, 'sbj')
-        add_embd_pos_neg_splits(model, 'obj')
-        add_embd_pos_neg_splits(model, 'rel')
-    # else:
-    #     model.net.Alias('x_sbj', 'scaled_xp_sbj')
-    #     model.net.Alias('x_obj', 'scaled_xp_obj')
-    #     model.net.Alias('x_rel', 'scaled_xp_rel')
-    if model.train:
-        x_blob_sbj = 'scaled_xp_sbj'
-        x_blob_obj = 'scaled_xp_obj'
-        x_blob_rel = 'scaled_xp_rel'
-    else:
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         x_blob_sbj = 'x_sbj'
         x_blob_obj = 'x_obj'
-        x_blob_rel = 'x_rel'
+        # x_blob_rel = 'x_rel'
 
-
-    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ or cfg.MODEL.MEMORY_MODULE_PRD:
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         model.StopGradient(x_blob_sbj, x_blob_sbj)
         model.StopGradient(x_blob_obj, x_blob_obj)
-        model.StopGradient(x_blob_rel, x_blob_rel)
+
+    # if cfg.MODEL.MEMORY_MODULE_PRD:
+    #     model.StopGradient(x_blob_rel, x_blob_rel)
 
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ or cfg.MODEL.MEMORY_MODULE_PRD:
 
@@ -138,26 +126,47 @@ def create_model(model):
         #                        value=1.0)
 
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-            logits_sbj = add_memory_module(model, x_blob_sbj, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj, scale_10_blob_sbj)
-            logits_obj = add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj, scale_10_blob_obj)
+            v_meta_sbj = add_memory_module(model, x_blob_sbj, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_sbj, scale_10_blob_sbj)
+            v_meta_obj = add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, batch_size_obj, scale_10_blob_obj)
+            model.net.Alias(v_meta_sbj, x_blob_sbj)
+            model.net.Alias(v_meta_obj, x_blob_obj)
+
+        # if cfg.MODEL.MEMORY_MODULE_PRD:
+        #     v_meta_rel = add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel, scale_10_blob_rel)
+
+
+    add_embd_fusion_for_p(model)
+
+
+    model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
+    model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
+
+    if model.train:
+        add_embd_pos_neg_splits(model, 'sbj')
+        add_embd_pos_neg_splits(model, 'obj')
+        add_embd_pos_neg_splits(model, 'rel')
+        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+            x_blob_sbj = 'scaled_xp_sbj'
+            x_blob_obj = 'scaled_xp_obj'
+            x_blob_rel = 'scaled_xp_rel'
         else:
-            logits_sbj = model.add_FC_layer_with_weight_name(
-                'x_sbj_and_obj_out',
-                x_blob_sbj, 'logits_sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            x_blob_sbj = 'xp_sbj'
+            x_blob_obj = 'xp_obj'
+            x_blob_rel = 'xp_rel'
+    else:
+        x_blob_sbj = 'x_sbj'
+        x_blob_obj = 'x_obj'
+        x_blob_rel = 'x_rel'
 
-            logits_obj = model.add_FC_layer_with_weight_name(
-                'x_sbj_and_obj_out',
-                x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+    # else:
+    #     model.net.Alias('x_sbj', 'scaled_xp_sbj')
+    #     model.net.Alias('x_obj', 'scaled_xp_obj')
+    #     model.net.Alias('x_rel', 'scaled_xp_rel')
 
-        if cfg.MODEL.MEMORY_MODULE_PRD:
-            logits_rel = add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel, scale_10_blob_rel)
-        else:
-            logits_rel = model.FC(
-                x_blob_rel, 'logits_rel',
-                cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
-                weight_init=('GaussianFill', {'std': 0.01}),
-                bias_init=('ConstantFill', {'value': 0.}))
 
+    if cfg.MODEL.COSNORM:
+        logits_sbj = add_cosnorm_classifier(model, x_blob_sbj, 'sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        logits_obj = add_cosnorm_classifier(model, x_blob_obj, 'obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
     else:
         logits_sbj = model.add_FC_layer_with_weight_name(
@@ -168,11 +177,8 @@ def create_model(model):
             'x_sbj_and_obj_out',
             x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
-        logits_rel = model.FC(
-            x_blob_rel, 'logits_rel',
-            cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
-            weight_init=('GaussianFill', {'std': 0.01}),
-            bias_init=('ConstantFill', {'value': 0.}))
+    logits_rel = model.FC(x_blob_rel, 'logits_rel',cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
+                          weight_init=('GaussianFill', {'std': 0.01}),bias_init=('ConstantFill', {'value': 0.}))
 
     # During testing, get topk labels and scores
     if not model.train:
@@ -465,7 +471,7 @@ def add_embd_fusion_for_p(model):
                 model.net.Alias('x_rel_raw_2', 'x_rel_raw_final')
             else:
                 model.net.Alias('x_rel_raw', 'x_rel_raw_final')
-    model.net.Normalize('x_rel_raw_final', 'x_rel')
+    return model.net.Normalize('x_rel_raw_final', 'x_rel')
 
 
 def add_embd_pos_neg_splits(model, label, sublabel=''):
@@ -885,9 +891,9 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes, ba
 
     #logits = model.FC('x_out' + suffix, 'logits' + suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes, weight_init=('GaussianFill', {'std': 0.01}), bias_init=('ConstantFill', {'value': 0.}))
 
-    logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
+    # logits = add_cosnorm_classifier(model, x_out, suffix, cfg.OUTPUT_EMBEDDING_DIM, num_classes)
 
-    return logits  # , [direct_feature, infused_feature]
+    return x_out  # , [direct_feature, infused_feature]
 
 
 def add_hallucinator(model, input_blob_name, output_blob_name, feat_size, num_classes):
