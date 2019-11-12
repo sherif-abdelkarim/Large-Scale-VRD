@@ -88,14 +88,14 @@ def create_model(model):
     # Modulated Attention Proxy
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         x_blob_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_sbj, 'x_sbj_att',
-                                                         cfg.OUTPUT_EMBEDDING_DIM, fg.OUTPUT_EMBEDDING_DIM)
+                                                         cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
         x_blob_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_obj, 'x_obj_att',
-                                                         cfg.OUTPUT_EMBEDDING_DIM, fg.OUTPUT_EMBEDDING_DIM)
+                                                         cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
         if model.train:
             x_blob_rel_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_sbj, 'x_rel_sbj_att',
-                                                             cfg.OUTPUT_EMBEDDING_DIM, fg.OUTPUT_EMBEDDING_DIM)
+                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
             x_blob_rel_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_obj, 'x_rel_obj_att',
-                                                             cfg.OUTPUT_EMBEDDING_DIM, fg.OUTPUT_EMBEDDING_DIM)
+                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
 
     model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0) # used for memory module
 
