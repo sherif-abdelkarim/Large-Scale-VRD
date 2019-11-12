@@ -12,10 +12,8 @@ from __future__ import division
 import logging
 
 from caffe2.python import core as caffe2core
-from caffe2.python import workspace
 from core.config_rel import cfg
 import utils.blob as blob_utils
-import pickle
 import math
 
 logger = logging.getLogger(__name__)
@@ -154,7 +152,6 @@ def create_model(model):
 
     # During testing, get topk labels and scores
     if not model.train:
-    # if not model.train or cfg.DEBUG:
         add_labels_and_scores_topk(model, 'sbj', logits_sbj)
         add_labels_and_scores_topk(model, 'obj', logits_obj)
         add_labels_and_scores_topk(model, 'rel', logits_rel)
@@ -448,7 +445,7 @@ def add_embd_fusion_for_p(model, x_blob_sbj, x_blob_obj, x_blob_rel_sbj, x_blob_
                 model.net.Alias('x_rel_raw_2', 'x_rel_raw_final')
             else:
                 model.net.Alias('x_rel_raw', 'x_rel_raw_final')
-    return model.net.Normalize('x_rel_raw_final', 'x_rel')
+    model.net.Normalize('x_rel_raw_final', 'x_rel')
 
 
 def add_embd_pos_neg_splits(model, label, x_blob, sublabel=''):
@@ -905,15 +902,3 @@ def l2_norm(model, input_, keepdims=False):
     if keepdims:
         lp_norm = model.net.ExpandDims(lp_norm, dims=[1])
     return lp_norm
-
-def load_pickle(pickle_file):
-    try:
-        with open(pickle_file, 'rb') as f:
-            pickle_data = pickle.load(f)
-    except UnicodeDecodeError as e:
-        with open(pickle_file, 'rb') as f:
-            pickle_data = pickle.load(f, encoding='latin1')
-    except Exception as e:
-        print('Unable to load data ', pickle_file, ':', e)
-        raise
-    return pickle_data
