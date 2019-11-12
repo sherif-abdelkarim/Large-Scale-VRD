@@ -48,8 +48,8 @@ def create_model(model):
         #    if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         #        model.Scale('centroids_obj', 'centroids_obj', scale=cfg.TRAIN.NORM_SCALAR)
         model.net.Alias('centroids_obj', 'centroids_sbj')
-        model.StopGradient('centroids_obj', 'centroids_obj')
-        model.StopGradient('centroids_sbj', 'centroids_sbj')
+        # model.StopGradient('centroids_obj', 'centroids_obj')
+        # model.StopGradient('centroids_sbj', 'centroids_sbj')
 
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
         model.add_weight_blob_with_weight_name('weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
@@ -60,7 +60,7 @@ def create_model(model):
         #if cfg.DEBUG:
         #    if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         #        model.Scale('centroids_rel', 'centroids_rel', scale=cfg.TRAIN.NORM_SCALAR)
-        model.StopGradient('centroids_rel', 'centroids_rel')
+        # model.StopGradient('centroids_rel', 'centroids_rel')
 
         std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
         model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
