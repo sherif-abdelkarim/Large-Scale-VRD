@@ -115,9 +115,10 @@ def create_model(model):
     add_embd_fusion_for_p(model, x_blob_sbj, x_blob_obj, x_blob_rel_sbj, x_blob_rel_obj)
     x_blob_rel = 'x_rel'
 
-    x_blob_sbj = model.net.Normalize(x_blob_sbj)
-    x_blob_obj = model.net.Normalize(x_blob_obj)
-    x_blob_rel = model.net.Normalize(x_blob_rel)
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        x_blob_sbj = model.net.Normalize(x_blob_sbj)
+        x_blob_obj = model.net.Normalize(x_blob_obj)
+        x_blob_rel = model.net.Normalize(x_blob_rel)
 
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
@@ -127,14 +128,14 @@ def create_model(model):
         add_embd_pos_neg_splits(model, 'obj', x_blob_obj)
         add_embd_pos_neg_splits(model, 'rel', x_blob_rel)
 
-        # if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-        #     x_blob_sbj = 'scaled_xp_sbj'
-        #     x_blob_obj = 'scaled_xp_obj'
-        #     x_blob_rel = 'scaled_xp_rel'
-        # else:
-        x_blob_sbj = 'xp_sbj'
-        x_blob_obj = 'xp_obj'
-        x_blob_rel = 'xp_rel'
+        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+            x_blob_sbj = 'scaled_xp_sbj'
+            x_blob_obj = 'scaled_xp_obj'
+            x_blob_rel = 'scaled_xp_rel'
+        else:
+            x_blob_sbj = 'xp_sbj'
+            x_blob_obj = 'xp_obj'
+            x_blob_rel = 'xp_rel'
 
     # else:
     #     model.net.Alias('x_sbj', 'scaled_xp_sbj')
@@ -145,9 +146,9 @@ def create_model(model):
 
     # During testing, get topk labels and scores
     if not model.train:
-        add_labels_and_scores_topk(model, 'sbj')
-        add_labels_and_scores_topk(model, 'obj')
-        add_labels_and_scores_topk(model, 'rel')
+        add_labels_and_scores_topk(model, 'sbj', x_blob_sbj)
+        add_labels_and_scores_topk(model, 'obj', x_blob_obj)
+        add_labels_and_scores_topk(model, 'rel', x_blob_rel)
 
     # # 2. language modules and losses
     if model.train:
@@ -379,12 +380,14 @@ def add_visual_embedding(model,
             model.net.Alias('x_rel_prd_raw_2', 'x_rel_prd_raw')
         else:
             model.net.Alias('x_rel_prd_raw_1', 'x_rel_prd_raw')
-    # model.net.Normalize('x_sbj_raw', 'x_sbj')
-    # model.net.Normalize('x_obj_raw', 'x_obj')
-    # model.net.Normalize('x_rel_prd_raw', 'x_rel_prd')
-    model.net.Alias('x_sbj_raw', 'x_sbj')
-    model.net.Alias('x_obj_raw', 'x_obj')
-    model.net.Alias('x_rel_prd_raw', 'x_rel_prd')
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        model.net.Alias('x_sbj_raw', 'x_sbj')
+        model.net.Alias('x_obj_raw', 'x_obj')
+        model.net.Alias('x_rel_prd_raw', 'x_rel_prd')
+    else:
+        model.net.Normalize('x_sbj_raw', 'x_sbj')
+        model.net.Normalize('x_obj_raw', 'x_obj')
+        model.net.Normalize('x_rel_prd_raw', 'x_rel_prd')
 
     # get x_rel_sbj and x_rel_obj for the p branch
     if model.train and cfg.MODEL.SUBTYPE.find('embd_fusion') >= 0:
@@ -400,10 +403,12 @@ def add_visual_embedding(model,
             dim_rel_obj, cfg.OUTPUT_EMBEDDING_DIM,
             weight_init=('GaussianFill', {'std': 0.01}),
             bias_init=('ConstantFill', {'value': 0.}))
-        # x_rel_sbj = model.net.Normalize('x_rel_sbj_raw', 'x_rel_sbj')
-        # x_rel_obj = model.net.Normalize('x_rel_obj_raw', 'x_rel_obj')
-        x_rel_sbj = model.net.Alias('x_rel_sbj_raw', 'x_rel_sbj')
-        x_rel_obj = model.net.Alias('x_rel_obj_raw', 'x_rel_obj')
+        if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+            x_rel_sbj = model.net.Alias('x_rel_sbj_raw', 'x_rel_sbj')
+            x_rel_obj = model.net.Alias('x_rel_obj_raw', 'x_rel_obj')
+        else:
+            x_rel_sbj = model.net.Normalize('x_rel_sbj_raw', 'x_rel_sbj')
+            x_rel_obj = model.net.Normalize('x_rel_obj_raw', 'x_rel_obj')
         if cfg.MODEL.SPECS.find('not_stop_gradient') < 0:
             # this is to stop gradients from x_rel_sbj and x_rel_obj
             model.StopGradient(x_rel_sbj, x_rel_sbj)
@@ -832,11 +837,11 @@ def add_embd_triplet_losses_labeled(model, label):
         model.loss_set.extend([loss_xp_xn])
 
 
-def add_labels_and_scores_topk(model, label):
+def add_labels_and_scores_topk(model, label, x_blob):
     suffix = '_' + label
     if label != 'rel':
         all_lan_embd = 'all_obj_lan_embds'
     else:
         all_lan_embd = 'all_prd_lan_embds'
-    model.net.MatMul(['x' + suffix, all_lan_embd], 'all_Y' + suffix, trans_b=1)
+    model.net.MatMul([x_blob, all_lan_embd], 'all_Y' + suffix, trans_b=1)
     model.net.TopK('all_Y' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
