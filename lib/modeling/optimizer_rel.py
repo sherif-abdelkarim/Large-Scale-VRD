@@ -94,13 +94,16 @@ def add_single_gpu_param_update_ops(model, gpu_id):
         param_momentum = model.param_init_net.ConstantFill(
             [param], param + '_momentum', value=0.0
         )
-        if param in model.biases:
+
+        if param in model.centroids:
+            model.Scale(param_grad, param_grad, scale=0.1)
+        elif param in model.biases:
             # Special treatment for biases (mainly to match historical impl.
             # details):
             # (1) Do not apply weight decay
             # (2) Use a 2x higher learning rate
             model.Scale(param_grad, param_grad, scale=2.0)
-        elif cfg.SOLVER.WEIGHT_DECAY > 0 and not (param in model.centroids):
+        elif cfg.SOLVER.WEIGHT_DECAY > 0:
             # Apply weight decay to non-bias weights
             model.WeightedSum([param_grad, one, param, wd], param_grad)
         # Update param_grad and param_momentum in place
