@@ -84,13 +84,23 @@ def create_model(model):
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         model.StopGradient(x_blob_sbj, x_blob_sbj)
         model.StopGradient(x_blob_obj, x_blob_obj)
-
     # if cfg.MODEL.MEMORY_MODULE_PRD:
     #     model.StopGradient(x_blob_rel, x_blob_rel)
 
-    #               <=================================== Modulated Attention (or proxy) Goes Here
+    # Modulated Attention Proxy
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        x_blob_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_sbj, 'x_sbj_att',
+                                                         cfg.OUTPUT_EMBEDDING_DIM, fg.OUTPUT_EMBEDDING_DIM)
+        x_blob_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_obj, 'x_obj_att',
+                                                         cfg.OUTPUT_EMBEDDING_DIM, fg.OUTPUT_EMBEDDING_DIM)
+        if model.train:
+            x_blob_rel_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_sbj, 'x_rel_sbj_att',
+                                                             cfg.OUTPUT_EMBEDDING_DIM, fg.OUTPUT_EMBEDDING_DIM)
+            x_blob_rel_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_obj, 'x_rel_obj_att',
+                                                             cfg.OUTPUT_EMBEDDING_DIM, fg.OUTPUT_EMBEDDING_DIM)
 
-    model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0)
+    model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0) # used for memory module
+
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
         x_blob_sbj = add_memory_module(model, x_blob_sbj, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
         x_blob_obj = add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
@@ -113,18 +123,14 @@ def create_model(model):
         add_embd_pos_neg_splits(model, 'obj', x_blob_obj)
         add_embd_pos_neg_splits(model, 'rel', x_blob_rel)
 
-        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-            x_blob_sbj = 'scaled_xp_sbj'
-            x_blob_obj = 'scaled_xp_obj'
-            x_blob_rel = 'scaled_xp_rel'
-        else:
-            x_blob_sbj = 'xp_sbj'
-            x_blob_obj = 'xp_obj'
-            x_blob_rel = 'xp_rel'
-    else:
-        x_blob_sbj = 'x_sbj'
-        x_blob_obj = 'x_obj'
-        x_blob_rel = 'x_rel'
+        # if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+        #     x_blob_sbj = 'scaled_xp_sbj'
+        #     x_blob_obj = 'scaled_xp_obj'
+        #     x_blob_rel = 'scaled_xp_rel'
+        # else:
+        x_blob_sbj = 'xp_sbj'
+        x_blob_obj = 'xp_obj'
+        x_blob_rel = 'xp_rel'
 
     # else:
     #     model.net.Alias('x_sbj', 'scaled_xp_sbj')
@@ -137,12 +143,10 @@ def create_model(model):
         logits_obj = add_cosnorm_classifier(model, x_blob_obj, 'obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
     else:
-        logits_sbj = model.add_FC_layer_with_weight_name(
-            'x_sbj_and_obj_out',
+        logits_sbj = model.add_FC_layer_with_weight_name('x_sbj_and_obj_out',
             x_blob_sbj, 'logits_sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
-        logits_obj = model.add_FC_layer_with_weight_name(
-            'x_sbj_and_obj_out',
+        logits_obj = model.add_FC_layer_with_weight_name('x_sbj_and_obj_out',
             x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
     logits_rel = model.FC(x_blob_rel, 'logits_rel',cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
@@ -366,9 +370,12 @@ def add_visual_embedding(model,
             model.net.Alias('x_rel_prd_raw_2', 'x_rel_prd_raw')
         else:
             model.net.Alias('x_rel_prd_raw_1', 'x_rel_prd_raw')
-    model.net.Normalize('x_sbj_raw', 'x_sbj')
-    model.net.Normalize('x_obj_raw', 'x_obj')
-    model.net.Normalize('x_rel_prd_raw', 'x_rel_prd')
+    # model.net.Normalize('x_sbj_raw', 'x_sbj')
+    # model.net.Normalize('x_obj_raw', 'x_obj')
+    # model.net.Normalize('x_rel_prd_raw', 'x_rel_prd')
+    model.net.Alias('x_sbj_raw', 'x_sbj')
+    model.net.Alias('x_obj_raw', 'x_obj')
+    model.net.Alias('x_rel_prd_raw', 'x_rel_prd')
 
     # get x_rel_sbj and x_rel_obj for the p branch
     if model.train and cfg.MODEL.SUBTYPE.find('embd_fusion') >= 0:
@@ -384,8 +391,10 @@ def add_visual_embedding(model,
             dim_rel_obj, cfg.OUTPUT_EMBEDDING_DIM,
             weight_init=('GaussianFill', {'std': 0.01}),
             bias_init=('ConstantFill', {'value': 0.}))
-        x_rel_sbj = model.net.Normalize('x_rel_sbj_raw', 'x_rel_sbj')
-        x_rel_obj = model.net.Normalize('x_rel_obj_raw', 'x_rel_obj')
+        # x_rel_sbj = model.net.Normalize('x_rel_sbj_raw', 'x_rel_sbj')
+        # x_rel_obj = model.net.Normalize('x_rel_obj_raw', 'x_rel_obj')
+        x_rel_sbj = model.net.Alias('x_rel_sbj_raw', 'x_rel_sbj')
+        x_rel_obj = model.net.Alias('x_rel_obj_raw', 'x_rel_obj')
         if cfg.MODEL.SPECS.find('not_stop_gradient') < 0:
             # this is to stop gradients from x_rel_sbj and x_rel_obj
             model.StopGradient(x_rel_sbj, x_rel_sbj)
@@ -454,7 +463,7 @@ def add_embd_pos_neg_splits(model, label, x_blob, sublabel=''):
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         model.net.Slice([x_blob, preprefix + 'pos_starts',
                          preprefix + 'pos_ends'], 'xp' + suffix)
-        model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
+        # model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
         if suffix == '_rel':
             model.net.Slice(['x_rel_raw_final', prefix + 'pos_starts',
                              prefix + 'pos_ends'], 'xp_rel_raw_final')
