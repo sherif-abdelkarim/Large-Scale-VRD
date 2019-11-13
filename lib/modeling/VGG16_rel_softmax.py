@@ -147,7 +147,7 @@ def create_model(model):
         logits_obj = model.add_FC_layer_with_weight_name('x_sbj_and_obj_out_new',
             x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
-    logits_rel = model.FC(x_blob_rel, 'logits_r el',cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
+    logits_rel = model.FC(x_blob_rel, 'logits_rel_new',cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
                           weight_init=('GaussianFill', {'std': 0.01}),bias_init=('ConstantFill', {'value': 0.}))
 
     # During testing, get topk labels and scores
