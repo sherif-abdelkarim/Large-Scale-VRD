@@ -96,7 +96,8 @@ def add_single_gpu_param_update_ops(model, gpu_id):
         )
 
         if param in model.centroids:
-            model.Scale(param_grad, param_grad, scale=0.1)
+            pass
+            # model.Scale(param_grad, param_grad, scale=0.1)
         elif param in model.biases:
             # Special treatment for biases (mainly to match historical impl.
             # details):

@@ -86,7 +86,7 @@ def create_model(model):
     #     model.StopGradient(x_blob_rel, x_blob_rel)
 
     # Modulated Attention Proxy
-    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ and cfg.MODEL.ATTENTION:
         x_blob_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_sbj, 'x_sbj_att',
                                                          cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
         x_blob_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_obj, 'x_obj_att',
@@ -141,13 +141,13 @@ def create_model(model):
         logits_obj = add_cosnorm_classifier(model, x_blob_obj, 'obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
     else:
-        logits_sbj = model.add_FC_layer_with_weight_name('x_sbj_and_obj_out',
+        logits_sbj = model.add_FC_layer_with_weight_name('x_sbj_and_obj_out_new',
             x_blob_sbj, 'logits_sbj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
-        logits_obj = model.add_FC_layer_with_weight_name('x_sbj_and_obj_out',
+        logits_obj = model.add_FC_layer_with_weight_name('x_sbj_and_obj_out_new',
             x_blob_obj, 'logits_obj', cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
-    logits_rel = model.FC(x_blob_rel, 'logits_rel',cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
+    logits_rel = model.FC(x_blob_rel, 'logits_r el',cfg.OUTPUT_EMBEDDING_DIM, cfg.MODEL.NUM_CLASSES_PRD,
                           weight_init=('GaussianFill', {'std': 0.01}),bias_init=('ConstantFill', {'value': 0.}))
 
     # During testing, get topk labels and scores
@@ -668,8 +668,9 @@ def add_centroids_loss(model, feat, label, num_classes):
         #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
 
     # loss_attract + 0.01 * loss_repel
-    loss_attract = model.Scale('loss_attract' + suffix, 'loss_attract' + suffix, scale=1. / cfg.NUM_DEVICES)
+    loss_attract = model.Scale(loss_attract, 'loss_attract' + suffix, scale=1. / cfg.NUM_DEVICES)
     loss_repel = model.Scale('loss_repel_temp' + suffix, 'loss_repel' + suffix, scale=1. / cfg.NUM_DEVICES)
+
     loss_large_margin = model.net.Sum([loss_attract, loss_repel])
     loss_large_margin = model.net.Scale(loss_large_margin, 'loss_large_margin' + suffix, scale=0.01)
     #model.Scale('loss_large_margin' + suffix, 'loss_large_margin_scaled_1' + suffix, scale=1. / cfg.NUM_DEVICES)
@@ -761,85 +762,85 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     feat_size = cfg.OUTPUT_EMBEDDING_DIM
     keys_memory = centroids_blob_name
 
+    if cfg.MODEL.REACHABILITY:
+        # computing reachability
 
-    # computing reachability
+        # Below is the code for the reachability, it is deactivated for now
+        # =============================================================================
+        # set up visual memory
+        # x_expand = x.unsqueeze(1).expand(-1, self.num_classes, -1)
+        # x_expanddims = model.net.ExpandDims([x_blob],
+        #                     dims=[1])
 
-    # Below is the code for the reachability, it is deactivated for now
-    # =============================================================================
-    # set up visual memory
-    # x_expand = x.unsqueeze(1).expand(-1, self.num_classes, -1)
-    # x_expanddims = model.net.ExpandDims([x_blob],
-    #                     dims=[1])
+        # x_expand = model.net.Tile(x_expanddims,
+        #               tiles=num_classes,
+        #               axis=1)
 
-    # x_expand = model.net.Tile(x_expanddims,
-    #               tiles=num_classes,
-    #               axis=1)
+        # centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
+        # centroids_expanddims = model.net.ExpandDims([centroids_blob_name],
+        #                     dims=[0])
 
-    # centroids_expand = centroids.unsqueeze(0).expand(batch_size, -1, -1)
-    # centroids_expanddims = model.net.ExpandDims([centroids_blob_name],
-    #                     dims=[0])
+        # centroids_expand = model.net.Tile([centroids_expanddims, batch_size_blob],
+                      # tiles=batch_size,
+                      # axis=0)
 
-    # centroids_expand = model.net.Tile([centroids_expanddims, batch_size_blob],
-                  # tiles=batch_size,
-                  # axis=0)
+        # x_minus_c = model.net.Sub([x_expand, centroids_expand])
 
-    # x_minus_c = model.net.Sub([x_expand, centroids_expand])
+        # #model.net.ConstantFill(['x_minus_c' + suffix],  'one_blob_x_minus_c' + suffix, value=1.0)
 
-    # #model.net.ConstantFill(['x_minus_c' + suffix],  'one_blob_x_minus_c' + suffix, value=1.0)
+        # dist_cur = l2_norm(model, x_minus_c, keepdims=False)
+        # model.net.Alias(dist_cur, 'dist_cur' + suffix)
 
-    # dist_cur = l2_norm(model, x_minus_c, keepdims=False)
-    # model.net.Alias(dist_cur, 'dist_cur' + suffix)
+        # distance = X^2 - 2 * XC_t + C^2
+        # X: x_blob: (128, 1024)
+        # C: 'centroids' + suffix + suffix: (1703, 1024)
+        # X^2: (128,)
+        # X^2_tiled: (128, 1703)
 
-    # distance = X^2 - 2 * XC_t + C^2
-    # X: x_blob: (128, 1024)
-    # C: 'centroids' + suffix + suffix: (1703, 1024)
-    # X^2: (128,)
-    # X^2_tiled: (128, 1703)
+        # x_norm = model.net.SquaredL2Distance([x_blob, zero_blob_x])
+        # x_norm_expand = model.net.ExpandDims([x_norm], dims=[1])
+        x_norm = model.net.Sqr(x_blob)
+        x_norm_expand = model.net.ReduceBackSum([x_norm], num_reduce_dims=1)
+        x_norm_expand = model.net.ExpandDims([x_norm_expand], dims=[1])
 
-    # x_norm = model.net.SquaredL2Distance([x_blob, zero_blob_x])
-    # x_norm_expand = model.net.ExpandDims([x_norm], dims=[1])
-    # x_norm = model.net.Sqr(x_blob)
-    # x_norm_expand = model.net.ReduceBackSum([x_norm], num_reduce_dims=1)
-    # x_norm_expand = model.net.ExpandDims([x_norm_expand], dims=[1])
-    #
-    # x_norm_tile = model.net.Tile([x_norm_expand], tiles=num_classes, axis=1)
-    #
-    # C^2: (1703,)
-    # c_norm = model.net.SquaredL2Distance([centroids_blob_name, 'zero_blob_c' + suffix])
-    # c_norm_expand = model.net.ExpandDims([c_norm], dims=[1])
-    #
-    # c_norm = model.net.Sqr(centroids_blob_name)
-    # c_norm_expand = model.net.ReduceBackSum([c_norm], num_reduce_dims=1)
-    # c_norm_expand = model.net.ExpandDims([c_norm_expand], dims=[1])
-    #
-    # c_norm_expand_T = model.Transpose([c_norm_expand], ['c_norm_expand_T' + suffix])
-    # c_norm_tile_T = model.net.Tile([c_norm_expand_T, batch_size_blob], axis=0)
-    # model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), [])
-    # model.net.Print(model.net.Shape('c_norm_expand' + suffix, 'c_norm_expand' + suffix + '_shape'), [])
+        x_norm_tile = model.net.Tile([x_norm_expand], tiles=num_classes, axis=1)
 
-    # XC_t: (128, 1703)
-    # xc_t = model.net.MatMul([x_blob, centroids_blob_name], trans_b=1)
+        # C^2: (1703,)
+        # c_norm = model.net.SquaredL2Distance([centroids_blob_name, 'zero_blob_c' + suffix])
+        # c_norm_expand = model.net.ExpandDims([c_norm], dims=[1])
 
-    # -2 * XC_t
-    # neg_2_xc_t = model.net.Mul([xc_t, 'neg_two_blob'], broadcast=1)
+        c_norm = model.net.Sqr(centroids_blob_name)
+        c_norm_expand = model.net.ReduceBackSum([c_norm], num_reduce_dims=1)
+        c_norm_expand = model.net.ExpandDims([c_norm_expand], dims=[1])
 
-    # X^2 - 2 * XC_t + C^2
-    # dist_cur_squared = model.net.Sum([x_norm_tile, neg_2_xc_t, c_norm_tile_T])
-    # dist_cur = model.net.Pow(dist_cur_squared, exponent=(1 / 2))
+        c_norm_expand_T = model.Transpose([c_norm_expand], ['c_norm_expand_T' + suffix])
+        c_norm_tile_T = model.net.Tile([c_norm_expand_T, batch_size_blob], axis=0)
+        # model.net.Print(model.net.Shape('c_norm_tile_T' + suffix, 'c_norm_tile_T' + suffix + '_shape'), [])
+        # model.net.Print(model.net.Shape('c_norm_expand' + suffix, 'c_norm_expand' + suffix + '_shape'), [])
 
-    # debug_blob = model.net.ConstantFill([dist_cur], value=1.0)
-    # flipped_dist = model.net.Div([debug_blob, dist_cur])
-    # flipped_dist_max = model.net.ReduceBackMax(flipped_dist)
-    # debug_blob2 = model.net.ConstantFill([flipped_dist_max], value=1.0)
-    # min_dis_temp = model.net.Div([debug_blob2, flipped_dist_max])
-    # min_dis = model.net.ExpandDims(min_dis_temp, dims=[1])
-    #
-    # scale_over_values = model.net.Div([scale_10_blob, min_dis])
-    #
-    # reachability = model.net.Tile(scale_over_values,
-    #                               tiles=feat_size,
-    #                               axis=1)
-    # =============================================================================
+        # XC_t: (128, 1703)
+        xc_t = model.net.MatMul([x_blob, centroids_blob_name], trans_b=1)
+
+        # -2 * XC_t
+        neg_2_xc_t = model.net.Mul([xc_t, 'neg_two_blob'], broadcast=1)
+
+        # X^2 - 2 * XC_t + C^2
+        dist_cur_squared = model.net.Sum([x_norm_tile, neg_2_xc_t, c_norm_tile_T])
+        dist_cur = model.net.Pow(dist_cur_squared, exponent=(1 / 2))
+
+        debug_blob = model.net.ConstantFill([dist_cur], value=1.0)
+        flipped_dist = model.net.Div([debug_blob, dist_cur])
+        flipped_dist_max = model.net.ReduceBackMax(flipped_dist)
+        debug_blob2 = model.net.ConstantFill([flipped_dist_max], value=1.0)
+        min_dis_temp = model.net.Div([debug_blob2, flipped_dist_max])
+        min_dis = model.net.ExpandDims(min_dis_temp, dims=[1])
+
+        scale_over_values = model.net.Div([scale_10_blob, min_dis])
+
+        reachability = model.net.Tile(scale_over_values,
+                                      tiles=feat_size,
+                                      axis=1)
+        # =============================================================================
 
     # computing memory feature by querying and associating visual memory
     # values_memory = self.fc_hallucinator(x)
@@ -857,7 +858,8 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     matmul_concep_memory = model.net.Mul([concept_selector, memory_feature])
     x_out = model.net.Add([direct_feature, matmul_concep_memory])
 
-    # x_out = model.net.Mul([reachability, add_matmul_conc_mem])
+    if cfg.MODEL.REACHABILITY:
+        x_out = model.net.Mul([reachability, x_out])
     # storing infused feature
     # infused_feature = concept_selector * memory_feature
     # infused_feature = model.net.Mul([concept_selector, memory_feature],

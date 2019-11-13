@@ -88,7 +88,8 @@ def create_model(model):
     #     model.StopGradient(x_blob_rel, x_blob_rel)
 
     # Modulated Attention Proxy
-    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ and cfg.MODEL.ATTENTION:
         x_blob_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_sbj, 'x_sbj_att',
                                                          cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
         x_blob_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_obj, 'x_obj_att',
