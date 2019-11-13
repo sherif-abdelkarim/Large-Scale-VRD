@@ -624,16 +624,18 @@ def add_centroids_loss(model, feat, label, num_classes):
     model.net.ReduceBackSum('distmat_neg_sum1' + suffix, 'distmat_neg_sum' + suffix, num_reduce_dims=1)
     model.net.ConstantFill(['distmat_neg_sum' + suffix], 'margin_blob' + suffix, value=margin)
 
-    # margin - distmat_neg.sum() / (batch_size * self.num_classes
+    # margin - distmat_neg.sum() / (batch_size * self.num_classes)
     model.net.Sub(['margin_blob' + suffix, 'distmat_neg_sum' + suffix], 'margin_minus_distmat_neg' + suffix)
 
+    model.net.ConstantFill(['margin_minus_distmat_neg' + suffix], 'batch_size_x_num_classes' + suffix, value=cfg.TRAIN.BATCH_SIZE_PER_IM * num_classes)
+    model.net.Div(['margin_minus_distmat_neg' + suffix, 'batch_size_x_num_classes' + suffix], 'pre_clamp' + suffix)
     # torch.clamp()
-    model.net.Clip('margin_minus_distmat_neg' + suffix, 'loss_repel' + suffix, min=0.0, max=1e6)
+    model.net.Clip('pre_clamp' + suffix, 'loss_repel_temp' + suffix, min=0.0, max=1e6)
     ## loss = loss_attract + 0.05 * loss_repel
 
     # loss = loss_attract + 0.01 * loss_repel
     # 0.01 * loss_repel
-    model.Scale('loss_repel' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
+    model.Scale('loss_repel_temp' + suffix, 'loss_repel_scaled' + suffix, scale=0.01)
     if cfg.DEBUG:
         pass
         #model.net.Print('centroids' + suffix, [])
@@ -663,9 +665,9 @@ def add_centroids_loss(model, feat, label, num_classes):
         #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
 
     # loss_attract + 0.01 * loss_repel
-    model.net.Sum([loss_attract, 'loss_repel_scaled' + suffix], 'loss_large_margin' + suffix)
+    # model.net.Sum([loss_attract, 'loss_repel_scaled' + suffix], 'loss_large_margin' + suffix)
     loss_attract = model.Scale('loss_attract' + suffix, 'loss_attract' + suffix, scale=0.01 / cfg.NUM_DEVICES)
-    loss_repel = model.Scale('loss_repel_scaled' + suffix, 'loss_repel_scaled' + suffix, scale=0.01 / cfg.NUM_DEVICES)
+    loss_repel = model.Scale('loss_repel_temp' + suffix, 'loss_repel' + suffix, scale=0.01 / cfg.NUM_DEVICES)
     #model.Scale('loss_large_margin' + suffix, 'loss_large_margin_scaled_1' + suffix, scale=1. / cfg.NUM_DEVICES)
     #loss_large_margin = model.Scale('loss_large_margin_scaled_1' + suffix, 'loss_large_margin_scaled_2' + suffix, scale=0.01)
     #model.loss_set.extend([loss_large_margin]) 
