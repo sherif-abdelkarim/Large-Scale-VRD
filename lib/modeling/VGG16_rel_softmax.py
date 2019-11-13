@@ -750,10 +750,10 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
     prefix = label + '_'
     suffix = '_' + label
 
-    # x_shape = model.net.Shape(x_blob)                                     # used for reachability
-    # batch_size_blob = model.net.Slice([x_shape], starts=[0], ends=[1])    # used for reachability
-    # single_row = model.net.Slice([x_blob], starts=[0, 0], ends=[-1, 1])   # used for reachability
-    # scale_10_blob = model.net.ConstantFill([single_row], value=10.0)      # used for reachability
+    x_shape = model.net.Shape(x_blob)                                     # used for reachability
+    batch_size_blob = model.net.Slice([x_shape], starts=[0], ends=[1])    # used for reachability
+    single_row = model.net.Slice([x_blob], starts=[0, 0], ends=[-1, 1])   # used for reachability
+    scale_10_blob = model.net.ConstantFill([single_row], value=10.0)      # used for reachability
 
     # storing direct feature
     direct_feature = x_blob
