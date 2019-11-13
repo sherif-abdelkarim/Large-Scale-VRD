@@ -624,14 +624,17 @@ def add_centroids_loss(model, feat, label, num_classes):
     model.net.ReduceBackSum('distmat_neg_sum1' + suffix, 'distmat_neg_sum' + suffix, num_reduce_dims=1)
     model.net.ConstantFill(['distmat_neg_sum' + suffix], 'margin_blob' + suffix, value=margin)
 
-    # margin - distmat_neg.sum() / (batch_size * self.num_classes)
-    model.net.Sub(['margin_blob' + suffix, 'distmat_neg_sum' + suffix], 'margin_minus_distmat_neg' + suffix)
+    #model.net.Print('distmat_neg_sum' + suffix, [])
+    model.net.ConstantFill(['distmat_neg_sum' + suffix], 'batch_size_x_num_classes' + suffix, value=float(32 * num_classes))
+    model.net.Div(['distmat_neg_sum' + suffix, 'batch_size_x_num_classes' + suffix], 'distmat_neg_sum_div' + suffix)
 
-    model.net.ConstantFill(['margin_minus_distmat_neg' + suffix], 'batch_size_x_num_classes' + suffix, value=cfg.TRAIN.BATCH_SIZE_PER_IM * num_classes)
-    model.net.Div(['margin_minus_distmat_neg' + suffix, 'batch_size_x_num_classes' + suffix], 'pre_clamp' + suffix)
+    # margin - distmat_neg.sum() / (batch_size * self.num_classes)
+    model.net.Sub(['margin_blob' + suffix, 'distmat_neg_sum_div' + suffix], 'pre_clamp' + suffix)
+
     # torch.clamp()
     model.net.Clip('pre_clamp' + suffix, 'loss_repel_temp' + suffix, min=0.0, max=1e6)
     ## loss = loss_attract + 0.05 * loss_repel
+    #model.net.Print('pre_clamp' + suffix, [])
 
     # loss = loss_attract + 0.01 * loss_repel
     # 0.01 * loss_repel
@@ -665,14 +668,15 @@ def add_centroids_loss(model, feat, label, num_classes):
         #model.net.Print(model.net.Shape(loss_attract, 'loss_attract' + suffix + '_shape'), [])
 
     # loss_attract + 0.01 * loss_repel
-    # model.net.Sum([loss_attract, 'loss_repel_scaled' + suffix], 'loss_large_margin' + suffix)
-    loss_attract = model.Scale('loss_attract' + suffix, 'loss_attract' + suffix, scale=0.01 / cfg.NUM_DEVICES)
-    loss_repel = model.Scale('loss_repel_temp' + suffix, 'loss_repel' + suffix, scale=0.01 / cfg.NUM_DEVICES)
+    loss_attract = model.Scale('loss_attract' + suffix, 'loss_attract' + suffix, scale=1. / cfg.NUM_DEVICES)
+    loss_repel = model.Scale('loss_repel_temp' + suffix, 'loss_repel' + suffix, scale=1. / cfg.NUM_DEVICES)
+    loss_large_margin = model.net.Sum([loss_attract, loss_repel])
+    loss_large_margin = model.net.Scale(loss_large_margin, 'loss_large_margin' + suffix, scale=0.01)
     #model.Scale('loss_large_margin' + suffix, 'loss_large_margin_scaled_1' + suffix, scale=1. / cfg.NUM_DEVICES)
     #loss_large_margin = model.Scale('loss_large_margin_scaled_1' + suffix, 'loss_large_margin_scaled_2' + suffix, scale=0.01)
-    #model.loss_set.extend([loss_large_margin]) 
-    model.loss_set.extend([loss_attract]) 
-    model.loss_set.extend([loss_repel]) 
+    model.loss_set.extend([loss_large_margin]) 
+    #model.loss_set.extend([loss_attract]) 
+    #model.loss_set.extend([loss_repel]) 
     #model.net.Print(loss_large_margin, [])
 
 
@@ -726,6 +730,8 @@ def disc_centroids_loss_func(model, feature, labels, centroids_blob_name, batch_
                             'feat_centroid_l2_dist_sum' + suffix,
                             num_reduce_dims=1)
 
+    #model.net.Print('centroids_batch' + suffix, [])
+    #model.net.Print(feature, [])
     #model.net.Print('feat_centroid_l2_dist' + suffix, [])
     #model.net.Print('feat_centroid_l2_dist_sum' + suffix, [])
     #model.net.Print(model.net.Shape('feat_centroid_l2_dist' + suffix, 'feat_centroid_l2_dist' + suffix + '_shape'), [])
