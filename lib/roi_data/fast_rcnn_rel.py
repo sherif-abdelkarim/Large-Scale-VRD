@@ -677,6 +677,13 @@ def _sample_rois_triplet_yall(
     #     std = 1. / math.sqrt(weight_rel.shape[1])
     #     weight_rel = np.random.uniform(-std, std, (cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)).astype(
     #         np.float32)
+    sbj_pos_labels_neg_one_hot = np.ones((sbj_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.float32)
+    obj_pos_labels_neg_one_hot = np.ones((obj_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_SBJ_OBJ), dtype=np.float32)
+    rel_pos_labels_neg_one_hot = np.ones((rel_pos_labels.shape[0], cfg.MODEL.NUM_CLASSES_PRD), dtype=np.float32)
+
+    sbj_pos_labels_neg_one_hot[np.arange(sbj_pos_labels.size, dtype=np.int32), sbj_pos_labels.astype(np.int32)] = 0.
+    obj_pos_labels_neg_one_hot[np.arange(obj_pos_labels.size, dtype=np.int32), obj_pos_labels.astype(np.int32)] = 0.
+    rel_pos_labels_neg_one_hot[np.arange(rel_pos_labels.size, dtype=np.int32), rel_pos_labels.astype(np.int32)] = 0.
 
     blob = dict(
         sbj_rois=rois_sbj,
@@ -809,6 +816,20 @@ def _sample_rois_triplet_yall(
     if cfg.TRAIN.ADD_LOSS_WEIGHTS_SO:
         blob['sbj_pos_weights'] = sbj_pos_weights
         blob['obj_pos_weights'] = obj_pos_weights
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        # blob['weight_sbj'] = weight_sbj
+        # blob['weight_obj'] = weight_obj
+        # blob['weight_rel'] = weight_rel
+        blob['sbj_pos_labels_neg_one_hot'] = sbj_pos_labels_neg_one_hot
+        blob['obj_pos_labels_neg_one_hot'] = obj_pos_labels_neg_one_hot
+
+    if cfg.MODEL.MEMORY_MODULE_PRD:
+        blob['rel_pos_labels_neg_one_hot'] = rel_pos_labels_neg_one_hot
+
+        # blob['centroids_sbj'] = centroids_obj
+        # blob['centroids_obj'] = centroids_obj
+        # blob['centroids_rel'] = centroids_rel
 
     return blob
 
