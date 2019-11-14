@@ -124,25 +124,6 @@ def create_model(model):
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
 
-    if model.train:
-        add_embd_pos_neg_splits(model, 'sbj', x_blob_sbj)
-        add_embd_pos_neg_splits(model, 'obj', x_blob_obj)
-        add_embd_pos_neg_splits(model, 'rel', x_blob_rel)
-
-        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-            x_blob_sbj = 'scaled_xp_sbj'
-            x_blob_obj = 'scaled_xp_obj'
-            x_blob_rel = 'scaled_xp_rel'
-        else:
-            x_blob_sbj = 'xp_sbj'
-            x_blob_obj = 'xp_obj'
-            x_blob_rel = 'xp_rel'
-
-    # else:
-    #     model.net.Alias('x_sbj', 'scaled_xp_sbj')
-    #     model.net.Alias('x_obj', 'scaled_xp_obj')
-    #     model.net.Alias('x_rel', 'scaled_xp_rel')
-
     add_language_embedding_for_vocab(model)
 
     # During testing, get topk labels and scores
@@ -155,9 +136,9 @@ def create_model(model):
     if model.train:
         add_language_embedding_for_gt(model)
 
-        add_embd_pos_neg_splits(model, 'sbj')
-        add_embd_pos_neg_splits(model, 'obj')
-        add_embd_pos_neg_splits(model, 'rel')
+        add_embd_pos_neg_splits(model, 'sbj', x_blob_sbj)
+        add_embd_pos_neg_splits(model, 'obj', x_blob_obj)
+        add_embd_pos_neg_splits(model, 'rel', x_blob_rel)
 
         # define several helper blobs
         sbj_margin = cfg.TRAIN.MARGIN_SO
