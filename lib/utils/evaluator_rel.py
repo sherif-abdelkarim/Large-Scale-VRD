@@ -380,18 +380,18 @@ class Evaluator():
             self.all_dets['scores_rel'].append(det_scores_rel)
 
             if cfg.TEST.GET_ALL_VIS_EMBEDDINGS:
-                # embds_sbj = workspace.FetchBlob(prefix + '{}/{}'.format(
-                #     gpu_id, 'x_sbj'))
-                # embds_obj = workspace.FetchBlob(prefix + '{}/{}'.format(
-                #     gpu_id, 'x_obj'))
-                # embds_prd = workspace.FetchBlob(prefix + '{}/{}'.format(
-                #     gpu_id, 'x_rel'))
                 embds_sbj = workspace.FetchBlob(prefix + '{}/{}'.format(
-                    gpu_id, 'x_sbj_raw'))
+                    gpu_id, 'x_sbj'))
                 embds_obj = workspace.FetchBlob(prefix + '{}/{}'.format(
-                    gpu_id, 'x_obj_raw'))
+                    gpu_id, 'x_obj'))
                 embds_prd = workspace.FetchBlob(prefix + '{}/{}'.format(
-                    gpu_id, 'x_rel_raw_final'))
+                    gpu_id, 'x_rel'))
+                # embds_sbj = workspace.FetchBlob(prefix + '{}/{}'.format(
+                #     gpu_id, 'x_sbj_raw'))
+                # embds_obj = workspace.FetchBlob(prefix + '{}/{}'.format(
+                #     gpu_id, 'x_obj_raw'))
+                # embds_prd = workspace.FetchBlob(prefix + '{}/{}'.format(
+                #     gpu_id, 'x_rel_raw_final'))
                 self.all_sbj_vis_embds.append(embds_sbj)
                 self.all_obj_vis_embds.append(embds_obj)
                 self.all_prd_vis_embds.append(embds_prd)
@@ -730,8 +730,8 @@ class Evaluator():
                 os.path.abspath(all_prd_lan_embds_file)))
 
         if cfg.TEST.GET_ALL_VIS_EMBEDDINGS:
-            # all_sbj_vis_embds_name = 'all_sbj_vis_embds.pkl'
-            all_sbj_vis_embds_name = 'all_sbj_vis_embds_raw.pkl'
+            all_sbj_vis_embds_name = 'all_sbj_vis_embds.pkl'
+            # all_sbj_vis_embds_name = 'all_sbj_vis_embds_raw.pkl'
             all_sbj_vis_embds_file = os.path.join(det_path, all_sbj_vis_embds_name)
             logger.info('all_sbj_vis_embds size: {}'.format(
                 len(self.all_sbj_vis_embds)))
@@ -740,8 +740,8 @@ class Evaluator():
             logger.info('Wrote all_sbj_vis_embds to {}'.format(
                 os.path.abspath(all_sbj_vis_embds_file)))
 
-            # all_obj_vis_embds_name = 'all_obj_vis_embds.pkl'
-            all_obj_vis_embds_name = 'all_obj_vis_embds_raw.pkl'
+            all_obj_vis_embds_name = 'all_obj_vis_embds.pkl'
+            # all_obj_vis_embds_name = 'all_obj_vis_embds_raw.pkl'
             all_obj_vis_embds_file = os.path.join(det_path, all_obj_vis_embds_name)
             logger.info('all_obj_vis_embds size: {}'.format(
                 len(self.all_obj_vis_embds)))
@@ -750,8 +750,8 @@ class Evaluator():
             logger.info('Wrote all_obj_vis_embds to {}'.format(
                 os.path.abspath(all_obj_vis_embds_file)))
 
-            # all_prd_vis_embds_name = 'all_prd_vis_embds.pkl'
-            all_prd_vis_embds_name = 'all_prd_vis_embds_raw.pkl'
+            all_prd_vis_embds_name = 'all_prd_vis_embds.pkl'
+            # all_prd_vis_embds_name = 'all_prd_vis_embds_raw.pkl'
             all_prd_vis_embds_file = os.path.join(det_path, all_prd_vis_embds_name)
             logger.info('all_prd_vis_embds size: {}'.format(
                 len(self.all_prd_vis_embds)))
