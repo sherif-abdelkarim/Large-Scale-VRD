@@ -29,6 +29,10 @@ def create_model(model):
     # 1. visual modules
     blob, dim, spatial_scale = add_VGG16_conv5_body(model)
 
+    # stop gradient at conv 5:
+    model.StopGradient(blob, blob)
+
+
     # sbj and obj always share their branches
     blob_sbj, dim_sbj, spatial_scale_sbj = add_VGG16_roi_fc_head_labeled_shared(
         model, 'sbj', blob, dim, spatial_scale)
@@ -72,79 +76,67 @@ def create_model(model):
         blob_rel_obj, dim_rel_obj)
 
     # if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-    x_blob_sbj = 'x_sbj'
-    x_blob_obj = 'x_obj'
+    x_blob_sbj_direct = 'x_sbj'
+    x_blob_obj_direct = 'x_obj'
 
-    x_blob_rel_sbj = 'x_rel_sbj'
-    x_blob_rel_obj = 'x_rel_obj'
+    x_blob_rel_sbj_direct = 'x_rel_sbj'
+    x_blob_rel_obj_direct = 'x_rel_obj'
     # x_blob_rel = 'x_rel'
 
-    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-        model.StopGradient(x_blob_sbj, x_blob_sbj)
-        model.StopGradient(x_blob_obj, x_blob_obj)
-    # if cfg.MODEL.MEMORY_MODULE_PRD:
+    # if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+    #     model.StopGradient(x_blob_sbj, x_blob_sbj)
+    #     model.StopGradient(x_blob_obj, x_blob_obj)
+    # # if cfg.MODEL.MEMORY_MODULE_PRD:
     #     model.StopGradient(x_blob_rel, x_blob_rel)
 
     # Modulated Attention Proxy
+
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ and cfg.MODEL.ATTENTION:
-        x_blob_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_sbj, 'x_sbj_att',
+        x_blob_sbj_direct = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_sbj_direct, 'x_sbj_att',
                                                          cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-        x_blob_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_obj, 'x_obj_att',
+        x_blob_obj_direct = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_obj_direct, 'x_obj_att',
                                                          cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
         if model.train:
-            x_blob_rel_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_sbj, 'x_rel_sbj_att',
+            x_blob_rel_sbj_direct = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_sbj_direct, 'x_rel_sbj_att',
                                                              cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-            x_blob_rel_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_obj, 'x_rel_obj_att',
+            x_blob_rel_obj_direct = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_obj_direct, 'x_rel_obj_att',
                                                              cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-
-        if cfg.MODEL.ATTENTION_DEEP:
-            x_blob_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj2', x_blob_sbj, 'x_sbj_att2',
-                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-            x_blob_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj2', x_blob_obj, 'x_obj_att2',
-                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-            x_blob_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj3', x_blob_sbj, 'x_sbj_att3',
-                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-            x_blob_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj3', x_blob_obj, 'x_obj_att3',
-                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-            x_blob_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj4', x_blob_sbj, 'x_sbj_att4',
-                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-            x_blob_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj4', x_blob_obj, 'x_obj_att4',
-                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-            if model.train:
-                x_blob_rel_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj2', x_blob_rel_sbj,
-                                                                     'x_rel_sbj_att2',
-                                                                     cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-                x_blob_rel_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj2', x_blob_rel_obj,
-                                                                     'x_rel_obj_att2',
-                                                                     cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-                x_blob_rel_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj3', x_blob_rel_sbj,
-                                                                     'x_rel_sbj_att3',
-                                                                     cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-                x_blob_rel_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj3', x_blob_rel_obj,
-                                                                     'x_rel_obj_att3',
-                                                                     cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-                x_blob_rel_sbj = model.add_FC_layer_with_weight_name('attention_sbj_obj4', x_blob_rel_sbj,
-                                                                     'x_rel_sbj_att4',
-                                                                     cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
-                x_blob_rel_obj = model.add_FC_layer_with_weight_name('attention_sbj_obj4', x_blob_rel_obj,
-                                                                     'x_rel_obj_att4',
-                                                                     cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
 
     model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0) # used for memory module
 
     if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-        x_blob_sbj = add_memory_module(model, x_blob_sbj, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-        x_blob_obj = add_memory_module(model, x_blob_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        x_blob_sbj_mem = add_memory_module(model, x_blob_sbj_direct, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        x_blob_obj_mem = add_memory_module(model, x_blob_obj_direct, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         if model.train:
-            x_blob_rel_sbj = add_memory_module(model, x_blob_rel_sbj, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-            x_blob_rel_obj = add_memory_module(model, x_blob_rel_obj, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            x_blob_rel_sbj_mem = add_memory_module(model, x_blob_rel_sbj_direct, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            x_blob_rel_obj_mem = add_memory_module(model, x_blob_rel_obj_direct, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
     # if cfg.MODEL.MEMORY_MODULE_PRD:
     #     v_meta_rel = add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel, scale_10_blob_rel)
+    x_blob_rel_sbj = None
+    x_blob_rel_obj = None
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        x_blob_sbj = x_blob_sbj_mem
+        x_blob_obj = x_blob_obj_mem
+        if model.train:
+            x_blob_rel_sbj = x_blob_rel_sbj_mem
+            x_blob_rel_obj = x_blob_rel_obj_mem
+    else:
+        x_blob_sbj = x_blob_sbj_direct
+        x_blob_obj = x_blob_obj_direct
+        if model.train:
+            x_blob_rel_sbj = x_blob_rel_sbj_direct
+            x_blob_rel_obj = x_blob_rel_obj_direct
 
     add_embd_fusion_for_p(model, x_blob_sbj, x_blob_obj, x_blob_rel_sbj, x_blob_rel_obj)
     x_blob_rel = 'x_rel'
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        x_blob_sbj = model.net.Normalize(x_blob_sbj)
+        x_blob_obj = model.net.Normalize(x_blob_obj)
+        x_blob_rel = model.net.Normalize(x_blob_rel)
 
     model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
     model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
@@ -154,14 +146,14 @@ def create_model(model):
         add_embd_pos_neg_splits(model, 'obj', x_blob_obj)
         add_embd_pos_neg_splits(model, 'rel', x_blob_rel)
 
-        # if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-        #     x_blob_sbj = 'scaled_xp_sbj'
-        #     x_blob_obj = 'scaled_xp_obj'
-        #     x_blob_rel = 'scaled_xp_rel'
-        # else:
-        x_blob_sbj = 'xp_sbj'
-        x_blob_obj = 'xp_obj'
-        x_blob_rel = 'xp_rel'
+        if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+            x_blob_sbj = 'scaled_xp_sbj'
+            x_blob_obj = 'scaled_xp_obj'
+            x_blob_rel = 'scaled_xp_rel'
+        else:
+            x_blob_sbj = 'xp_sbj'
+            x_blob_obj = 'xp_obj'
+            x_blob_rel = 'xp_rel'
 
     # else:
     #     model.net.Alias('x_sbj', 'scaled_xp_sbj')
@@ -195,11 +187,11 @@ def create_model(model):
         add_softmax_losses(model, 'obj', logits_obj)
         add_softmax_losses(model, 'rel', logits_rel)
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
-            add_centroids_loss(model, x_blob_sbj, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
-            add_centroids_loss(model, x_blob_obj, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            add_centroids_loss(model, x_blob_sbj_direct, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            add_centroids_loss(model, x_blob_obj_direct, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
 
         if cfg.MODEL.MEMORY_MODULE_PRD:
-            add_centroids_loss(model, x_blob_rel, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
+            add_centroids_loss(model, x_blob_rel_direct, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
 
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)
     model.AddLosses(model.loss_set)
@@ -400,12 +392,9 @@ def add_visual_embedding(model,
             model.net.Alias('x_rel_prd_raw_2', 'x_rel_prd_raw')
         else:
             model.net.Alias('x_rel_prd_raw_1', 'x_rel_prd_raw')
-    # model.net.Normalize('x_sbj_raw', 'x_sbj')
-    # model.net.Normalize('x_obj_raw', 'x_obj')
-    # model.net.Normalize('x_rel_prd_raw', 'x_rel_prd')
-    model.net.Alias('x_sbj_raw', 'x_sbj')
-    model.net.Alias('x_obj_raw', 'x_obj')
-    model.net.Alias('x_rel_prd_raw', 'x_rel_prd')
+    model.net.Normalize('x_sbj_raw', 'x_sbj')
+    model.net.Normalize('x_obj_raw', 'x_obj')
+    model.net.Normalize('x_rel_prd_raw', 'x_rel_prd')
 
     # get x_rel_sbj and x_rel_obj for the p branch
     if model.train and cfg.MODEL.SUBTYPE.find('embd_fusion') >= 0:
@@ -421,10 +410,8 @@ def add_visual_embedding(model,
             dim_rel_obj, cfg.OUTPUT_EMBEDDING_DIM,
             weight_init=('GaussianFill', {'std': 0.01}),
             bias_init=('ConstantFill', {'value': 0.}))
-        # x_rel_sbj = model.net.Normalize('x_rel_sbj_raw', 'x_rel_sbj')
-        # x_rel_obj = model.net.Normalize('x_rel_obj_raw', 'x_rel_obj')
-        x_rel_sbj = model.net.Alias('x_rel_sbj_raw', 'x_rel_sbj')
-        x_rel_obj = model.net.Alias('x_rel_obj_raw', 'x_rel_obj')
+        x_rel_sbj = model.net.Normalize('x_rel_sbj_raw', 'x_rel_sbj')
+        x_rel_obj = model.net.Normalize('x_rel_obj_raw', 'x_rel_obj')
         if cfg.MODEL.SPECS.find('not_stop_gradient') < 0:
             # this is to stop gradients from x_rel_sbj and x_rel_obj
             model.StopGradient(x_rel_sbj, x_rel_sbj)
@@ -493,7 +480,7 @@ def add_embd_pos_neg_splits(model, label, x_blob, sublabel=''):
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
         model.net.Slice([x_blob, preprefix + 'pos_starts',
                          preprefix + 'pos_ends'], 'xp' + suffix)
-        # model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
+        model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
         if suffix == '_rel':
             model.net.Slice(['x_rel_raw_final', prefix + 'pos_starts',
                              prefix + 'pos_ends'], 'xp_rel_raw_final')
