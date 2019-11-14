@@ -38,7 +38,8 @@ from caffe2.python import workspace
 
 from modeling import (
     VGG16_rel_softmaxed_triplet,
-    VGG16_rel_softmax
+    VGG16_rel_softmax,
+    VGG16_rel_softmaxed_triplet_original
 )
 
 from core.config_rel import cfg
@@ -60,6 +61,7 @@ logger = logging.getLogger(__name__)
 
 model_creator_map = {
     'VGG16_rel_softmaxed_triplet': VGG16_rel_softmaxed_triplet,
+    'VGG16_rel_softmaxed_triplet_original': VGG16_rel_softmaxed_triplet_original,
     'VGG16_rel_softmax': VGG16_rel_softmax}
 
 # ---------------------------------------------------------------------------- #
