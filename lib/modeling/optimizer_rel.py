@@ -81,6 +81,9 @@ def add_single_gpu_param_update_ops(model, gpu_id):
     lr = model.param_init_net.ConstantFill(
         [], 'lr', shape=[1], value=0.0
     )
+    cur_iter = model.Iter(
+        'cur_iter'
+    )
     one = model.param_init_net.ConstantFill(
         [], 'one', shape=[1], value=1.0
     )
@@ -90,10 +93,13 @@ def add_single_gpu_param_update_ops(model, gpu_id):
     for param in model.TrainableParams(gpu_id=gpu_id):
         logger.debug('param ' + str(param) + ' will be updated')
         param_grad = model.param_to_grad[param]
-        # Initialize momentum vector
-        param_momentum = model.param_init_net.ConstantFill(
-            [param], param + '_momentum', value=0.0
-        )
+        # # Initialize momentum vector
+        # param_momentum = model.param_init_net.ConstantFill(
+        #     [param], param + '_momentum', value=0.0
+        # )
+        # Initialize moments
+        param_moment1 = model.param_init_net.ConstantFill([param], param + '_moment1', value=0.0)
+        param_moment2 = model.param_init_net.ConstantFill([param], param + '_moment2', value=0.0)
 
         if param in model.centroids:
             pass
@@ -108,8 +114,20 @@ def add_single_gpu_param_update_ops(model, gpu_id):
             # Apply weight decay to non-bias weights
             model.WeightedSum([param_grad, one, param, wd], param_grad)
         # Update param_grad and param_momentum in place
-        model.net.MomentumSGDUpdate(
-            [param_grad, param_momentum, lr, param],
-            [param_grad, param_momentum, param],
-            momentum=cfg.SOLVER.MOMENTUM
+        # model.net.MomentumSGDUpdate(
+        #     [param_grad, param_momentum, lr, param],
+        #     [param_grad, param_momentum, param],
+        #     momentum=cfg.SOLVER.MOMENTUM
+        # )
+        model.net.Adam(
+            [param, param_moment1, param_moment2, param_grad, lr, cur_iter],
+            [param, param_moment1, param_moment2]
         )
+
+        from caffe2.python.optimizer import (build_sgd, build_ftrl, build_adagrad, build_adam)
+    model.AddGradientOperators([loss])
+    build_adam(model, base_learning_rate=0.0001)
+
+    for param in model.params:
+        param_grad = model.param_to_grad[param]
+        model.WeightedSum([param, ONE, param_grad, LR], param)
