@@ -642,14 +642,14 @@ def add_centroids_loss(model, feat, label, num_classes):
     # distmat_neg.sum() / (batch_size * self.num_classes
     model.net.ReduceBackSum('distmat_neg' + suffix, 'distmat_neg_sum1' + suffix, num_reduce_dims=1)
     model.net.ReduceBackSum('distmat_neg_sum1' + suffix, 'distmat_neg_sum' + suffix, num_reduce_dims=1)
-    model.net.ConstantFill(['distmat_neg_sum' + suffix], 'margin_blob' + suffix, value=margin)
+    model.net.ConstantFill(['distmat_neg_sum' + suffix], 'margin_blob2' + suffix, value=margin)
 
     #model.net.Print('distmat_neg_sum' + suffix, [])
     model.net.ConstantFill(['distmat_neg_sum' + suffix], 'batch_size_x_num_classes' + suffix, value=float(32 * num_classes))
     model.net.Div(['distmat_neg_sum' + suffix, 'batch_size_x_num_classes' + suffix], 'distmat_neg_sum_div' + suffix)
 
     # margin - distmat_neg.sum() / (batch_size * self.num_classes)
-    model.net.Sub(['margin_blob' + suffix, 'distmat_neg_sum_div' + suffix], 'pre_clamp' + suffix)
+    model.net.Sub(['margin_blob2' + suffix, 'distmat_neg_sum_div' + suffix], 'pre_clamp' + suffix)
 
     # torch.clamp()
     model.net.Clip('pre_clamp' + suffix, 'loss_repel_temp' + suffix, min=0.0, max=1e6)
