@@ -91,7 +91,7 @@ def add_single_gpu_param_update_ops(model, gpu_id):
         [], 'wd', shape=[1], value=cfg.SOLVER.WEIGHT_DECAY
     )
     for param in model.TrainableParams(gpu_id=gpu_id):
-        logger.debug('param ' + str(param) + ' will be updated')
+        logger.info('param ' + str(param) + ' will be updated')
         param_grad = model.param_to_grad[param]
         # # Initialize momentum vector
         # param_momentum = model.param_init_net.ConstantFill(
