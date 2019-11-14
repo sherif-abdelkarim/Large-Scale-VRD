@@ -178,9 +178,9 @@ def create_model(model):
 
         if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
             x_blob_sbj_direct = model.net.Slice([x_blob_sbj_direct, 'sbj_pos_starts', 'sbj_pos_ends'])
-            model.Scale(x_blob_sbj_direct, 'scaled_direct' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
+            #x_blob_sbj_direct = model.Scale(x_blob_sbj_direct, 'scaled_direct_sbj', scale=cfg.TRAIN.NORM_SCALAR)
             x_blob_obj_direct = model.net.Slice([x_blob_obj_direct, 'obj_pos_starts', 'obj_pos_ends'])
-            model.Scale(x_blob_obj_direct, 'scaled_direct' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
+            #x_blob_obj_direct = model.Scale(x_blob_obj_direct, 'scaled_direct_obj', scale=cfg.TRAIN.NORM_SCALAR)
 
             add_centroids_loss(model, x_blob_sbj_direct, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
             add_centroids_loss(model, x_blob_obj_direct, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
