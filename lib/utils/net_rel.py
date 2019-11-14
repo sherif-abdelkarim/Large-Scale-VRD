@@ -186,7 +186,9 @@ def broadcast_parameters(model):
                     workspace.FeedBlob(p, data)
 
     _do_broadcast(model.params)
-    _do_broadcast([b + '_momentum' for b in model.TrainableParams()])
+    # _do_broadcast([b + '_momentum' for b in model.TrainableParams()])
+    _do_broadcast([b + '_moment1' for b in model.TrainableParams()])
+    _do_broadcast([b + '_moment2' for b in model.TrainableParams()])
 
 
 def sum_multi_gpu_blob(blob_name):
