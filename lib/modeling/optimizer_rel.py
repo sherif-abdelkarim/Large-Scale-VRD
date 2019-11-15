@@ -94,6 +94,8 @@ def add_single_gpu_param_update_ops(model, gpu_id):
         param_momentum = model.param_init_net.ConstantFill(
             [param], param + '_momentum', value=0.0
         )
+        if 'hallucinator' in str(param) or 'selector' in str(param):
+            model.Scale(param_grad, param_grad, scale=10.)
 
         if param in model.centroids:
             pass
