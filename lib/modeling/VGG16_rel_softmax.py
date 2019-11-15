@@ -893,18 +893,28 @@ def add_memory_module(model, x_blob, centroids_blob_name, label, num_classes):
 
 
 def add_hallucinator(model, input_blob_name, output_blob_name, feat_size, num_classes, suffix):
+    init_std = 1. / feat_size
+    init_std = math.sqrt(init_std)
+    bias_init = ('UniformFill', {'min': -init_std, 'max': init_std})
+    weight_init = ('UniformFill', {'min': -init_std, 'max': init_std})
+
     if suffix in ['_sbj', '_obj']:
-        out = model.add_FC_layer_with_weight_name('hallucinator_sbj_obj', input_blob_name, output_blob_name, feat_size, num_classes)
+        out = model.add_FC_layer_with_weight_name('hallucinator_sbj_obj', input_blob_name, output_blob_name, feat_size, num_classes, weight_init=weight_init, bias_init=bias_init)
     else:
-        out = model.add_FC_layer_with_weight_name('hallucinator_rel', input_blob_name, output_blob_name, feat_size, num_classes)
+        out = model.add_FC_layer_with_weight_name('hallucinator_rel', input_blob_name, output_blob_name, feat_size, num_classes, weight_init=weight_init, bias_init=bias_init)
     return out
 
 
 def add_selector(model, input_blob_name, output_blob_name, feat_size, suffix):
+    init_std = 1. / feat_size
+    init_std = math.sqrt(init_std)
+    bias_init = ('UniformFill', {'min': -init_std, 'max': init_std})
+    weight_init = ('UniformFill', {'min': -init_std, 'max': init_std})
+
     if suffix in ['_sbj', '_obj']:
-        out = model.add_FC_layer_with_weight_name('selector_sbj_obj', input_blob_name, output_blob_name, feat_size, feat_size)
+        out = model.add_FC_layer_with_weight_name('selector_sbj_obj', input_blob_name, output_blob_name, feat_size, feat_size, weight_init=weight_init, bias_init=bias_init)
     else:
-        out = model.add_FC_layer_with_weight_name('selector_rel', input_blob_name, output_blob_name, feat_size, feat_size)
+        out = model.add_FC_layer_with_weight_name('selector_rel', input_blob_name, output_blob_name, feat_size, feat_size, weight_init=weight_init, bias_init=bias_init)
     return out
 
 
