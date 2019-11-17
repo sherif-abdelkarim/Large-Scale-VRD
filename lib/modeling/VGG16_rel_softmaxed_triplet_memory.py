@@ -14,6 +14,9 @@ import logging
 from caffe2.python import core as caffe2core
 from core.config_rel import cfg
 import utils.blob as blob_utils
+import math
+from modeling.VGG16_rel_softmax import add_memory_module, add_hallucinator, add_selector, add_cosnorm_classifier, \
+   disc_centroids_loss_func, add_centroids_loss, l2_norm
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +24,16 @@ dropout_ratio = cfg.TRAIN.DROPOUT
 
 
 def create_model(model):
-    logger.info(' | VGG-16 yall softmaxed triplet original {}'.format(cfg.DATASET))
+    logger.info(' | VGG-16 yall softmaxed triplet {}'.format(cfg.DATASET))
 
     model.loss_set = []
 
     # 1. visual modules
     blob, dim, spatial_scale = add_VGG16_conv5_body(model)
+
+    # stop gradient at conv 5:
+    model.StopGradient(blob, blob)
+
 
     # sbj and obj always share their branches
     blob_sbj, dim_sbj, spatial_scale_sbj = add_VGG16_roi_fc_head_labeled_shared(
@@ -41,29 +48,116 @@ def create_model(model):
     spatial_scale_rel = add_VGG16_roi_fc_head_rel_spo_late_fusion(
         model, blob, dim, spatial_scale)
 
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        model.add_centroids_blob_with_weight_name('centroids_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM)
+        #if cfg.DEBUG:
+        #    if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+        #        model.Scale('centroids_obj', 'centroids_obj', scale=cfg.TRAIN.NORM_SCALAR)
+        model.net.Alias('centroids_obj', 'centroids_sbj')
+        # model.StopGradient('centroids_obj', 'centroids_obj')
+        # model.StopGradient('centroids_sbj', 'centroids_sbj')
+
+        std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
+        model.add_weight_blob_with_weight_name('weight_obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+        model.net.Alias('weight_obj', 'weight_sbj')
+
+    if cfg.MODEL.MEMORY_MODULE_PRD:
+        model.add_centroids_blob_with_weight_name('centroids_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM)
+        #if cfg.DEBUG:
+        #    if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
+        #        model.Scale('centroids_rel', 'centroids_rel', scale=cfg.TRAIN.NORM_SCALAR)
+        # model.StopGradient('centroids_rel', 'centroids_rel')
+
+        std = 1. / math.sqrt(cfg.OUTPUT_EMBEDDING_DIM)
+        model.add_weight_blob_with_weight_name('weight_rel', cfg.MODEL.NUM_CLASSES_PRD, cfg.OUTPUT_EMBEDDING_DIM, -std, std)
+
     add_visual_embedding(
         model, blob_sbj, dim_sbj, blob_obj, dim_obj,
         blob_rel_prd, dim_rel_prd,
         blob_rel_sbj, dim_rel_sbj,
         blob_rel_obj, dim_rel_obj)
 
-    add_embd_fusion_for_p(model)
+    # if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+    x_blob_sbj_direct = 'x_sbj'
+    x_blob_obj_direct = 'x_obj'
+
+    x_blob_rel_sbj_direct = 'x_rel_sbj'
+    x_blob_rel_obj_direct = 'x_rel_obj'
+    # x_blob_rel = 'x_rel'
+
+    # if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+    #     model.StopGradient(x_blob_sbj, x_blob_sbj)
+    #     model.StopGradient(x_blob_obj, x_blob_obj)
+    # # if cfg.MODEL.MEMORY_MODULE_PRD:
+    #     model.StopGradient(x_blob_rel, x_blob_rel)
+
+    # Modulated Attention Proxy
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ and cfg.MODEL.ATTENTION:
+        x_blob_sbj_direct = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_sbj_direct, 'x_sbj_att',
+                                                         cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
+        x_blob_obj_direct = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_obj_direct, 'x_obj_att',
+                                                         cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
+        if model.train:
+            x_blob_rel_sbj_direct = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_sbj_direct, 'x_rel_sbj_att',
+                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
+            x_blob_rel_obj_direct = model.add_FC_layer_with_weight_name('attention_sbj_obj', x_blob_rel_obj_direct, 'x_rel_obj_att',
+                                                             cfg.OUTPUT_EMBEDDING_DIM, cfg.OUTPUT_EMBEDDING_DIM)
+
+    model.net.ConstantFill([], 'neg_two_blob', shape=[1], value=-2.0) # used for memory module
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        x_blob_sbj_mem = add_memory_module(model, x_blob_sbj_direct, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+        x_blob_obj_mem = add_memory_module(model, x_blob_obj_direct, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+
+        if model.train:
+            x_blob_rel_sbj_mem = add_memory_module(model, x_blob_rel_sbj_direct, 'centroids_sbj', 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            x_blob_rel_obj_mem = add_memory_module(model, x_blob_rel_obj_direct, 'centroids_obj', 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+
+    # if cfg.MODEL.MEMORY_MODULE_PRD:
+    #     v_meta_rel = add_memory_module(model, x_blob_rel, 'centroids_rel', 'rel', cfg.MODEL.NUM_CLASSES_PRD, batch_size_rel, scale_10_blob_rel)
+    x_blob_rel_sbj = None
+    x_blob_rel_obj = None
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        x_blob_sbj = x_blob_sbj_mem
+        x_blob_obj = x_blob_obj_mem
+        if model.train:
+            x_blob_rel_sbj = x_blob_rel_sbj_mem
+            x_blob_rel_obj = x_blob_rel_obj_mem
+    else:
+        x_blob_sbj = x_blob_sbj_direct
+        x_blob_obj = x_blob_obj_direct
+        if model.train:
+            x_blob_rel_sbj = x_blob_rel_sbj_direct
+            x_blob_rel_obj = x_blob_rel_obj_direct
+
+    add_embd_fusion_for_p(model, x_blob_sbj, x_blob_obj, x_blob_rel_sbj, x_blob_rel_obj)
+    x_blob_rel = 'x_rel'
+
+    if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+        x_blob_sbj = model.net.Normalize(x_blob_sbj)
+        x_blob_obj = model.net.Normalize(x_blob_obj)
+        x_blob_rel = model.net.Normalize(x_blob_rel)
+
+    model.net.ConstantFill([], 'one_blob', shape=[1], value=1.0)
+    model.net.ConstantFill([], 'scale_blob', shape=[1], value=16.0)
 
     add_language_embedding_for_vocab(model)
 
     # During testing, get topk labels and scores
     if not model.train:
-        add_labels_and_scores_topk(model, 'sbj')
-        add_labels_and_scores_topk(model, 'obj')
-        add_labels_and_scores_topk(model, 'rel')
+        add_labels_and_scores_topk(model, 'sbj', x_blob_sbj)
+        add_labels_and_scores_topk(model, 'obj', x_blob_obj)
+        add_labels_and_scores_topk(model, 'rel', x_blob_rel)
 
     # # 2. language modules and losses
     if model.train:
         add_language_embedding_for_gt(model)
 
-        add_embd_pos_neg_splits(model, 'sbj')
-        add_embd_pos_neg_splits(model, 'obj')
-        add_embd_pos_neg_splits(model, 'rel')
+        add_embd_pos_neg_splits(model, 'sbj', x_blob_sbj)
+        add_embd_pos_neg_splits(model, 'obj', x_blob_obj)
+        add_embd_pos_neg_splits(model, 'rel', x_blob_rel)
 
         # define several helper blobs
         sbj_margin = cfg.TRAIN.MARGIN_SO
@@ -81,6 +175,18 @@ def create_model(model):
         add_embd_triplet_losses_labeled(model, 'sbj')
         add_embd_triplet_losses_labeled(model, 'obj')
         add_embd_triplet_losses_labeled(model, 'rel')
+
+        if cfg.MODEL.MEMORY_MODULE_SBJ_OBJ:
+            x_blob_sbj_direct = model.net.Slice([x_blob_sbj_direct, 'sbj_pos_starts', 'sbj_pos_ends'])
+            #x_blob_sbj_direct = model.Scale(x_blob_sbj_direct, 'scaled_direct_sbj', scale=cfg.TRAIN.NORM_SCALAR)
+            x_blob_obj_direct = model.net.Slice([x_blob_obj_direct, 'obj_pos_starts', 'obj_pos_ends'])
+            #x_blob_obj_direct = model.Scale(x_blob_obj_direct, 'scaled_direct_obj', scale=cfg.TRAIN.NORM_SCALAR)
+
+            add_centroids_loss(model, x_blob_sbj_direct, 'sbj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+            add_centroids_loss(model, x_blob_obj_direct, 'obj', cfg.MODEL.NUM_CLASSES_SBJ_OBJ)
+
+        if cfg.MODEL.MEMORY_MODULE_PRD:
+            add_centroids_loss(model, x_blob_rel_direct, 'rel', cfg.MODEL.NUM_CLASSES_PRD)
 
     loss_gradients = blob_utils.get_loss_gradients(model, model.loss_set)
     model.AddLosses(model.loss_set)
@@ -307,17 +413,17 @@ def add_visual_embedding(model,
             model.StopGradient(x_rel_obj, x_rel_obj)
 
 
-def add_embd_fusion_for_p(model):
+def add_embd_fusion_for_p(model, x_blob_sbj, x_blob_obj, x_blob_rel_sbj, x_blob_rel_obj):
     if cfg.MODEL.SUBTYPE.find('embd_fusion') < 0:
         model.net.Alias('x_rel_prd', 'x_rel_raw_final')
     else:
         if model.train:
             x_spo = model.Concat(
-                ['x_rel_sbj', 'x_rel_obj', 'x_rel_prd'], 'x_spo')
+                [x_blob_rel_sbj, x_blob_rel_obj, 'x_rel_prd'], 'x_spo')
             dim_x_spo = cfg.OUTPUT_EMBEDDING_DIM * 3
         else:
             x_spo = model.Concat(
-                ['x_sbj', 'x_obj', 'x_rel_prd'], 'x_spo')
+                [x_blob_sbj, x_blob_obj, 'x_rel_prd'], 'x_spo')
             dim_x_spo = cfg.OUTPUT_EMBEDDING_DIM * 3
         if cfg.MODEL.SUBTYPE.find('w_ishans') >= 0:
             model.FC(
@@ -528,7 +634,7 @@ def add_language_embedding_for_vocab(model):
         'all_prd_lan_embds', 'scaled_all_prd_lan_embds', scale=cfg.TRAIN.NORM_SCALAR)
 
 
-def add_embd_pos_neg_splits(model, label, sublabel=''):
+def add_embd_pos_neg_splits(model, label, x_blob, sublabel=''):
     preprefix = label + '_'
     if sublabel == '':
         prefix = preprefix
@@ -538,7 +644,7 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
         suffix = '_' + label + '_' + sublabel
 
     if cfg.MODEL.SUBTYPE.find('xp_only') < 0:
-        model.net.Slice(['x' + suffix, preprefix + 'pos_starts',
+        model.net.Slice([x_blob, preprefix + 'pos_starts',
                          preprefix + 'pos_ends'], 'xp' + suffix)
         model.Scale('xp' + suffix, 'scaled_xp' + suffix, scale=cfg.TRAIN.NORM_SCALAR)
         if suffix == '_rel':
@@ -548,7 +654,7 @@ def add_embd_pos_neg_splits(model, label, sublabel=''):
             model.net.Slice(['x_' + label + '_raw', prefix + 'pos_starts',
                              prefix + 'pos_ends'], 'xp_' + label + '_raw')
     else:
-        model.net.Alias('x' + suffix, 'xp' + suffix)
+        model.net.Alias(x_blob, 'xp' + suffix)
     model.net.Alias(prefix + 'pos_lan_embds', 'yp' + suffix)
 
 
@@ -729,11 +835,11 @@ def add_embd_triplet_losses_labeled(model, label):
         model.loss_set.extend([loss_xp_xn])
 
 
-def add_labels_and_scores_topk(model, label):
+def add_labels_and_scores_topk(model, label, x_blob):
     suffix = '_' + label
     if label != 'rel':
         all_lan_embd = 'all_obj_lan_embds'
     else:
         all_lan_embd = 'all_prd_lan_embds'
-    model.net.MatMul(['x' + suffix, all_lan_embd], 'all_Y' + suffix, trans_b=1)
+    model.net.MatMul([x_blob, all_lan_embd], 'all_Y' + suffix, trans_b=1)
     model.net.TopK('all_Y' + suffix, ['scores' + suffix, 'labels' + suffix], k=250)
