@@ -1,5 +1,6 @@
 DATASET: vg_wiki_and_relco
 NUM_DEVICES: 1
+RANDOM_SEED: 0
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
