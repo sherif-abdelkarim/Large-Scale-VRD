@@ -1,9 +1,9 @@
 DATASET: gvqa
-NUM_DEVICES: 1
+NUM_DEVICES: 8
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
-  SPECS: 8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_memory_sbj_obj_fusion
+  SPECS: 8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_memory_sbj_obj_fusion_v1
   LOSS_TYPE: SOFTMAXED_TRIPLET  # EUC, SOFTMAX
   MODEL_NAME: VGG16_rel_softmaxed_triplet
   BN_MOMENTUM: 0.9
@@ -18,6 +18,8 @@ MODEL:
   MEMORY_MODULE_FUSION: True
   MEMORY_MODULE_SBJ_OBJ: True
   MEMORY_MODULE_PRD: False
+  REACHABILITY: False
+  ATTENTION: False
   COSNORM: False
 VISUAL_EMBEDDING:
   WEIGHT_SHARING:  SBJ_OBJ_SHARED #, all_unshared,  sbj_obj_shared, all_unshared
@@ -42,23 +44,24 @@ TRAIN:
   FG_FRACTION: 0.25
   FG_THRESH: 0.5
   # SCALE_JITTER_TYPE: googleNet
-  EVALUATION_FREQUENCY: 1000 # 2500  # 50000
+  EVALUATION_FREQUENCY: 10000 # 2500  # 50000
 TEST:
-  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers_memory_sbj_obj_fusion/train/best.pkl
+  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_memory_sbj_obj_fusion_v1/train/best.pkl
   DATA_TYPE: test
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
   BBOX_REG: False
   ISA: False
 SOLVER:
-  BASE_LR: 0.001
+  BASE_LR: 0.0001
   STEP_SIZES: [125000]
-  NUM_ITERATIONS: 175000
+  #NUM_ITERATIONS: 175000
+  NUM_ITERATIONS: 260000
   WEIGHT_DECAY: 0.0005
   WEIGHT_DECAY_BN: 0.0
   MOMENTUM: 0.9
   GAMMA: 0.1
   NESTEROV: True
   WARM_UP_ITERS: 500  # 10000
-  WARM_UP_LR: 0.001
+  WARM_UP_LR: 0.0001
 CHECKPOINT:
   CHECKPOINT_PERIOD: 10000

@@ -5,7 +5,7 @@ MODEL:
   SUBTYPE: embd_fusion_w_relu_yall
   SPECS: 8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_hubness10000
   LOSS_TYPE: SOFTMAXED_TRIPLET  # EUC, SOFTMAX
-  MODEL_NAME: VGG16_rel_softmaxed_triplet
+  MODEL_NAME: VGG16_rel_softmaxed_triplet_original
   BN_MOMENTUM: 0.9
   BN_EPSILON: 1.0000001e-5
   FC_INIT_STD: 0.01
@@ -33,10 +33,10 @@ TRAIN:
   FG_FRACTION: 0.25
   FG_THRESH: 0.5
   # SCALE_JITTER_TYPE: googleNet
-  EVALUATION_FREQUENCY: 2500  # 50000
+  EVALUATION_FREQUENCY: 10000 # 50000
 TEST:
-  WEIGHTS: checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_hubness10000/train/latest.pkl #checkpoints/vg_wiki_and_relco/latest_final.pkl
-  DATA_TYPE: val
+  WEIGHTS: checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_hubness10000/train/best.pkl #checkpoints/vg_wiki_and_relco/latest_final.pkl
+  DATA_TYPE: test
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/vg/gt_proposals_test.pkl
   BBOX_REG: False
 SOLVER:
