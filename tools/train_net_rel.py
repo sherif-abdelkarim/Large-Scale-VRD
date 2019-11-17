@@ -91,6 +91,8 @@ if __name__ == '__main__':
         load_params_from_file(args.cfg_file)
     if args.opts is not None:
         load_params_from_list(args.opts)
+
+    helpers_rel.set_random_seed(cfg.RNG_SEED)
     logger.info('Training with config:')
     logger.info(pprint.pformat(cfg))
 
