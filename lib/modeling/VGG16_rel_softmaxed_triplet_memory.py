@@ -15,7 +15,7 @@ from caffe2.python import core as caffe2core
 from core.config_rel import cfg
 import utils.blob as blob_utils
 import math
-from modeling.VGG16_rel_softmax import add_memory_module, add_hallucinator, add_selector, add_cosnorm_classifier, \
+from modeling.VGG16_rel_softmax_memory import add_memory_module, add_hallucinator, add_selector, add_cosnorm_classifier, \
    disc_centroids_loss_func, add_centroids_loss, l2_norm
 
 logger = logging.getLogger(__name__)
