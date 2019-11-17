@@ -4,9 +4,9 @@ RNG_SEED: 5
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
-  SPECS: 8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers
-  LOSS_TYPE: SOFTMAX  # EUC, SOFTMAX
-  MODEL_NAME: VGG16_rel_softmax
+  SPECS: 8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_retrain
+  LOSS_TYPE: SOFTMAXED_TRIPLET  # EUC, SOFTMAX
+  MODEL_NAME: VGG16_rel_softmaxed_triplet
   BN_MOMENTUM: 0.9
   BN_EPSILON: 1.0000001e-5
   FC_INIT_STD: 0.01
@@ -36,7 +36,7 @@ TRAIN:
   # SCALE_JITTER_TYPE: googleNet
   EVALUATION_FREQUENCY: 25000  # 50000
 TEST:
-  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers/train/best.pkl
+  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_retrain/train/best.pkl
   DATA_TYPE: train
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
   BBOX_REG: False

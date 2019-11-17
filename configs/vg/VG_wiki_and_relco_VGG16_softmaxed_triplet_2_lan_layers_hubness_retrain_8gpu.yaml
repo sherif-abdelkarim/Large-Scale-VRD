@@ -1,21 +1,19 @@
-DATASET: gvqa
+DATASET: vg_wiki_and_relco
 NUM_DEVICES: 8
 RNG_SEED: 5
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
-  SPECS: 8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers
-  LOSS_TYPE: SOFTMAX  # EUC, SOFTMAX
-  MODEL_NAME: VGG16_rel_softmax
+  SPECS: 8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_hubness_retrain
+  LOSS_TYPE: SOFTMAXED_TRIPLET  # EUC, SOFTMAX
+  MODEL_NAME: VGG16_rel_softmaxed_triplet
   BN_MOMENTUM: 0.9
   BN_EPSILON: 1.0000001e-5
   FC_INIT_STD: 0.01
   ALLOW_INPLACE_SUM: True
   MEMONGER: True
-  WEAK_LABELS: False
-  NUM_WEAK_LABELS: 0
-  NUM_CLASSES_SBJ_OBJ: 1703
-  NUM_CLASSES_PRD: 310
+  NUM_CLASSES_SBJ_OBJ: 53304
+  NUM_CLASSES_PRD: 29086
 VISUAL_EMBEDDING:
   WEIGHT_SHARING:  SBJ_OBJ_SHARED #, all_unshared,  sbj_obj_shared, all_unshared
   L2_NORMALIZE: True
@@ -30,18 +28,18 @@ TRAIN:
   BBOX_REG: False
   BBOX_NORMALIZE_TARGETS: False  # No bbox regression at the end
   USE_FLIPPED: True
+  HUBNESS: True
+  HUBNESS_SCALE: 1.0
   BATCH_SIZE_PER_IM: 128
   FG_FRACTION: 0.25
   FG_THRESH: 0.5
   # SCALE_JITTER_TYPE: googleNet
   EVALUATION_FREQUENCY: 25000  # 50000
 TEST:
-  WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmax_no_last_l2norm_trainval_w_cluster_2_lan_layers/train/best.pkl
-  DATA_TYPE: train
-  PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
+  WEIGHTS: checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_hubness_retrain/train/latest.pkl #checkpoints/vg_wiki_and_relco/latest_final.pkl
+  DATA_TYPE: test
+  PROPOSAL_FILE: datasets/large_scale_VRD/proposals/vg/gt_proposals_test.pkl
   BBOX_REG: False
-  ISA: False
-  GET_ALL_VIS_EMBEDDINGS: True
 SOLVER:
   BASE_LR: 0.001
   STEP_SIZES: [125000]
