@@ -656,12 +656,12 @@ def add_embd_triplet_losses_labeled(model, label):
 
             hubness_dist_suffix_sqr_scaled = model.Scale(['hubness_dist_sqr' + suffix],
                                                          ['hubness_dist_sqr_scaled' + suffix],
-                                                         scale=cfg.TRAIN.HUBNESS_scale)
+                                                         scale=cfg.TRAIN.HUBNESS_SCALE)
 
             # scale=scale
-            # loss_hubness=   cfg.TRAIN.HUBNESS_scale* hubness_dist_suffix_sqr.AveragedLoss([], ['loss_hubness' + suffix])
+            # loss_hubness=   cfg.TRAIN.HUBNESS_SCALE* hubness_dist_suffix_sqr.AveragedLoss([], ['loss_hubness' + suffix])
             loss_hubness = hubness_dist_suffix_sqr_scaled.AveragedLoss([], ['loss_hubness' + suffix])
-            # loss_hubness_scaled= loss_hubness.Scale(, scale=cfg.TRAIN.HUBNESS_scale, )
+            # loss_hubness_scaled= loss_hubness.Scale(, scale=cfg.TRAIN.HUBNESS_SCALE, )
             model.loss_set.extend([loss_hubness])
             # loss_h = sum(pf - 1/k)
 
