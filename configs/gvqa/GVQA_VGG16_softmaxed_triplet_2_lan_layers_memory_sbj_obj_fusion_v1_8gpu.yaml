@@ -1,11 +1,12 @@
 DATASET: gvqa
 NUM_DEVICES: 8
+RANDOM_SEED: 0
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
   SPECS: 8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_memory_sbj_obj_fusion_v1
   LOSS_TYPE: SOFTMAXED_TRIPLET  # EUC, SOFTMAX
-  MODEL_NAME: VGG16_rel_softmaxed_triplet
+  MODEL_NAME: VGG16_rel_softmaxed_triplet_memory
   BN_MOMENTUM: 0.9
   BN_EPSILON: 1.0000001e-5
   FC_INIT_STD: 0.01
