@@ -96,7 +96,7 @@ __C.TRAIN.IMS_PER_BATCH = 1
 __C.TRAIN.BATCH_SIZE_PER_IM = 128
 # HUBNESS Loss
 __C.TRAIN.HUBNESS = False
-__C.TRAIN.HUBNESS_scale= 1.0
+__C.TRAIN.HUBNESS_SCALE= 1.0
 
 # Fraction of minibatch that is labeled foreground (i.e. class > 0)
 __C.TRAIN.FG_FRACTION = 0.25

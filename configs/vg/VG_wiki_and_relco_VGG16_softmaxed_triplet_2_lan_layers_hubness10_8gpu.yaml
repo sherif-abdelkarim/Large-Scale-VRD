@@ -1,6 +1,6 @@
 DATASET: vg_wiki_and_relco
 NUM_DEVICES: 8
-RANDOM_SEED: 0
+RNG_SEED: 5
 MODEL:
   TYPE: VGG16_reldn_fast_rcnn_conv4_spo_for_p
   SUBTYPE: embd_fusion_w_relu_yall
@@ -29,7 +29,7 @@ TRAIN:
   BBOX_NORMALIZE_TARGETS: False  # No bbox regression at the end
   USE_FLIPPED: True
   HUBNESS: True
-  HUBNESS_scale: 10.0
+  HUBNESS_SCALE: 10.0
   BATCH_SIZE_PER_IM: 128
   FG_FRACTION: 0.25
   FG_THRESH: 0.5
