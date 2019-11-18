@@ -183,7 +183,7 @@ def get_output_directory():
 
 
 def set_random_seed(seed):
-    logger.info("Setting random seed to:", seed)
+    logger.info("Setting random seed to:" + str(seed))
     np.random.seed(seed)
     return None
 
