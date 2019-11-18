@@ -41,7 +41,7 @@ TEST:
   PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
   BBOX_REG: False
   ISA: False
-  GET_ALL_VIS_EMBEDDINGS: True
+  GET_ALL_VIS_EMBEDDINGS: False
 SOLVER:
   BASE_LR: 0.001
   STEP_SIZES: [125000]

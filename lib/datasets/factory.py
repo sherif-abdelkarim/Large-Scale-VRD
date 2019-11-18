@@ -28,14 +28,17 @@ __sets_lan = {}
 #     name = 'vg_wiki_and_relco_lan'
 #     __sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
 #
-# if cfg.DATASET == 'gvqa':
 __sets = {}
 __sets_lan = {}
 for split in ['train', 'val', 'test']:
     name = 'gvqa_{}'.format(split)
+    name2 = 'vg_wiki_and_relco_{}'.format(split)
     __sets[name] = (lambda split=split: vg_wiki_and_relco(split))
+    __sets[name2] = (lambda split=split: vg_wiki_and_relco(split))
 name = 'gvqa_lan'
+name2 = 'vg_wiki_and_relco_lan'
 __sets_lan[name] = (lambda: vg_wiki_and_relco_lan())
+__sets_lan[name2] = (lambda: vg_wiki_and_relco_lan())
 
 
 def get_landb(name):
