@@ -93,7 +93,7 @@ class vg_wiki_and_relco(imdb_rel):
 
     def get_widths_and_heights(self):
         cache_file = os.path.join(
-            self._data_path, 'vg_' + self._image_set + '_image_sizes.pkl')
+            self._data_path, 'vg_' + self._image_set + '_image_sizes{}.pkl'.format(cfg.RNG_SEED))
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 sizes = cPickle.load(fid)
@@ -134,9 +134,9 @@ class vg_wiki_and_relco(imdb_rel):
         This function loads/saves from/to a cache file to speed up future calls.
         """
         if cfg.MODEL.WEAK_LABELS:
-            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_w.pkl')
+            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_w{}.pkl'.format(cfg.RNG_SEED))
         else:
-            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
+            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb{}.pkl'.format(cfg.RNG_SEED))
 
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
