@@ -49,7 +49,7 @@ class vg_wiki_and_relco_lan():
         print(len(self._predicate_categories))
 
         cache_path = osp.abspath(osp.join(cfg.DATA_DIR, 'cache'))
-        cache_file = os.path.join(cache_path, cfg.DATASET + '_gt_landb{}.pkl'.format(cfg.RNG_SEED))
+        cache_file = os.path.join(cache_path, cfg.DATASET + '_gt_landb.pkl')
 
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:

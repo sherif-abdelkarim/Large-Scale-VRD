@@ -26,7 +26,8 @@ def get_gt_val_test_proposals(split, gt_roidb):
         raise NotImplementedError
 
     proposal_file = os.path.join(
-        cfg.DATA_DIR, 'proposals', data_name, 'gt_proposals_' + split + '{}.pkl'.format(cfg.RNG_SEED))
+        # cfg.DATA_DIR, 'proposals', data_name, 'gt_proposals_' + split + '{}.pkl'.format(cfg.RNG_SEED))
+        cfg.DATA_DIR, 'proposals', data_name, 'gt_proposals_' + split + '.pkl')
     if os.path.exists(proposal_file):
         logger.info('Loading existing proposals from {}'.format(proposal_file))
         with open(proposal_file, 'rb') as fid:

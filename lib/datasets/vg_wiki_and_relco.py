@@ -93,7 +93,7 @@ class vg_wiki_and_relco(imdb_rel):
 
     def get_widths_and_heights(self):
         cache_file = os.path.join(
-            self._data_path, 'vg_' + self._image_set + '_image_sizes{}.pkl'.format(cfg.RNG_SEED))
+            self._data_path, 'vg_' + self._image_set + '_image_sizes.pkl')
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 sizes = cPickle.load(fid)
@@ -120,7 +120,8 @@ class vg_wiki_and_relco(imdb_rel):
         """
         Load the indexes listed in this dataset's image set file.
         """
-        image_set_file = os.path.join(self._data_path, 'random_splits/seed{}'.format(cfg.RNG_SEED), self._image_set + '_clean.json')
+        # image_set_file = os.path.join(self._data_path, 'random_splits/seed{}'.format(cfg.RNG_SEED), self._image_set + '_clean.json')
+        image_set_file = os.path.join(self._data_path, self._image_set + '_clean.json')
         assert os.path.exists(image_set_file), \
             'Path does not exist: {}'.format(image_set_file)
         with open(image_set_file) as f:
@@ -134,9 +135,9 @@ class vg_wiki_and_relco(imdb_rel):
         This function loads/saves from/to a cache file to speed up future calls.
         """
         if cfg.MODEL.WEAK_LABELS:
-            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_w{}.pkl'.format(cfg.RNG_SEED))
+            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_w.pkl')
         else:
-            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb{}.pkl'.format(cfg.RNG_SEED))
+            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
 
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
