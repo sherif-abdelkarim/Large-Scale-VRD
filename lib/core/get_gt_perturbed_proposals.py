@@ -60,8 +60,8 @@ def get_gt_perturbed_proposals(gt_roidb):
     else:
         raise NotImplementedError
 
-    # proposal_name = 'gt_perturbed_proposals_flipped{}.pkl'.format(cfg.RNG_SEED)
-    proposal_name = 'gt_perturbed_proposals_flipped.pkl'
+    proposal_name = 'gt_perturbed_proposals_flipped{}.pkl'.format(cfg.RNG_SEED)
+    # proposal_name = 'gt_perturbed_proposals_flipped.pkl'
     proposal_file = os.path.join(proposal_file_path, proposal_name)
     logger.info('proposal file: {}'.format(proposal_file))
     if os.path.exists(proposal_file):
