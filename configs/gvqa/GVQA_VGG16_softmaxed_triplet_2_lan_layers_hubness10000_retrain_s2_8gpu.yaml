@@ -38,7 +38,7 @@ TRAIN:
 TEST:
   WEIGHTS: checkpoints/gvqa/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_hubness10000_retrain_s2/train/best.pkl #checkpoints/vg_wiki_and_relco/latest_final.pkl
   DATA_TYPE: test
-  PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test.pkl
+  PROPOSAL_FILE: datasets/large_scale_VRD/proposals/gvqa/gt_proposals_test2.pkl
   BBOX_REG: False
 SOLVER:
   BASE_LR: 0.001
