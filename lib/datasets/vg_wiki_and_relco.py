@@ -120,7 +120,7 @@ class vg_wiki_and_relco(imdb_rel):
         """
         Load the indexes listed in this dataset's image set file.
         """
-        image_set_file = os.path.join(self._data_path, self._image_set + '_clean.json')
+        image_set_file = os.path.join(self._data_path, 'random_splits/seed{}'.format(cfg.RNG_SEED), self._image_set + '_clean.json')
         assert os.path.exists(image_set_file), \
             'Path does not exist: {}'.format(image_set_file)
         with open(image_set_file) as f:
