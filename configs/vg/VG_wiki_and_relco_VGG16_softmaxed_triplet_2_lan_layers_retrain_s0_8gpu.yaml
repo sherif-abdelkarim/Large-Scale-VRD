@@ -34,7 +34,7 @@ TRAIN:
   FG_FRACTION: 0.25
   FG_THRESH: 0.5
   # SCALE_JITTER_TYPE: googleNet
-  EVALUATION_FREQUENCY: 2500  # 50000
+  EVALUATION_FREQUENCY: 25000  # 50000
 TEST:
   WEIGHTS: checkpoints/vg_wiki_and_relco/VGG16_reldn_fast_rcnn_conv4_spo_for_p/embd_fusion_w_relu_yall/8gpus_vgg16_softmaxed_triplet_no_last_l2norm_trainval_w_cluster_2_lan_layers_retrain_s0/train/best.pkl
   DATA_TYPE: test
@@ -53,4 +53,4 @@ SOLVER:
   WARM_UP_ITERS: 500  # 10000
   WARM_UP_LR: 0.0001
 CHECKPOINT:
-  CHECKPOINT_PERIOD: 5000
+  CHECKPOINT_PERIOD: 25000
