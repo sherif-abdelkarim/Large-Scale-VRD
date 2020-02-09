@@ -189,6 +189,13 @@ def add_fast_rcnn_blobs(
                 blobs[k] = np.concatenate(v)
         return True
     else:
+        freq_rel = np.load('./datasets/large_scale_VRD/GVQA/freq_pred.npy')
+        freq_obj = np.load('./datasets/large_scale_VRD/GVQA/freq_obj.npy')
+        freq_obj[freq_obj==0] = 1.0
+        rel_weights = np.sum(freq_rel)/freq_rel
+        obj_weights = np.sum(freq_obj)/freq_obj
+        rel_weights = (rel_weights/np.mean(rel_weights)).astype(np.float32)
+        obj_weights = (obj_weights/np.mean(obj_weights)).astype(np.float32)
         for im_i, entry in enumerate(roidb):
             scale = im_scales[im_i]
             sbj_gt_inds = np.where((entry['gt_sbj_classes'] > 0))[0]
@@ -327,7 +334,8 @@ def add_fast_rcnn_blobs(
                         sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
                         rel_gt_labels,
                         low_shot_helper,
-                        unique_sbj_gt_labels_w, unique_obj_gt_labels_w, rel_gt_labels_w)
+                        unique_sbj_gt_labels_w, unique_obj_gt_labels_w, rel_gt_labels_w,
+                        rel_weights=rel_weights, obj_weights=obj_weights)
                 else:
                     frcn_blobs = _sample_rois_triplet_yall(
                         unique_all_rois_sbj, unique_all_rois_obj,
@@ -337,7 +345,7 @@ def add_fast_rcnn_blobs(
                         sbj_gt_boxes, obj_gt_boxes,
                         sbj_gt_vecs, obj_gt_vecs, rel_gt_vecs,
                         rel_gt_labels,
-                        low_shot_helper)
+                        low_shot_helper, rel_weights=rel_weights, obj_weights=obj_weights)
 
             elif cfg.MODEL.LOSS_TYPE == 'SOFTMAX':
                 frcn_blobs = _sample_rois_softmax_yall(
@@ -400,7 +408,7 @@ def _sample_rois_triplet_yall(
         sbj_gt_vecs, obj_gt_vecs,
         rel_gt_vecs, rel_gt_labels,
         low_shot_helper,
-        unique_sbj_gt_labels_w=None, unique_obj_gt_labels_w=None, rel_gt_labels_w=None):
+        unique_sbj_gt_labels_w=None, unique_obj_gt_labels_w=None, rel_gt_labels_w=None, rel_weights=None, obj_weights=None):
     if cfg.TRAIN.OVERSAMPLE_SO:
         if cfg.MODEL.WEAK_LABELS:
             rois_sbj, pos_vecs_sbj, all_labels_sbj, all_labels_sbj_w, \
@@ -614,27 +622,32 @@ def _sample_rois_triplet_yall(
     if cfg.TRAIN.ADD_LOSS_WEIGHTS:
         # low-shot on P
         rel_pos_labels = rel_gt_labels[gt_assignment_pair_min[rel_fg_inds]] - 1
-        rel_pos_weights = np.ones_like(rel_pos_labels, dtype=np.float32)
-        low_shot_idx = \
-            np.array([i for i, p in enumerate(rel_pos_labels) if
-                      low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
-        rel_pos_weights[low_shot_idx] *= 2.0
-        rel_pos_weights /= np.mean(rel_pos_weights)
+        #rel_pos_weights = np.ones_like(rel_pos_labels, dtype=np.float32)
+        rel_pos_weights = rel_weights[rel_pos_labels.astype(np.int32)]
+        #low_shot_idx = \
+        #    np.array([i for i, p in enumerate(rel_pos_labels) if
+        #              low_shot_helper.check_low_shot_p([-1, p, -1])], dtype=np.int32)
+        #rel_pos_weights[low_shot_idx] *= 2.0
+        #rel_pos_weights /= np.mean(rel_pos_weights)
     if cfg.TRAIN.ADD_LOSS_WEIGHTS_SO:
         # low-shot on S
-        sbj_pos_weights = np.ones_like(sbj_pos_labels, dtype=np.float32)
-        low_shot_idx = \
-            np.array([i for i, s in enumerate(sbj_pos_labels) if
-                      low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
-        sbj_pos_weights[low_shot_idx] *= 2.0
-        sbj_pos_weights /= np.mean(sbj_pos_weights)
+        #sbj_pos_weights = np.ones_like(sbj_pos_labels, dtype=np.float32)
+        sbj_pos_weights = obj_weights[sbj_pos_labels.astype(np.int32)]
+        #print('sbj_pos_weights', sbj_pos_weights)
+        #low_shot_idx = \
+        #    np.array([i for i, s in enumerate(sbj_pos_labels) if
+        #              low_shot_helper.check_low_shot_s([s, -1, -1])], dtype=np.int32)
+        #sbj_pos_weights[low_shot_idx] *= 2.0
+        #sbj_pos_weights /= np.mean(sbj_pos_weights)
         # low-shot on O
-        obj_pos_weights = np.ones_like(obj_pos_labels, dtype=np.float32)
-        low_shot_idx = \
-            np.array([i for i, o in enumerate(obj_pos_labels) if
-                      low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
-        obj_pos_weights[low_shot_idx] *= 2.0
-        obj_pos_weights /= np.mean(obj_pos_weights)
+        #obj_pos_weights = np.ones_like(obj_pos_labels, dtype=np.float32)
+        obj_pos_weights = obj_weights[obj_pos_labels.astype(np.int32)]
+        #print('obj_pos_weights', obj_pos_weights)
+        #low_shot_idx = \
+        #    np.array([i for i, o in enumerate(obj_pos_labels) if
+        #              low_shot_helper.check_low_shot_o([-1, -1, o])], dtype=np.int32)
+        #obj_pos_weights[low_shot_idx] *= 2.0
+        #obj_pos_weights /= np.mean(obj_pos_weights)
 
     rel_keep_inds = np.append(rel_fg_inds, rel_bg_inds)
 
